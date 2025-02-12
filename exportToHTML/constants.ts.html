@@ -1,0 +1,170 @@
+<html>
+<head>
+<title>constants.ts</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+<style type="text/css">
+.s0 { color: #5f826b; font-style: italic;}
+.s1 { color: #67a37c; font-style: italic;}
+.s2 { color: #bcbec4;}
+.s3 { color: #cf8e6d;}
+.s4 { color: #bcbec4;}
+.s5 { color: #2aacb8;}
+.s6 { color: #6aab73;}
+</style>
+</head>
+<body bgcolor="#1e1f22">
+<table CELLSPACING=0 CELLPADDING=5 COLS=1 WIDTH="100%" BGCOLOR="#606060" >
+<tr><td><center>
+<font face="Arial, Helvetica" color="#000000">
+constants.ts</font>
+</center></td></tr></table>
+<pre><span class="s0">/** </span><span class="s1">@internal </span><span class="s0">*/</span>
+<span class="s3">export const </span><span class="s2">BSON_MAJOR_VERSION </span><span class="s4">= </span><span class="s5">6</span><span class="s4">;</span>
+
+<span class="s0">/** </span><span class="s1">@internal </span><span class="s0">*/</span>
+<span class="s3">export const </span><span class="s2">BSON_VERSION_SYMBOL </span><span class="s4">= </span><span class="s2">Symbol</span><span class="s4">.</span><span class="s2">for</span><span class="s4">(</span><span class="s6">'@@mdb.bson.version'</span><span class="s4">);</span>
+
+<span class="s0">/** </span><span class="s1">@internal </span><span class="s0">*/</span>
+<span class="s3">export const </span><span class="s2">BSON_INT32_MAX </span><span class="s4">= </span><span class="s5">0x7fffffff</span><span class="s4">;</span>
+<span class="s0">/** </span><span class="s1">@internal </span><span class="s0">*/</span>
+<span class="s3">export const </span><span class="s2">BSON_INT32_MIN </span><span class="s4">= -</span><span class="s5">0x80000000</span><span class="s4">;</span>
+<span class="s0">/** </span><span class="s1">@internal </span><span class="s0">*/</span>
+<span class="s3">export const </span><span class="s2">BSON_INT64_MAX </span><span class="s4">= </span><span class="s2">Math</span><span class="s4">.</span><span class="s2">pow</span><span class="s4">(</span><span class="s5">2</span><span class="s4">, </span><span class="s5">63</span><span class="s4">) - </span><span class="s5">1</span><span class="s4">;</span>
+<span class="s0">/** </span><span class="s1">@internal </span><span class="s0">*/</span>
+<span class="s3">export const </span><span class="s2">BSON_INT64_MIN </span><span class="s4">= -</span><span class="s2">Math</span><span class="s4">.</span><span class="s2">pow</span><span class="s4">(</span><span class="s5">2</span><span class="s4">, </span><span class="s5">63</span><span class="s4">);</span>
+
+<span class="s0">/**</span>
+ <span class="s0">* Any integer up to 2^53 can be precisely represented by a double.</span>
+ <span class="s0">* </span><span class="s1">@internal</span>
+ <span class="s0">*/</span>
+<span class="s3">export const </span><span class="s2">JS_INT_MAX </span><span class="s4">= </span><span class="s2">Math</span><span class="s4">.</span><span class="s2">pow</span><span class="s4">(</span><span class="s5">2</span><span class="s4">, </span><span class="s5">53</span><span class="s4">);</span>
+
+<span class="s0">/**</span>
+ <span class="s0">* Any integer down to -2^53 can be precisely represented by a double.</span>
+ <span class="s0">* </span><span class="s1">@internal</span>
+ <span class="s0">*/</span>
+<span class="s3">export const </span><span class="s2">JS_INT_MIN </span><span class="s4">= -</span><span class="s2">Math</span><span class="s4">.</span><span class="s2">pow</span><span class="s4">(</span><span class="s5">2</span><span class="s4">, </span><span class="s5">53</span><span class="s4">);</span>
+
+<span class="s0">/** Number BSON Type @internal */</span>
+<span class="s3">export const </span><span class="s2">BSON_DATA_NUMBER </span><span class="s4">= </span><span class="s5">1</span><span class="s4">;</span>
+
+<span class="s0">/** String BSON Type @internal */</span>
+<span class="s3">export const </span><span class="s2">BSON_DATA_STRING </span><span class="s4">= </span><span class="s5">2</span><span class="s4">;</span>
+
+<span class="s0">/** Object BSON Type @internal */</span>
+<span class="s3">export const </span><span class="s2">BSON_DATA_OBJECT </span><span class="s4">= </span><span class="s5">3</span><span class="s4">;</span>
+
+<span class="s0">/** Array BSON Type @internal */</span>
+<span class="s3">export const </span><span class="s2">BSON_DATA_ARRAY </span><span class="s4">= </span><span class="s5">4</span><span class="s4">;</span>
+
+<span class="s0">/** Binary BSON Type @internal */</span>
+<span class="s3">export const </span><span class="s2">BSON_DATA_BINARY </span><span class="s4">= </span><span class="s5">5</span><span class="s4">;</span>
+
+<span class="s0">/** Binary BSON Type @internal */</span>
+<span class="s3">export const </span><span class="s2">BSON_DATA_UNDEFINED </span><span class="s4">= </span><span class="s5">6</span><span class="s4">;</span>
+
+<span class="s0">/** ObjectId BSON Type @internal */</span>
+<span class="s3">export const </span><span class="s2">BSON_DATA_OID </span><span class="s4">= </span><span class="s5">7</span><span class="s4">;</span>
+
+<span class="s0">/** Boolean BSON Type @internal */</span>
+<span class="s3">export const </span><span class="s2">BSON_DATA_BOOLEAN </span><span class="s4">= </span><span class="s5">8</span><span class="s4">;</span>
+
+<span class="s0">/** Date BSON Type @internal */</span>
+<span class="s3">export const </span><span class="s2">BSON_DATA_DATE </span><span class="s4">= </span><span class="s5">9</span><span class="s4">;</span>
+
+<span class="s0">/** null BSON Type @internal */</span>
+<span class="s3">export const </span><span class="s2">BSON_DATA_NULL </span><span class="s4">= </span><span class="s5">10</span><span class="s4">;</span>
+
+<span class="s0">/** RegExp BSON Type @internal */</span>
+<span class="s3">export const </span><span class="s2">BSON_DATA_REGEXP </span><span class="s4">= </span><span class="s5">11</span><span class="s4">;</span>
+
+<span class="s0">/** Code BSON Type @internal */</span>
+<span class="s3">export const </span><span class="s2">BSON_DATA_DBPOINTER </span><span class="s4">= </span><span class="s5">12</span><span class="s4">;</span>
+
+<span class="s0">/** Code BSON Type @internal */</span>
+<span class="s3">export const </span><span class="s2">BSON_DATA_CODE </span><span class="s4">= </span><span class="s5">13</span><span class="s4">;</span>
+
+<span class="s0">/** Symbol BSON Type @internal */</span>
+<span class="s3">export const </span><span class="s2">BSON_DATA_SYMBOL </span><span class="s4">= </span><span class="s5">14</span><span class="s4">;</span>
+
+<span class="s0">/** Code with Scope BSON Type @internal */</span>
+<span class="s3">export const </span><span class="s2">BSON_DATA_CODE_W_SCOPE </span><span class="s4">= </span><span class="s5">15</span><span class="s4">;</span>
+
+<span class="s0">/** 32 bit Integer BSON Type @internal */</span>
+<span class="s3">export const </span><span class="s2">BSON_DATA_INT </span><span class="s4">= </span><span class="s5">16</span><span class="s4">;</span>
+
+<span class="s0">/** Timestamp BSON Type @internal */</span>
+<span class="s3">export const </span><span class="s2">BSON_DATA_TIMESTAMP </span><span class="s4">= </span><span class="s5">17</span><span class="s4">;</span>
+
+<span class="s0">/** Long BSON Type @internal */</span>
+<span class="s3">export const </span><span class="s2">BSON_DATA_LONG </span><span class="s4">= </span><span class="s5">18</span><span class="s4">;</span>
+
+<span class="s0">/** Decimal128 BSON Type @internal */</span>
+<span class="s3">export const </span><span class="s2">BSON_DATA_DECIMAL128 </span><span class="s4">= </span><span class="s5">19</span><span class="s4">;</span>
+
+<span class="s0">/** MinKey BSON Type @internal */</span>
+<span class="s3">export const </span><span class="s2">BSON_DATA_MIN_KEY </span><span class="s4">= </span><span class="s5">0xff</span><span class="s4">;</span>
+
+<span class="s0">/** MaxKey BSON Type @internal */</span>
+<span class="s3">export const </span><span class="s2">BSON_DATA_MAX_KEY </span><span class="s4">= </span><span class="s5">0x7f</span><span class="s4">;</span>
+
+<span class="s0">/** Binary Default Type @internal */</span>
+<span class="s3">export const </span><span class="s2">BSON_BINARY_SUBTYPE_DEFAULT </span><span class="s4">= </span><span class="s5">0</span><span class="s4">;</span>
+
+<span class="s0">/** Binary Function Type @internal */</span>
+<span class="s3">export const </span><span class="s2">BSON_BINARY_SUBTYPE_FUNCTION </span><span class="s4">= </span><span class="s5">1</span><span class="s4">;</span>
+
+<span class="s0">/** Binary Byte Array Type @internal */</span>
+<span class="s3">export const </span><span class="s2">BSON_BINARY_SUBTYPE_BYTE_ARRAY </span><span class="s4">= </span><span class="s5">2</span><span class="s4">;</span>
+
+<span class="s0">/** Binary Deprecated UUID Type @deprecated Please use BSON_BINARY_SUBTYPE_UUID_NEW @internal */</span>
+<span class="s3">export const </span><span class="s2">BSON_BINARY_SUBTYPE_UUID </span><span class="s4">= </span><span class="s5">3</span><span class="s4">;</span>
+
+<span class="s0">/** Binary UUID Type @internal */</span>
+<span class="s3">export const </span><span class="s2">BSON_BINARY_SUBTYPE_UUID_NEW </span><span class="s4">= </span><span class="s5">4</span><span class="s4">;</span>
+
+<span class="s0">/** Binary MD5 Type @internal */</span>
+<span class="s3">export const </span><span class="s2">BSON_BINARY_SUBTYPE_MD5 </span><span class="s4">= </span><span class="s5">5</span><span class="s4">;</span>
+
+<span class="s0">/** Encrypted BSON type @internal */</span>
+<span class="s3">export const </span><span class="s2">BSON_BINARY_SUBTYPE_ENCRYPTED </span><span class="s4">= </span><span class="s5">6</span><span class="s4">;</span>
+
+<span class="s0">/** Column BSON type @internal */</span>
+<span class="s3">export const </span><span class="s2">BSON_BINARY_SUBTYPE_COLUMN </span><span class="s4">= </span><span class="s5">7</span><span class="s4">;</span>
+
+<span class="s0">/** Sensitive BSON type @internal */</span>
+<span class="s3">export const </span><span class="s2">BSON_BINARY_SUBTYPE_SENSITIVE </span><span class="s4">= </span><span class="s5">8</span><span class="s4">;</span>
+
+<span class="s0">/** Binary User Defined Type @internal */</span>
+<span class="s3">export const </span><span class="s2">BSON_BINARY_SUBTYPE_USER_DEFINED </span><span class="s4">= </span><span class="s5">128</span><span class="s4">;</span>
+
+<span class="s0">/** </span><span class="s1">@public </span><span class="s0">*/</span>
+<span class="s3">export const </span><span class="s2">BSONType </span><span class="s4">= </span><span class="s2">Object</span><span class="s4">.</span><span class="s2">freeze</span><span class="s4">({</span>
+  <span class="s2">double</span><span class="s4">: </span><span class="s5">1</span><span class="s4">,</span>
+  <span class="s2">string</span><span class="s4">: </span><span class="s5">2</span><span class="s4">,</span>
+  <span class="s2">object</span><span class="s4">: </span><span class="s5">3</span><span class="s4">,</span>
+  <span class="s2">array</span><span class="s4">: </span><span class="s5">4</span><span class="s4">,</span>
+  <span class="s2">binData</span><span class="s4">: </span><span class="s5">5</span><span class="s4">,</span>
+  <span class="s2">undefined</span><span class="s4">: </span><span class="s5">6</span><span class="s4">,</span>
+  <span class="s2">objectId</span><span class="s4">: </span><span class="s5">7</span><span class="s4">,</span>
+  <span class="s2">bool</span><span class="s4">: </span><span class="s5">8</span><span class="s4">,</span>
+  <span class="s2">date</span><span class="s4">: </span><span class="s5">9</span><span class="s4">,</span>
+  <span class="s3">null</span><span class="s4">: </span><span class="s5">10</span><span class="s4">,</span>
+  <span class="s2">regex</span><span class="s4">: </span><span class="s5">11</span><span class="s4">,</span>
+  <span class="s2">dbPointer</span><span class="s4">: </span><span class="s5">12</span><span class="s4">,</span>
+  <span class="s2">javascript</span><span class="s4">: </span><span class="s5">13</span><span class="s4">,</span>
+  <span class="s2">symbol</span><span class="s4">: </span><span class="s5">14</span><span class="s4">,</span>
+  <span class="s2">javascriptWithScope</span><span class="s4">: </span><span class="s5">15</span><span class="s4">,</span>
+  <span class="s2">int</span><span class="s4">: </span><span class="s5">16</span><span class="s4">,</span>
+  <span class="s2">timestamp</span><span class="s4">: </span><span class="s5">17</span><span class="s4">,</span>
+  <span class="s2">long</span><span class="s4">: </span><span class="s5">18</span><span class="s4">,</span>
+  <span class="s2">decimal</span><span class="s4">: </span><span class="s5">19</span><span class="s4">,</span>
+  <span class="s2">minKey</span><span class="s4">: -</span><span class="s5">1</span><span class="s4">,</span>
+  <span class="s2">maxKey</span><span class="s4">: </span><span class="s5">127</span>
+<span class="s4">} as </span><span class="s3">const</span><span class="s4">);</span>
+
+<span class="s0">/** </span><span class="s1">@public </span><span class="s0">*/</span>
+<span class="s3">export </span><span class="s2">type BSONType </span><span class="s4">= (</span><span class="s3">typeof </span><span class="s2">BSONType</span><span class="s4">)[</span><span class="s2">keyof </span><span class="s3">typeof </span><span class="s2">BSONType</span><span class="s4">];</span>
+</pre>
+</body>
+</html>

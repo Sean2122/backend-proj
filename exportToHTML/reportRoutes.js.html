@@ -1,0 +1,113 @@
+<html>
+<head>
+<title>reportRoutes.js</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+<style type="text/css">
+.s0 { color: #cf8e6d;}
+.s1 { color: #bcbec4;}
+.s2 { color: #bcbec4;}
+.s3 { color: #6aab73;}
+.s4 { color: #7a7e85;}
+.s5 { color: #2aacb8;}
+</style>
+</head>
+<body bgcolor="#1e1f22">
+<table CELLSPACING=0 CELLPADDING=5 COLS=1 WIDTH="100%" BGCOLOR="#606060" >
+<tr><td><center>
+<font face="Arial, Helvetica" color="#000000">
+reportRoutes.js</font>
+</center></td></tr></table>
+<pre><span class="s0">const </span><span class="s1">express </span><span class="s2">= </span><span class="s1">require</span><span class="s2">(</span><span class="s3">'express'</span><span class="s2">);</span>
+<span class="s0">const </span><span class="s1">router </span><span class="s2">= </span><span class="s1">express</span><span class="s2">.</span><span class="s1">Router</span><span class="s2">();</span>
+<span class="s0">const </span><span class="s1">Cost </span><span class="s2">= </span><span class="s1">require</span><span class="s2">(</span><span class="s3">'../models/Cost'</span><span class="s2">); </span><span class="s4">// Assuming this is your model for costs</span>
+
+<span class="s4">// Get Monthly Report</span>
+<span class="s1">router</span><span class="s2">.</span><span class="s1">get</span><span class="s2">(</span><span class="s3">'/report'</span><span class="s2">, </span><span class="s1">async </span><span class="s2">(</span><span class="s1">req</span><span class="s2">, </span><span class="s1">res</span><span class="s2">) =&gt; {</span>
+    <span class="s0">try </span><span class="s2">{</span>
+        <span class="s0">const </span><span class="s2">{ </span><span class="s1">id</span><span class="s2">, </span><span class="s1">year</span><span class="s2">, </span><span class="s1">month </span><span class="s2">} = </span><span class="s1">req</span><span class="s2">.</span><span class="s1">query</span><span class="s2">;</span>
+
+        <span class="s4">// Handle missing parameters</span>
+        <span class="s0">let </span><span class="s1">filter </span><span class="s2">= {};</span>
+
+        <span class="s4">// If a userid is provided, filter by userid</span>
+        <span class="s0">if </span><span class="s2">(</span><span class="s1">id</span><span class="s2">) {</span>
+            <span class="s1">filter</span><span class="s2">.</span><span class="s1">userid </span><span class="s2">= </span><span class="s1">id</span><span class="s2">;</span>
+        <span class="s2">}</span>
+
+        <span class="s4">// If year and month are provided, filter by the specific month and year</span>
+        <span class="s0">if </span><span class="s2">(</span><span class="s1">year </span><span class="s2">&amp;&amp; </span><span class="s1">month </span><span class="s2">&amp;&amp; !</span><span class="s1">isNaN</span><span class="s2">(</span><span class="s1">parseInt</span><span class="s2">(</span><span class="s1">month</span><span class="s2">))) {</span>
+            <span class="s0">const </span><span class="s1">startOfMonth </span><span class="s2">= </span><span class="s0">new </span><span class="s1">Date</span><span class="s2">(</span><span class="s3">`</span><span class="s1">$</span><span class="s2">{</span><span class="s1">year</span><span class="s2">}</span><span class="s3">-</span><span class="s1">$</span><span class="s2">{</span><span class="s1">month</span><span class="s2">.</span><span class="s1">padStart</span><span class="s2">(</span><span class="s5">2</span><span class="s2">, </span><span class="s3">'0'</span><span class="s2">)}</span><span class="s3">-01T00:00:00Z`</span><span class="s2">);</span>
+
+            <span class="s4">// Correctly calculate the next month</span>
+            <span class="s0">let </span><span class="s1">nextMonth</span><span class="s2">, </span><span class="s1">nextYear</span><span class="s2">;</span>
+            <span class="s0">if </span><span class="s2">(</span><span class="s1">month </span><span class="s2">=== </span><span class="s3">&quot;12&quot;</span><span class="s2">) {</span>
+                <span class="s1">nextMonth </span><span class="s2">= </span><span class="s3">&quot;01&quot;</span><span class="s2">;  </span><span class="s4">// If December, next month is January</span>
+                <span class="s1">nextYear </span><span class="s2">= </span><span class="s1">parseInt</span><span class="s2">(</span><span class="s1">year</span><span class="s2">) + </span><span class="s5">1</span><span class="s2">;</span>
+            <span class="s2">} </span><span class="s0">else </span><span class="s2">{</span>
+                <span class="s1">nextMonth </span><span class="s2">= </span><span class="s1">String</span><span class="s2">(</span><span class="s1">parseInt</span><span class="s2">(</span><span class="s1">month</span><span class="s2">) + </span><span class="s5">1</span><span class="s2">).</span><span class="s1">padStart</span><span class="s2">(</span><span class="s5">2</span><span class="s2">, </span><span class="s3">'0'</span><span class="s2">);  </span><span class="s4">// Increment month</span>
+                <span class="s1">nextYear </span><span class="s2">= </span><span class="s1">year</span><span class="s2">;</span>
+            <span class="s2">}</span>
+
+            <span class="s0">const </span><span class="s1">startOfNextMonth </span><span class="s2">= </span><span class="s0">new </span><span class="s1">Date</span><span class="s2">(</span><span class="s3">`</span><span class="s1">$</span><span class="s2">{</span><span class="s1">nextYear</span><span class="s2">}</span><span class="s3">-</span><span class="s1">$</span><span class="s2">{</span><span class="s1">nextMonth</span><span class="s2">}</span><span class="s3">-01T00:00:00Z`</span><span class="s2">);</span>
+
+            <span class="s1">filter</span><span class="s2">.</span><span class="s1">createdAt </span><span class="s2">= {</span>
+                <span class="s1">$gte</span><span class="s2">: </span><span class="s1">startOfMonth</span><span class="s2">,  </span><span class="s4">// Start of selected month</span>
+                <span class="s1">$lt</span><span class="s2">: </span><span class="s1">startOfNextMonth </span><span class="s4">// Start of next month</span>
+            <span class="s2">};</span>
+        <span class="s2">}</span>
+
+        <span class="s4">// If only year is provided, filter by that year</span>
+        <span class="s0">else if </span><span class="s2">(</span><span class="s1">year</span><span class="s2">) {</span>
+            <span class="s1">filter</span><span class="s2">.</span><span class="s1">createdAt </span><span class="s2">= {</span>
+                <span class="s1">$gte</span><span class="s2">: </span><span class="s0">new </span><span class="s1">Date</span><span class="s2">(</span><span class="s3">`</span><span class="s1">$</span><span class="s2">{</span><span class="s1">year</span><span class="s2">}</span><span class="s3">-01-01T00:00:00Z`</span><span class="s2">), </span><span class="s4">// Start of the year</span>
+                <span class="s1">$lt</span><span class="s2">: </span><span class="s0">new </span><span class="s1">Date</span><span class="s2">(</span><span class="s3">`</span><span class="s1">$</span><span class="s2">{</span><span class="s1">parseInt</span><span class="s2">(</span><span class="s1">year</span><span class="s2">) + </span><span class="s5">1</span><span class="s2">}</span><span class="s3">-01-01T00:00:00Z`</span><span class="s2">) </span><span class="s4">// Start of the next year</span>
+            <span class="s2">};</span>
+        <span class="s2">}</span>
+
+        <span class="s4">// Fetch cost items based on filter</span>
+        <span class="s0">const </span><span class="s1">costs </span><span class="s2">= </span><span class="s0">await </span><span class="s1">Cost</span><span class="s2">.</span><span class="s1">find</span><span class="s2">(</span><span class="s1">filter</span><span class="s2">);</span>
+
+        <span class="s4">// Group by category</span>
+        <span class="s0">const </span><span class="s1">groupedCosts </span><span class="s2">= </span><span class="s1">costs</span><span class="s2">.</span><span class="s1">reduce</span><span class="s2">((</span><span class="s1">acc</span><span class="s2">, </span><span class="s1">cost</span><span class="s2">) =&gt; {</span>
+            <span class="s0">const </span><span class="s1">day </span><span class="s2">= </span><span class="s0">new </span><span class="s1">Date</span><span class="s2">(</span><span class="s1">cost</span><span class="s2">.</span><span class="s1">createdAt</span><span class="s2">).</span><span class="s1">getDate</span><span class="s2">();</span>
+            <span class="s0">const </span><span class="s1">category </span><span class="s2">= </span><span class="s1">cost</span><span class="s2">.</span><span class="s1">category</span><span class="s2">;</span>
+
+            <span class="s4">// If the category doesn't exist in the accumulator, initialize it</span>
+            <span class="s0">if </span><span class="s2">(!</span><span class="s1">acc</span><span class="s2">[</span><span class="s1">category</span><span class="s2">]) {</span>
+                <span class="s1">acc</span><span class="s2">[</span><span class="s1">category</span><span class="s2">] = [];</span>
+            <span class="s2">}</span>
+
+            <span class="s4">// Add cost item with day, description, and sum</span>
+            <span class="s1">acc</span><span class="s2">[</span><span class="s1">category</span><span class="s2">].</span><span class="s1">push</span><span class="s2">({</span>
+                <span class="s1">sum</span><span class="s2">: </span><span class="s1">cost</span><span class="s2">.</span><span class="s1">sum</span><span class="s2">,</span>
+                <span class="s1">description</span><span class="s2">: </span><span class="s1">cost</span><span class="s2">.</span><span class="s1">description</span><span class="s2">,</span>
+                <span class="s1">day</span><span class="s2">: </span><span class="s1">day</span>
+            <span class="s2">});</span>
+
+            <span class="s0">return </span><span class="s1">acc</span><span class="s2">;</span>
+        <span class="s2">}, {});</span>
+
+        <span class="s4">// Prepare the response object</span>
+        <span class="s0">const </span><span class="s1">report </span><span class="s2">= {</span>
+            <span class="s1">userid</span><span class="s2">: </span><span class="s1">id </span><span class="s2">|| </span><span class="s3">'All users'</span><span class="s2">,  </span><span class="s4">// Show 'All users' if no user id is provided</span>
+            <span class="s1">year</span><span class="s2">: </span><span class="s1">year </span><span class="s2">|| </span><span class="s3">'All time'</span><span class="s2">,   </span><span class="s4">// Show 'All time' if no year is provided</span>
+            <span class="s1">month</span><span class="s2">: </span><span class="s1">month </span><span class="s2">|| </span><span class="s3">'All months'</span><span class="s2">, </span><span class="s4">// Show 'All months' if no month is provided</span>
+            <span class="s1">costs</span><span class="s2">: [</span>
+                <span class="s2">{ </span><span class="s1">food</span><span class="s2">: </span><span class="s1">groupedCosts</span><span class="s2">.</span><span class="s1">food </span><span class="s2">|| [] },</span>
+                <span class="s2">{ </span><span class="s1">education</span><span class="s2">: </span><span class="s1">groupedCosts</span><span class="s2">.</span><span class="s1">education </span><span class="s2">|| [] },</span>
+                <span class="s2">{ </span><span class="s1">health</span><span class="s2">: </span><span class="s1">groupedCosts</span><span class="s2">.</span><span class="s1">health </span><span class="s2">|| [] },</span>
+                <span class="s2">{ </span><span class="s1">housing</span><span class="s2">: </span><span class="s1">groupedCosts</span><span class="s2">.</span><span class="s1">housing </span><span class="s2">|| [] },</span>
+                <span class="s2">{ </span><span class="s1">sport</span><span class="s2">: </span><span class="s1">groupedCosts</span><span class="s2">.</span><span class="s1">sport </span><span class="s2">|| [] }</span>
+            <span class="s2">]</span>
+        <span class="s2">};</span>
+
+        <span class="s1">res</span><span class="s2">.</span><span class="s1">json</span><span class="s2">(</span><span class="s1">report</span><span class="s2">);</span>
+    <span class="s2">} </span><span class="s0">catch </span><span class="s2">(</span><span class="s1">err</span><span class="s2">) {</span>
+        <span class="s1">res</span><span class="s2">.</span><span class="s1">status</span><span class="s2">(</span><span class="s5">500</span><span class="s2">).</span><span class="s1">json</span><span class="s2">({ </span><span class="s1">message</span><span class="s2">: </span><span class="s3">'Error fetching report'</span><span class="s2">, </span><span class="s1">error</span><span class="s2">: </span><span class="s1">err</span><span class="s2">.</span><span class="s1">message </span><span class="s2">});</span>
+    <span class="s2">}</span>
+<span class="s2">});</span>
+
+<span class="s1">module</span><span class="s2">.</span><span class="s1">exports </span><span class="s2">= </span><span class="s1">router</span><span class="s2">;</span>
+</pre>
+</body>
+</html>

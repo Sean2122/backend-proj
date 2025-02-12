@@ -1,0 +1,54 @@
+<html>
+<head>
+<title>bson_value.ts</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+<style type="text/css">
+.s0 { color: #cf8e6d;}
+.s1 { color: #bcbec4;}
+.s2 { color: #bcbec4;}
+.s3 { color: #6aab73;}
+.s4 { color: #5f826b; font-style: italic;}
+.s5 { color: #67a37c; font-style: italic;}
+</style>
+</head>
+<body bgcolor="#1e1f22">
+<table CELLSPACING=0 CELLPADDING=5 COLS=1 WIDTH="100%" BGCOLOR="#606060" >
+<tr><td><center>
+<font face="Arial, Helvetica" color="#000000">
+bson_value.ts</font>
+</center></td></tr></table>
+<pre><span class="s0">import </span><span class="s2">{ </span><span class="s1">BSON_MAJOR_VERSION </span><span class="s2">} </span><span class="s1">from </span><span class="s3">'./constants'</span><span class="s2">;</span>
+<span class="s0">import </span><span class="s2">{ </span><span class="s1">type InspectFn </span><span class="s2">} </span><span class="s1">from </span><span class="s3">'./parser/utils'</span><span class="s2">;</span>
+<span class="s0">import </span><span class="s2">{ </span><span class="s1">BSON_VERSION_SYMBOL </span><span class="s2">} </span><span class="s1">from </span><span class="s3">'./constants'</span><span class="s2">;</span>
+
+<span class="s4">/** </span><span class="s5">@public </span><span class="s4">*/</span>
+<span class="s0">export </span><span class="s1">abstract </span><span class="s0">class </span><span class="s1">BSONValue </span><span class="s2">{</span>
+  <span class="s4">/** </span><span class="s5">@public </span><span class="s4">*/</span>
+  <span class="s0">public </span><span class="s1">abstract get _bsontype</span><span class="s2">(): </span><span class="s1">string</span><span class="s2">;</span>
+
+  <span class="s4">/** </span><span class="s5">@internal </span><span class="s4">*/</span>
+  <span class="s1">get </span><span class="s2">[</span><span class="s1">BSON_VERSION_SYMBOL</span><span class="s2">](): </span><span class="s0">typeof </span><span class="s1">BSON_MAJOR_VERSION </span><span class="s2">{</span>
+    <span class="s0">return </span><span class="s1">BSON_MAJOR_VERSION</span><span class="s2">;</span>
+  <span class="s2">}</span>
+
+  <span class="s2">[</span><span class="s1">Symbol</span><span class="s2">.</span><span class="s1">for</span><span class="s2">(</span><span class="s3">'nodejs.util.inspect.custom'</span><span class="s2">)](</span>
+    <span class="s1">depth</span><span class="s2">?: </span><span class="s1">number</span><span class="s2">,</span>
+    <span class="s1">options</span><span class="s2">?: </span><span class="s1">unknown</span><span class="s2">,</span>
+    <span class="s1">inspect</span><span class="s2">?: </span><span class="s1">InspectFn</span>
+  <span class="s2">): </span><span class="s1">string </span><span class="s2">{</span>
+    <span class="s0">return this</span><span class="s2">.</span><span class="s1">inspect</span><span class="s2">(</span><span class="s1">depth</span><span class="s2">, </span><span class="s1">options</span><span class="s2">, </span><span class="s1">inspect</span><span class="s2">);</span>
+  <span class="s2">}</span>
+
+  <span class="s4">/**</span>
+   <span class="s4">* </span><span class="s5">@public</span>
+   <span class="s4">* Prints a human-readable string of BSON value information</span>
+   <span class="s4">* If invoked manually without node.js.inspect function, this will default to a modified JSON.stringify</span>
+   <span class="s4">*/</span>
+  <span class="s0">public </span><span class="s1">abstract inspect</span><span class="s2">(</span><span class="s1">depth</span><span class="s2">?: </span><span class="s1">number</span><span class="s2">, </span><span class="s1">options</span><span class="s2">?: </span><span class="s1">unknown</span><span class="s2">, </span><span class="s1">inspect</span><span class="s2">?: </span><span class="s1">InspectFn</span><span class="s2">): </span><span class="s1">string</span><span class="s2">;</span>
+
+  <span class="s4">/** </span><span class="s5">@internal </span><span class="s4">*/</span>
+  <span class="s1">abstract toExtendedJSON</span><span class="s2">(): </span><span class="s1">unknown</span><span class="s2">;</span>
+<span class="s2">}</span>
+</pre>
+</body>
+</html>

@@ -1,0 +1,652 @@
+<html>
+<head>
+<title>deserializer.ts</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+<style type="text/css">
+.s0 { color: #cf8e6d;}
+.s1 { color: #bcbec4;}
+.s2 { color: #bcbec4;}
+.s3 { color: #6aab73;}
+.s4 { color: #5f826b; font-style: italic;}
+.s5 { color: #67a37c; font-style: italic;}
+.s6 { color: #7a7e85;}
+.s7 { color: #2aacb8;}
+.s8 { color: #42c3d4;}
+</style>
+</head>
+<body bgcolor="#1e1f22">
+<table CELLSPACING=0 CELLPADDING=5 COLS=1 WIDTH="100%" BGCOLOR="#606060" >
+<tr><td><center>
+<font face="Arial, Helvetica" color="#000000">
+deserializer.ts</font>
+</center></td></tr></table>
+<pre><span class="s0">import </span><span class="s2">{ </span><span class="s1">Binary</span><span class="s2">, </span><span class="s1">UUID </span><span class="s2">} </span><span class="s1">from </span><span class="s3">'../binary'</span><span class="s2">;</span>
+<span class="s0">import </span><span class="s1">type </span><span class="s2">{ </span><span class="s1">Document </span><span class="s2">} </span><span class="s1">from </span><span class="s3">'../bson'</span><span class="s2">;</span>
+<span class="s0">import </span><span class="s2">{ </span><span class="s1">Code </span><span class="s2">} </span><span class="s1">from </span><span class="s3">'../code'</span><span class="s2">;</span>
+<span class="s0">import </span><span class="s2">* as </span><span class="s1">constants from </span><span class="s3">'../constants'</span><span class="s2">;</span>
+<span class="s0">import </span><span class="s2">{ </span><span class="s1">DBRef</span><span class="s2">, </span><span class="s1">type DBRefLike</span><span class="s2">, </span><span class="s1">isDBRefLike </span><span class="s2">} </span><span class="s1">from </span><span class="s3">'../db_ref'</span><span class="s2">;</span>
+<span class="s0">import </span><span class="s2">{ </span><span class="s1">Decimal128 </span><span class="s2">} </span><span class="s1">from </span><span class="s3">'../decimal128'</span><span class="s2">;</span>
+<span class="s0">import </span><span class="s2">{ </span><span class="s1">Double </span><span class="s2">} </span><span class="s1">from </span><span class="s3">'../double'</span><span class="s2">;</span>
+<span class="s0">import </span><span class="s2">{ </span><span class="s1">BSONError </span><span class="s2">} </span><span class="s1">from </span><span class="s3">'../error'</span><span class="s2">;</span>
+<span class="s0">import </span><span class="s2">{ </span><span class="s1">Int32 </span><span class="s2">} </span><span class="s1">from </span><span class="s3">'../int_32'</span><span class="s2">;</span>
+<span class="s0">import </span><span class="s2">{ </span><span class="s1">Long </span><span class="s2">} </span><span class="s1">from </span><span class="s3">'../long'</span><span class="s2">;</span>
+<span class="s0">import </span><span class="s2">{ </span><span class="s1">MaxKey </span><span class="s2">} </span><span class="s1">from </span><span class="s3">'../max_key'</span><span class="s2">;</span>
+<span class="s0">import </span><span class="s2">{ </span><span class="s1">MinKey </span><span class="s2">} </span><span class="s1">from </span><span class="s3">'../min_key'</span><span class="s2">;</span>
+<span class="s0">import </span><span class="s2">{ </span><span class="s1">ObjectId </span><span class="s2">} </span><span class="s1">from </span><span class="s3">'../objectid'</span><span class="s2">;</span>
+<span class="s0">import </span><span class="s2">{ </span><span class="s1">BSONRegExp </span><span class="s2">} </span><span class="s1">from </span><span class="s3">'../regexp'</span><span class="s2">;</span>
+<span class="s0">import </span><span class="s2">{ </span><span class="s1">BSONSymbol </span><span class="s2">} </span><span class="s1">from </span><span class="s3">'../symbol'</span><span class="s2">;</span>
+<span class="s0">import </span><span class="s2">{ </span><span class="s1">Timestamp </span><span class="s2">} </span><span class="s1">from </span><span class="s3">'../timestamp'</span><span class="s2">;</span>
+<span class="s0">import </span><span class="s2">{ </span><span class="s1">ByteUtils </span><span class="s2">} </span><span class="s1">from </span><span class="s3">'../utils/byte_utils'</span><span class="s2">;</span>
+<span class="s0">import </span><span class="s2">{ </span><span class="s1">NumberUtils </span><span class="s2">} </span><span class="s1">from </span><span class="s3">'../utils/number_utils'</span><span class="s2">;</span>
+
+<span class="s4">/** </span><span class="s5">@public </span><span class="s4">*/</span>
+<span class="s0">export interface </span><span class="s1">DeserializeOptions </span><span class="s2">{</span>
+  <span class="s4">/**</span>
+   <span class="s4">* when deserializing a Long return as a BigInt.</span>
+   <span class="s4">* </span><span class="s5">@defaultValue </span><span class="s4">`false`</span>
+   <span class="s4">*/</span>
+  <span class="s1">useBigInt64</span><span class="s2">?: </span><span class="s1">boolean</span><span class="s2">;</span>
+  <span class="s4">/**</span>
+   <span class="s4">* when deserializing a Long will fit it into a Number if it's smaller than 53 bits.</span>
+   <span class="s4">* </span><span class="s5">@defaultValue </span><span class="s4">`true`</span>
+   <span class="s4">*/</span>
+  <span class="s1">promoteLongs</span><span class="s2">?: </span><span class="s1">boolean</span><span class="s2">;</span>
+  <span class="s4">/**</span>
+   <span class="s4">* when deserializing a Binary will return it as a node.js Buffer instance.</span>
+   <span class="s4">* </span><span class="s5">@defaultValue </span><span class="s4">`false`</span>
+   <span class="s4">*/</span>
+  <span class="s1">promoteBuffers</span><span class="s2">?: </span><span class="s1">boolean</span><span class="s2">;</span>
+  <span class="s4">/**</span>
+   <span class="s4">* when deserializing will promote BSON values to their Node.js closest equivalent types.</span>
+   <span class="s4">* </span><span class="s5">@defaultValue </span><span class="s4">`true`</span>
+   <span class="s4">*/</span>
+  <span class="s1">promoteValues</span><span class="s2">?: </span><span class="s1">boolean</span><span class="s2">;</span>
+  <span class="s4">/**</span>
+   <span class="s4">* allow to specify if there what fields we wish to return as unserialized raw buffer.</span>
+   <span class="s4">* </span><span class="s5">@defaultValue </span><span class="s4">`null`</span>
+   <span class="s4">*/</span>
+  <span class="s1">fieldsAsRaw</span><span class="s2">?: </span><span class="s1">Document</span><span class="s2">;</span>
+  <span class="s4">/**</span>
+   <span class="s4">* return BSON regular expressions as BSONRegExp instances.</span>
+   <span class="s4">* </span><span class="s5">@defaultValue </span><span class="s4">`false`</span>
+   <span class="s4">*/</span>
+  <span class="s1">bsonRegExp</span><span class="s2">?: </span><span class="s1">boolean</span><span class="s2">;</span>
+  <span class="s4">/**</span>
+   <span class="s4">* allows the buffer to be larger than the parsed BSON object.</span>
+   <span class="s4">* </span><span class="s5">@defaultValue </span><span class="s4">`false`</span>
+   <span class="s4">*/</span>
+  <span class="s1">allowObjectSmallerThanBufferSize</span><span class="s2">?: </span><span class="s1">boolean</span><span class="s2">;</span>
+  <span class="s4">/**</span>
+   <span class="s4">* Offset into buffer to begin reading document from</span>
+   <span class="s4">* </span><span class="s5">@defaultValue </span><span class="s4">`0`</span>
+   <span class="s4">*/</span>
+  <span class="s1">index</span><span class="s2">?: </span><span class="s1">number</span><span class="s2">;</span>
+
+  <span class="s1">raw</span><span class="s2">?: </span><span class="s1">boolean</span><span class="s2">;</span>
+  <span class="s4">/** Allows for opt-out utf-8 validation for all keys or</span>
+   <span class="s4">* specified keys. Must be all true or all false.</span>
+   <span class="s4">*</span>
+   <span class="s4">* </span><span class="s5">@example</span>
+   <span class="s4">* ```js</span>
+   <span class="s4">* // disables validation on all keys</span>
+   <span class="s4">*  validation: { utf8: false }</span>
+   <span class="s4">*</span>
+   <span class="s4">* // enables validation only on specified keys a, b, and c</span>
+   <span class="s4">*  validation: { utf8: { a: true, b: true, c: true } }</span>
+   <span class="s4">*</span>
+   <span class="s4">*  // disables validation only on specified keys a, b</span>
+   <span class="s4">*  validation: { utf8: { a: false, b: false } }</span>
+   <span class="s4">* ```</span>
+   <span class="s4">*/</span>
+  <span class="s1">validation</span><span class="s2">?: { </span><span class="s1">utf8</span><span class="s2">: </span><span class="s1">boolean </span><span class="s2">| </span><span class="s1">Record</span><span class="s2">&lt;</span><span class="s1">string</span><span class="s2">, </span><span class="s0">true</span><span class="s2">&gt; | </span><span class="s1">Record</span><span class="s2">&lt;</span><span class="s1">string</span><span class="s2">, </span><span class="s0">false</span><span class="s2">&gt; };</span>
+<span class="s2">}</span>
+
+<span class="s6">// Internal long versions</span>
+<span class="s0">const </span><span class="s1">JS_INT_MAX_LONG </span><span class="s2">= </span><span class="s1">Long</span><span class="s2">.</span><span class="s1">fromNumber</span><span class="s2">(</span><span class="s1">constants</span><span class="s2">.</span><span class="s1">JS_INT_MAX</span><span class="s2">);</span>
+<span class="s0">const </span><span class="s1">JS_INT_MIN_LONG </span><span class="s2">= </span><span class="s1">Long</span><span class="s2">.</span><span class="s1">fromNumber</span><span class="s2">(</span><span class="s1">constants</span><span class="s2">.</span><span class="s1">JS_INT_MIN</span><span class="s2">);</span>
+
+<span class="s0">export function </span><span class="s1">internalDeserialize</span><span class="s2">(</span>
+  <span class="s1">buffer</span><span class="s2">: </span><span class="s1">Uint8Array</span><span class="s2">,</span>
+  <span class="s1">options</span><span class="s2">: </span><span class="s1">DeserializeOptions</span><span class="s2">,</span>
+  <span class="s1">isArray</span><span class="s2">?: </span><span class="s1">boolean</span>
+<span class="s2">): </span><span class="s1">Document </span><span class="s2">{</span>
+  <span class="s1">options </span><span class="s2">= </span><span class="s1">options </span><span class="s2">== </span><span class="s0">null </span><span class="s2">? {} : </span><span class="s1">options</span><span class="s2">;</span>
+  <span class="s0">const </span><span class="s1">index </span><span class="s2">= </span><span class="s1">options </span><span class="s2">&amp;&amp; </span><span class="s1">options</span><span class="s2">.</span><span class="s1">index </span><span class="s2">? </span><span class="s1">options</span><span class="s2">.</span><span class="s1">index </span><span class="s2">: </span><span class="s7">0</span><span class="s2">;</span>
+  <span class="s6">// Read the document size</span>
+  <span class="s0">const </span><span class="s1">size </span><span class="s2">= </span><span class="s1">NumberUtils</span><span class="s2">.</span><span class="s1">getInt32LE</span><span class="s2">(</span><span class="s1">buffer</span><span class="s2">, </span><span class="s1">index</span><span class="s2">);</span>
+
+  <span class="s0">if </span><span class="s2">(</span><span class="s1">size </span><span class="s2">&lt; </span><span class="s7">5</span><span class="s2">) {</span>
+    <span class="s0">throw new </span><span class="s1">BSONError</span><span class="s2">(</span><span class="s3">`bson size must be &gt;= 5, is </span><span class="s1">$</span><span class="s2">{</span><span class="s1">size</span><span class="s2">}</span><span class="s3">`</span><span class="s2">);</span>
+  <span class="s2">}</span>
+
+  <span class="s0">if </span><span class="s2">(</span><span class="s1">options</span><span class="s2">.</span><span class="s1">allowObjectSmallerThanBufferSize </span><span class="s2">&amp;&amp; </span><span class="s1">buffer</span><span class="s2">.</span><span class="s1">length </span><span class="s2">&lt; </span><span class="s1">size</span><span class="s2">) {</span>
+    <span class="s0">throw new </span><span class="s1">BSONError</span><span class="s2">(</span><span class="s3">`buffer length </span><span class="s1">$</span><span class="s2">{</span><span class="s1">buffer</span><span class="s2">.</span><span class="s1">length</span><span class="s2">} </span><span class="s3">must be &gt;= bson size </span><span class="s1">$</span><span class="s2">{</span><span class="s1">size</span><span class="s2">}</span><span class="s3">`</span><span class="s2">);</span>
+  <span class="s2">}</span>
+
+  <span class="s0">if </span><span class="s2">(!</span><span class="s1">options</span><span class="s2">.</span><span class="s1">allowObjectSmallerThanBufferSize </span><span class="s2">&amp;&amp; </span><span class="s1">buffer</span><span class="s2">.</span><span class="s1">length </span><span class="s2">!== </span><span class="s1">size</span><span class="s2">) {</span>
+    <span class="s0">throw new </span><span class="s1">BSONError</span><span class="s2">(</span><span class="s3">`buffer length </span><span class="s1">$</span><span class="s2">{</span><span class="s1">buffer</span><span class="s2">.</span><span class="s1">length</span><span class="s2">} </span><span class="s3">must === bson size </span><span class="s1">$</span><span class="s2">{</span><span class="s1">size</span><span class="s2">}</span><span class="s3">`</span><span class="s2">);</span>
+  <span class="s2">}</span>
+
+  <span class="s0">if </span><span class="s2">(</span><span class="s1">size </span><span class="s2">+ </span><span class="s1">index </span><span class="s2">&gt; </span><span class="s1">buffer</span><span class="s2">.</span><span class="s1">byteLength</span><span class="s2">) {</span>
+    <span class="s0">throw new </span><span class="s1">BSONError</span><span class="s2">(</span>
+      <span class="s3">`(bson size </span><span class="s1">$</span><span class="s2">{</span><span class="s1">size</span><span class="s2">} </span><span class="s3">+ options.index </span><span class="s1">$</span><span class="s2">{</span><span class="s1">index</span><span class="s2">} </span><span class="s3">must be &lt;= buffer length </span><span class="s1">$</span><span class="s2">{</span><span class="s1">buffer</span><span class="s2">.</span><span class="s1">byteLength</span><span class="s2">}</span><span class="s3">)`</span>
+    <span class="s2">);</span>
+  <span class="s2">}</span>
+
+  <span class="s6">// Illegal end value</span>
+  <span class="s0">if </span><span class="s2">(</span><span class="s1">buffer</span><span class="s2">[</span><span class="s1">index </span><span class="s2">+ </span><span class="s1">size </span><span class="s2">- </span><span class="s7">1</span><span class="s2">] !== </span><span class="s7">0</span><span class="s2">) {</span>
+    <span class="s0">throw new </span><span class="s1">BSONError</span><span class="s2">(</span>
+      <span class="s3">&quot;One object, sized correctly, with a spot for an EOO, but the EOO isn't 0x00&quot;</span>
+    <span class="s2">);</span>
+  <span class="s2">}</span>
+
+  <span class="s6">// Start deserialization</span>
+  <span class="s0">return </span><span class="s1">deserializeObject</span><span class="s2">(</span><span class="s1">buffer</span><span class="s2">, </span><span class="s1">index</span><span class="s2">, </span><span class="s1">options</span><span class="s2">, </span><span class="s1">isArray</span><span class="s2">);</span>
+<span class="s2">}</span>
+
+<span class="s0">const </span><span class="s1">allowedDBRefKeys </span><span class="s2">= </span><span class="s8">/^\$ref$|^\$id$|^\$db$/</span><span class="s2">;</span>
+
+<span class="s0">function </span><span class="s1">deserializeObject</span><span class="s2">(</span>
+  <span class="s1">buffer</span><span class="s2">: </span><span class="s1">Uint8Array</span><span class="s2">,</span>
+  <span class="s1">index</span><span class="s2">: </span><span class="s1">number</span><span class="s2">,</span>
+  <span class="s1">options</span><span class="s2">: </span><span class="s1">DeserializeOptions</span><span class="s2">,</span>
+  <span class="s1">isArray </span><span class="s2">= </span><span class="s0">false</span>
+<span class="s2">) {</span>
+  <span class="s0">const </span><span class="s1">fieldsAsRaw </span><span class="s2">= </span><span class="s1">options</span><span class="s2">[</span><span class="s3">'fieldsAsRaw'</span><span class="s2">] == </span><span class="s0">null </span><span class="s2">? </span><span class="s0">null </span><span class="s2">: </span><span class="s1">options</span><span class="s2">[</span><span class="s3">'fieldsAsRaw'</span><span class="s2">];</span>
+
+  <span class="s6">// Return raw bson buffer instead of parsing it</span>
+  <span class="s0">const </span><span class="s1">raw </span><span class="s2">= </span><span class="s1">options</span><span class="s2">[</span><span class="s3">'raw'</span><span class="s2">] == </span><span class="s0">null </span><span class="s2">? </span><span class="s0">false </span><span class="s2">: </span><span class="s1">options</span><span class="s2">[</span><span class="s3">'raw'</span><span class="s2">];</span>
+
+  <span class="s6">// Return BSONRegExp objects instead of native regular expressions</span>
+  <span class="s0">const </span><span class="s1">bsonRegExp </span><span class="s2">= </span><span class="s0">typeof </span><span class="s1">options</span><span class="s2">[</span><span class="s3">'bsonRegExp'</span><span class="s2">] === </span><span class="s3">'boolean' </span><span class="s2">? </span><span class="s1">options</span><span class="s2">[</span><span class="s3">'bsonRegExp'</span><span class="s2">] : </span><span class="s0">false</span><span class="s2">;</span>
+
+  <span class="s6">// Controls the promotion of values vs wrapper classes</span>
+  <span class="s0">const </span><span class="s1">promoteBuffers </span><span class="s2">= </span><span class="s1">options</span><span class="s2">.</span><span class="s1">promoteBuffers </span><span class="s2">?? </span><span class="s0">false</span><span class="s2">;</span>
+  <span class="s0">const </span><span class="s1">promoteLongs </span><span class="s2">= </span><span class="s1">options</span><span class="s2">.</span><span class="s1">promoteLongs </span><span class="s2">?? </span><span class="s0">true</span><span class="s2">;</span>
+  <span class="s0">const </span><span class="s1">promoteValues </span><span class="s2">= </span><span class="s1">options</span><span class="s2">.</span><span class="s1">promoteValues </span><span class="s2">?? </span><span class="s0">true</span><span class="s2">;</span>
+  <span class="s0">const </span><span class="s1">useBigInt64 </span><span class="s2">= </span><span class="s1">options</span><span class="s2">.</span><span class="s1">useBigInt64 </span><span class="s2">?? </span><span class="s0">false</span><span class="s2">;</span>
+
+  <span class="s0">if </span><span class="s2">(</span><span class="s1">useBigInt64 </span><span class="s2">&amp;&amp; !</span><span class="s1">promoteValues</span><span class="s2">) {</span>
+    <span class="s0">throw new </span><span class="s1">BSONError</span><span class="s2">(</span><span class="s3">'Must either request bigint or Long for int64 deserialization'</span><span class="s2">);</span>
+  <span class="s2">}</span>
+
+  <span class="s0">if </span><span class="s2">(</span><span class="s1">useBigInt64 </span><span class="s2">&amp;&amp; !</span><span class="s1">promoteLongs</span><span class="s2">) {</span>
+    <span class="s0">throw new </span><span class="s1">BSONError</span><span class="s2">(</span><span class="s3">'Must either request bigint or Long for int64 deserialization'</span><span class="s2">);</span>
+  <span class="s2">}</span>
+
+  <span class="s6">// Ensures default validation option if none given</span>
+  <span class="s0">const </span><span class="s1">validation </span><span class="s2">= </span><span class="s1">options</span><span class="s2">.</span><span class="s1">validation </span><span class="s2">== </span><span class="s0">null </span><span class="s2">? { </span><span class="s1">utf8</span><span class="s2">: </span><span class="s0">true </span><span class="s2">} : </span><span class="s1">options</span><span class="s2">.</span><span class="s1">validation</span><span class="s2">;</span>
+
+  <span class="s6">// Shows if global utf-8 validation is enabled or disabled</span>
+  <span class="s0">let </span><span class="s1">globalUTFValidation </span><span class="s2">= </span><span class="s0">true</span><span class="s2">;</span>
+  <span class="s6">// Reflects utf-8 validation setting regardless of global or specific key validation</span>
+  <span class="s0">let </span><span class="s1">validationSetting</span><span class="s2">: </span><span class="s1">boolean</span><span class="s2">;</span>
+  <span class="s6">// Set of keys either to enable or disable validation on</span>
+  <span class="s0">let </span><span class="s1">utf8KeysSet</span><span class="s2">;</span>
+
+  <span class="s6">// Check for boolean uniformity and empty validation option</span>
+  <span class="s0">const </span><span class="s1">utf8ValidatedKeys </span><span class="s2">= </span><span class="s1">validation</span><span class="s2">.</span><span class="s1">utf8</span><span class="s2">;</span>
+  <span class="s0">if </span><span class="s2">(</span><span class="s0">typeof </span><span class="s1">utf8ValidatedKeys </span><span class="s2">=== </span><span class="s3">'boolean'</span><span class="s2">) {</span>
+    <span class="s1">validationSetting </span><span class="s2">= </span><span class="s1">utf8ValidatedKeys</span><span class="s2">;</span>
+  <span class="s2">} </span><span class="s0">else </span><span class="s2">{</span>
+    <span class="s1">globalUTFValidation </span><span class="s2">= </span><span class="s0">false</span><span class="s2">;</span>
+    <span class="s0">const </span><span class="s1">utf8ValidationValues </span><span class="s2">= </span><span class="s1">Object</span><span class="s2">.</span><span class="s1">keys</span><span class="s2">(</span><span class="s1">utf8ValidatedKeys</span><span class="s2">).</span><span class="s1">map</span><span class="s2">(</span><span class="s0">function </span><span class="s2">(</span><span class="s1">key</span><span class="s2">) {</span>
+      <span class="s0">return </span><span class="s1">utf8ValidatedKeys</span><span class="s2">[</span><span class="s1">key</span><span class="s2">];</span>
+    <span class="s2">});</span>
+    <span class="s0">if </span><span class="s2">(</span><span class="s1">utf8ValidationValues</span><span class="s2">.</span><span class="s1">length </span><span class="s2">=== </span><span class="s7">0</span><span class="s2">) {</span>
+      <span class="s0">throw new </span><span class="s1">BSONError</span><span class="s2">(</span><span class="s3">'UTF-8 validation setting cannot be empty'</span><span class="s2">);</span>
+    <span class="s2">}</span>
+    <span class="s0">if </span><span class="s2">(</span><span class="s0">typeof </span><span class="s1">utf8ValidationValues</span><span class="s2">[</span><span class="s7">0</span><span class="s2">] !== </span><span class="s3">'boolean'</span><span class="s2">) {</span>
+      <span class="s0">throw new </span><span class="s1">BSONError</span><span class="s2">(</span><span class="s3">'Invalid UTF-8 validation option, must specify boolean values'</span><span class="s2">);</span>
+    <span class="s2">}</span>
+    <span class="s1">validationSetting </span><span class="s2">= </span><span class="s1">utf8ValidationValues</span><span class="s2">[</span><span class="s7">0</span><span class="s2">];</span>
+    <span class="s6">// Ensures boolean uniformity in utf-8 validation (all true or all false)</span>
+    <span class="s0">if </span><span class="s2">(!</span><span class="s1">utf8ValidationValues</span><span class="s2">.</span><span class="s1">every</span><span class="s2">(</span><span class="s1">item </span><span class="s2">=&gt; </span><span class="s1">item </span><span class="s2">=== </span><span class="s1">validationSetting</span><span class="s2">)) {</span>
+      <span class="s0">throw new </span><span class="s1">BSONError</span><span class="s2">(</span><span class="s3">'Invalid UTF-8 validation option - keys must be all true or all false'</span><span class="s2">);</span>
+    <span class="s2">}</span>
+  <span class="s2">}</span>
+
+  <span class="s6">// Add keys to set that will either be validated or not based on validationSetting</span>
+  <span class="s0">if </span><span class="s2">(!</span><span class="s1">globalUTFValidation</span><span class="s2">) {</span>
+    <span class="s1">utf8KeysSet </span><span class="s2">= </span><span class="s0">new </span><span class="s1">Set</span><span class="s2">();</span>
+
+    <span class="s0">for </span><span class="s2">(</span><span class="s0">const </span><span class="s1">key of Object</span><span class="s2">.</span><span class="s1">keys</span><span class="s2">(</span><span class="s1">utf8ValidatedKeys</span><span class="s2">)) {</span>
+      <span class="s1">utf8KeysSet</span><span class="s2">.</span><span class="s1">add</span><span class="s2">(</span><span class="s1">key</span><span class="s2">);</span>
+    <span class="s2">}</span>
+  <span class="s2">}</span>
+
+  <span class="s6">// Set the start index</span>
+  <span class="s0">const </span><span class="s1">startIndex </span><span class="s2">= </span><span class="s1">index</span><span class="s2">;</span>
+
+  <span class="s6">// Validate that we have at least 4 bytes of buffer</span>
+  <span class="s0">if </span><span class="s2">(</span><span class="s1">buffer</span><span class="s2">.</span><span class="s1">length </span><span class="s2">&lt; </span><span class="s7">5</span><span class="s2">) </span><span class="s0">throw new </span><span class="s1">BSONError</span><span class="s2">(</span><span class="s3">'corrupt bson message &lt; 5 bytes long'</span><span class="s2">);</span>
+
+  <span class="s6">// Read the document size</span>
+  <span class="s0">const </span><span class="s1">size </span><span class="s2">= </span><span class="s1">NumberUtils</span><span class="s2">.</span><span class="s1">getInt32LE</span><span class="s2">(</span><span class="s1">buffer</span><span class="s2">, </span><span class="s1">index</span><span class="s2">);</span>
+  <span class="s1">index </span><span class="s2">+= </span><span class="s7">4</span><span class="s2">;</span>
+
+  <span class="s6">// Ensure buffer is valid size</span>
+  <span class="s0">if </span><span class="s2">(</span><span class="s1">size </span><span class="s2">&lt; </span><span class="s7">5 </span><span class="s2">|| </span><span class="s1">size </span><span class="s2">&gt; </span><span class="s1">buffer</span><span class="s2">.</span><span class="s1">length</span><span class="s2">) </span><span class="s0">throw new </span><span class="s1">BSONError</span><span class="s2">(</span><span class="s3">'corrupt bson message'</span><span class="s2">);</span>
+
+  <span class="s6">// Create holding object</span>
+  <span class="s0">const </span><span class="s1">object</span><span class="s2">: </span><span class="s1">Document </span><span class="s2">= </span><span class="s1">isArray </span><span class="s2">? [] : {};</span>
+  <span class="s6">// Used for arrays to skip having to perform utf8 decoding</span>
+  <span class="s0">let </span><span class="s1">arrayIndex </span><span class="s2">= </span><span class="s7">0</span><span class="s2">;</span>
+  <span class="s0">const </span><span class="s1">done </span><span class="s2">= </span><span class="s0">false</span><span class="s2">;</span>
+
+  <span class="s0">let </span><span class="s1">isPossibleDBRef </span><span class="s2">= </span><span class="s1">isArray </span><span class="s2">? </span><span class="s0">false </span><span class="s2">: </span><span class="s0">null</span><span class="s2">;</span>
+
+  <span class="s6">// While we have more left data left keep parsing</span>
+  <span class="s0">while </span><span class="s2">(!</span><span class="s1">done</span><span class="s2">) {</span>
+    <span class="s6">// Read the type</span>
+    <span class="s0">const </span><span class="s1">elementType </span><span class="s2">= </span><span class="s1">buffer</span><span class="s2">[</span><span class="s1">index</span><span class="s2">++];</span>
+
+    <span class="s6">// If we get a zero it's the last byte, exit</span>
+    <span class="s0">if </span><span class="s2">(</span><span class="s1">elementType </span><span class="s2">=== </span><span class="s7">0</span><span class="s2">) </span><span class="s0">break</span><span class="s2">;</span>
+
+    <span class="s6">// Get the start search index</span>
+    <span class="s0">let </span><span class="s1">i </span><span class="s2">= </span><span class="s1">index</span><span class="s2">;</span>
+    <span class="s6">// Locate the end of the c string</span>
+    <span class="s0">while </span><span class="s2">(</span><span class="s1">buffer</span><span class="s2">[</span><span class="s1">i</span><span class="s2">] !== </span><span class="s7">0x00 </span><span class="s2">&amp;&amp; </span><span class="s1">i </span><span class="s2">&lt; </span><span class="s1">buffer</span><span class="s2">.</span><span class="s1">length</span><span class="s2">) {</span>
+      <span class="s1">i</span><span class="s2">++;</span>
+    <span class="s2">}</span>
+
+    <span class="s6">// If are at the end of the buffer there is a problem with the document</span>
+    <span class="s0">if </span><span class="s2">(</span><span class="s1">i </span><span class="s2">&gt;= </span><span class="s1">buffer</span><span class="s2">.</span><span class="s1">byteLength</span><span class="s2">) </span><span class="s0">throw new </span><span class="s1">BSONError</span><span class="s2">(</span><span class="s3">'Bad BSON Document: illegal CString'</span><span class="s2">);</span>
+
+    <span class="s6">// Represents the key</span>
+    <span class="s0">const </span><span class="s1">name </span><span class="s2">= </span><span class="s1">isArray </span><span class="s2">? </span><span class="s1">arrayIndex</span><span class="s2">++ : </span><span class="s1">ByteUtils</span><span class="s2">.</span><span class="s1">toUTF8</span><span class="s2">(</span><span class="s1">buffer</span><span class="s2">, </span><span class="s1">index</span><span class="s2">, </span><span class="s1">i</span><span class="s2">, </span><span class="s0">false</span><span class="s2">);</span>
+
+    <span class="s6">// shouldValidateKey is true if the key should be validated, false otherwise</span>
+    <span class="s0">let </span><span class="s1">shouldValidateKey </span><span class="s2">= </span><span class="s0">true</span><span class="s2">;</span>
+    <span class="s0">if </span><span class="s2">(</span><span class="s1">globalUTFValidation </span><span class="s2">|| </span><span class="s1">utf8KeysSet</span><span class="s2">?.</span><span class="s1">has</span><span class="s2">(</span><span class="s1">name</span><span class="s2">)) {</span>
+      <span class="s1">shouldValidateKey </span><span class="s2">= </span><span class="s1">validationSetting</span><span class="s2">;</span>
+    <span class="s2">} </span><span class="s0">else </span><span class="s2">{</span>
+      <span class="s1">shouldValidateKey </span><span class="s2">= !</span><span class="s1">validationSetting</span><span class="s2">;</span>
+    <span class="s2">}</span>
+
+    <span class="s0">if </span><span class="s2">(</span><span class="s1">isPossibleDBRef </span><span class="s2">!== </span><span class="s0">false </span><span class="s2">&amp;&amp; (</span><span class="s1">name </span><span class="s2">as </span><span class="s1">string</span><span class="s2">)[</span><span class="s7">0</span><span class="s2">] === </span><span class="s3">'$'</span><span class="s2">) {</span>
+      <span class="s1">isPossibleDBRef </span><span class="s2">= </span><span class="s1">allowedDBRefKeys</span><span class="s2">.</span><span class="s1">test</span><span class="s2">(</span><span class="s1">name </span><span class="s2">as </span><span class="s1">string</span><span class="s2">);</span>
+    <span class="s2">}</span>
+    <span class="s0">let </span><span class="s1">value</span><span class="s2">;</span>
+
+    <span class="s1">index </span><span class="s2">= </span><span class="s1">i </span><span class="s2">+ </span><span class="s7">1</span><span class="s2">;</span>
+
+    <span class="s0">if </span><span class="s2">(</span><span class="s1">elementType </span><span class="s2">=== </span><span class="s1">constants</span><span class="s2">.</span><span class="s1">BSON_DATA_STRING</span><span class="s2">) {</span>
+      <span class="s0">const </span><span class="s1">stringSize </span><span class="s2">= </span><span class="s1">NumberUtils</span><span class="s2">.</span><span class="s1">getInt32LE</span><span class="s2">(</span><span class="s1">buffer</span><span class="s2">, </span><span class="s1">index</span><span class="s2">);</span>
+      <span class="s1">index </span><span class="s2">+= </span><span class="s7">4</span><span class="s2">;</span>
+      <span class="s0">if </span><span class="s2">(</span>
+        <span class="s1">stringSize </span><span class="s2">&lt;= </span><span class="s7">0 </span><span class="s2">||</span>
+        <span class="s1">stringSize </span><span class="s2">&gt; </span><span class="s1">buffer</span><span class="s2">.</span><span class="s1">length </span><span class="s2">- </span><span class="s1">index </span><span class="s2">||</span>
+        <span class="s1">buffer</span><span class="s2">[</span><span class="s1">index </span><span class="s2">+ </span><span class="s1">stringSize </span><span class="s2">- </span><span class="s7">1</span><span class="s2">] !== </span><span class="s7">0</span>
+      <span class="s2">) {</span>
+        <span class="s0">throw new </span><span class="s1">BSONError</span><span class="s2">(</span><span class="s3">'bad string length in bson'</span><span class="s2">);</span>
+      <span class="s2">}</span>
+      <span class="s1">value </span><span class="s2">= </span><span class="s1">ByteUtils</span><span class="s2">.</span><span class="s1">toUTF8</span><span class="s2">(</span><span class="s1">buffer</span><span class="s2">, </span><span class="s1">index</span><span class="s2">, </span><span class="s1">index </span><span class="s2">+ </span><span class="s1">stringSize </span><span class="s2">- </span><span class="s7">1</span><span class="s2">, </span><span class="s1">shouldValidateKey</span><span class="s2">);</span>
+      <span class="s1">index </span><span class="s2">= </span><span class="s1">index </span><span class="s2">+ </span><span class="s1">stringSize</span><span class="s2">;</span>
+    <span class="s2">} </span><span class="s0">else if </span><span class="s2">(</span><span class="s1">elementType </span><span class="s2">=== </span><span class="s1">constants</span><span class="s2">.</span><span class="s1">BSON_DATA_OID</span><span class="s2">) {</span>
+      <span class="s0">const </span><span class="s1">oid </span><span class="s2">= </span><span class="s1">ByteUtils</span><span class="s2">.</span><span class="s1">allocateUnsafe</span><span class="s2">(</span><span class="s7">12</span><span class="s2">);</span>
+      <span class="s0">for </span><span class="s2">(</span><span class="s0">let </span><span class="s1">i </span><span class="s2">= </span><span class="s7">0</span><span class="s2">; </span><span class="s1">i </span><span class="s2">&lt; </span><span class="s7">12</span><span class="s2">; </span><span class="s1">i</span><span class="s2">++) </span><span class="s1">oid</span><span class="s2">[</span><span class="s1">i</span><span class="s2">] = </span><span class="s1">buffer</span><span class="s2">[</span><span class="s1">index </span><span class="s2">+ </span><span class="s1">i</span><span class="s2">];</span>
+      <span class="s1">value </span><span class="s2">= </span><span class="s0">new </span><span class="s1">ObjectId</span><span class="s2">(</span><span class="s1">oid</span><span class="s2">);</span>
+      <span class="s1">index </span><span class="s2">= </span><span class="s1">index </span><span class="s2">+ </span><span class="s7">12</span><span class="s2">;</span>
+    <span class="s2">} </span><span class="s0">else if </span><span class="s2">(</span><span class="s1">elementType </span><span class="s2">=== </span><span class="s1">constants</span><span class="s2">.</span><span class="s1">BSON_DATA_INT </span><span class="s2">&amp;&amp; </span><span class="s1">promoteValues </span><span class="s2">=== </span><span class="s0">false</span><span class="s2">) {</span>
+      <span class="s1">value </span><span class="s2">= </span><span class="s0">new </span><span class="s1">Int32</span><span class="s2">(</span><span class="s1">NumberUtils</span><span class="s2">.</span><span class="s1">getInt32LE</span><span class="s2">(</span><span class="s1">buffer</span><span class="s2">, </span><span class="s1">index</span><span class="s2">));</span>
+      <span class="s1">index </span><span class="s2">+= </span><span class="s7">4</span><span class="s2">;</span>
+    <span class="s2">} </span><span class="s0">else if </span><span class="s2">(</span><span class="s1">elementType </span><span class="s2">=== </span><span class="s1">constants</span><span class="s2">.</span><span class="s1">BSON_DATA_INT</span><span class="s2">) {</span>
+      <span class="s1">value </span><span class="s2">= </span><span class="s1">NumberUtils</span><span class="s2">.</span><span class="s1">getInt32LE</span><span class="s2">(</span><span class="s1">buffer</span><span class="s2">, </span><span class="s1">index</span><span class="s2">);</span>
+      <span class="s1">index </span><span class="s2">+= </span><span class="s7">4</span><span class="s2">;</span>
+    <span class="s2">} </span><span class="s0">else if </span><span class="s2">(</span><span class="s1">elementType </span><span class="s2">=== </span><span class="s1">constants</span><span class="s2">.</span><span class="s1">BSON_DATA_NUMBER</span><span class="s2">) {</span>
+      <span class="s1">value </span><span class="s2">= </span><span class="s1">NumberUtils</span><span class="s2">.</span><span class="s1">getFloat64LE</span><span class="s2">(</span><span class="s1">buffer</span><span class="s2">, </span><span class="s1">index</span><span class="s2">);</span>
+      <span class="s1">index </span><span class="s2">+= </span><span class="s7">8</span><span class="s2">;</span>
+      <span class="s0">if </span><span class="s2">(</span><span class="s1">promoteValues </span><span class="s2">=== </span><span class="s0">false</span><span class="s2">) </span><span class="s1">value </span><span class="s2">= </span><span class="s0">new </span><span class="s1">Double</span><span class="s2">(</span><span class="s1">value</span><span class="s2">);</span>
+    <span class="s2">} </span><span class="s0">else if </span><span class="s2">(</span><span class="s1">elementType </span><span class="s2">=== </span><span class="s1">constants</span><span class="s2">.</span><span class="s1">BSON_DATA_DATE</span><span class="s2">) {</span>
+      <span class="s0">const </span><span class="s1">lowBits </span><span class="s2">= </span><span class="s1">NumberUtils</span><span class="s2">.</span><span class="s1">getInt32LE</span><span class="s2">(</span><span class="s1">buffer</span><span class="s2">, </span><span class="s1">index</span><span class="s2">);</span>
+      <span class="s0">const </span><span class="s1">highBits </span><span class="s2">= </span><span class="s1">NumberUtils</span><span class="s2">.</span><span class="s1">getInt32LE</span><span class="s2">(</span><span class="s1">buffer</span><span class="s2">, </span><span class="s1">index </span><span class="s2">+ </span><span class="s7">4</span><span class="s2">);</span>
+      <span class="s1">index </span><span class="s2">+= </span><span class="s7">8</span><span class="s2">;</span>
+
+      <span class="s1">value </span><span class="s2">= </span><span class="s0">new </span><span class="s1">Date</span><span class="s2">(</span><span class="s0">new </span><span class="s1">Long</span><span class="s2">(</span><span class="s1">lowBits</span><span class="s2">, </span><span class="s1">highBits</span><span class="s2">).</span><span class="s1">toNumber</span><span class="s2">());</span>
+    <span class="s2">} </span><span class="s0">else if </span><span class="s2">(</span><span class="s1">elementType </span><span class="s2">=== </span><span class="s1">constants</span><span class="s2">.</span><span class="s1">BSON_DATA_BOOLEAN</span><span class="s2">) {</span>
+      <span class="s0">if </span><span class="s2">(</span><span class="s1">buffer</span><span class="s2">[</span><span class="s1">index</span><span class="s2">] !== </span><span class="s7">0 </span><span class="s2">&amp;&amp; </span><span class="s1">buffer</span><span class="s2">[</span><span class="s1">index</span><span class="s2">] !== </span><span class="s7">1</span><span class="s2">)</span>
+        <span class="s0">throw new </span><span class="s1">BSONError</span><span class="s2">(</span><span class="s3">'illegal boolean type value'</span><span class="s2">);</span>
+      <span class="s1">value </span><span class="s2">= </span><span class="s1">buffer</span><span class="s2">[</span><span class="s1">index</span><span class="s2">++] === </span><span class="s7">1</span><span class="s2">;</span>
+    <span class="s2">} </span><span class="s0">else if </span><span class="s2">(</span><span class="s1">elementType </span><span class="s2">=== </span><span class="s1">constants</span><span class="s2">.</span><span class="s1">BSON_DATA_OBJECT</span><span class="s2">) {</span>
+      <span class="s0">const </span><span class="s1">_index </span><span class="s2">= </span><span class="s1">index</span><span class="s2">;</span>
+      <span class="s0">const </span><span class="s1">objectSize </span><span class="s2">= </span><span class="s1">NumberUtils</span><span class="s2">.</span><span class="s1">getInt32LE</span><span class="s2">(</span><span class="s1">buffer</span><span class="s2">, </span><span class="s1">index</span><span class="s2">);</span>
+
+      <span class="s0">if </span><span class="s2">(</span><span class="s1">objectSize </span><span class="s2">&lt;= </span><span class="s7">0 </span><span class="s2">|| </span><span class="s1">objectSize </span><span class="s2">&gt; </span><span class="s1">buffer</span><span class="s2">.</span><span class="s1">length </span><span class="s2">- </span><span class="s1">index</span><span class="s2">)</span>
+        <span class="s0">throw new </span><span class="s1">BSONError</span><span class="s2">(</span><span class="s3">'bad embedded document length in bson'</span><span class="s2">);</span>
+
+      <span class="s6">// We have a raw value</span>
+      <span class="s0">if </span><span class="s2">(</span><span class="s1">raw</span><span class="s2">) {</span>
+        <span class="s1">value </span><span class="s2">= </span><span class="s1">buffer</span><span class="s2">.</span><span class="s1">subarray</span><span class="s2">(</span><span class="s1">index</span><span class="s2">, </span><span class="s1">index </span><span class="s2">+ </span><span class="s1">objectSize</span><span class="s2">);</span>
+      <span class="s2">} </span><span class="s0">else </span><span class="s2">{</span>
+        <span class="s0">let </span><span class="s1">objectOptions </span><span class="s2">= </span><span class="s1">options</span><span class="s2">;</span>
+        <span class="s0">if </span><span class="s2">(!</span><span class="s1">globalUTFValidation</span><span class="s2">) {</span>
+          <span class="s1">objectOptions </span><span class="s2">= { </span><span class="s1">...options</span><span class="s2">, </span><span class="s1">validation</span><span class="s2">: { </span><span class="s1">utf8</span><span class="s2">: </span><span class="s1">shouldValidateKey </span><span class="s2">} };</span>
+        <span class="s2">}</span>
+        <span class="s1">value </span><span class="s2">= </span><span class="s1">deserializeObject</span><span class="s2">(</span><span class="s1">buffer</span><span class="s2">, </span><span class="s1">_index</span><span class="s2">, </span><span class="s1">objectOptions</span><span class="s2">, </span><span class="s0">false</span><span class="s2">);</span>
+      <span class="s2">}</span>
+
+      <span class="s1">index </span><span class="s2">= </span><span class="s1">index </span><span class="s2">+ </span><span class="s1">objectSize</span><span class="s2">;</span>
+    <span class="s2">} </span><span class="s0">else if </span><span class="s2">(</span><span class="s1">elementType </span><span class="s2">=== </span><span class="s1">constants</span><span class="s2">.</span><span class="s1">BSON_DATA_ARRAY</span><span class="s2">) {</span>
+      <span class="s0">const </span><span class="s1">_index </span><span class="s2">= </span><span class="s1">index</span><span class="s2">;</span>
+      <span class="s0">const </span><span class="s1">objectSize </span><span class="s2">= </span><span class="s1">NumberUtils</span><span class="s2">.</span><span class="s1">getInt32LE</span><span class="s2">(</span><span class="s1">buffer</span><span class="s2">, </span><span class="s1">index</span><span class="s2">);</span>
+      <span class="s0">let </span><span class="s1">arrayOptions</span><span class="s2">: </span><span class="s1">DeserializeOptions </span><span class="s2">= </span><span class="s1">options</span><span class="s2">;</span>
+
+      <span class="s6">// Stop index</span>
+      <span class="s0">const </span><span class="s1">stopIndex </span><span class="s2">= </span><span class="s1">index </span><span class="s2">+ </span><span class="s1">objectSize</span><span class="s2">;</span>
+
+      <span class="s6">// All elements of array to be returned as raw bson</span>
+      <span class="s0">if </span><span class="s2">(</span><span class="s1">fieldsAsRaw </span><span class="s2">&amp;&amp; </span><span class="s1">fieldsAsRaw</span><span class="s2">[</span><span class="s1">name</span><span class="s2">]) {</span>
+        <span class="s1">arrayOptions </span><span class="s2">= { </span><span class="s1">...options</span><span class="s2">, </span><span class="s1">raw</span><span class="s2">: </span><span class="s0">true </span><span class="s2">};</span>
+      <span class="s2">}</span>
+
+      <span class="s0">if </span><span class="s2">(!</span><span class="s1">globalUTFValidation</span><span class="s2">) {</span>
+        <span class="s1">arrayOptions </span><span class="s2">= { </span><span class="s1">...arrayOptions</span><span class="s2">, </span><span class="s1">validation</span><span class="s2">: { </span><span class="s1">utf8</span><span class="s2">: </span><span class="s1">shouldValidateKey </span><span class="s2">} };</span>
+      <span class="s2">}</span>
+      <span class="s1">value </span><span class="s2">= </span><span class="s1">deserializeObject</span><span class="s2">(</span><span class="s1">buffer</span><span class="s2">, </span><span class="s1">_index</span><span class="s2">, </span><span class="s1">arrayOptions</span><span class="s2">, </span><span class="s0">true</span><span class="s2">);</span>
+      <span class="s1">index </span><span class="s2">= </span><span class="s1">index </span><span class="s2">+ </span><span class="s1">objectSize</span><span class="s2">;</span>
+
+      <span class="s0">if </span><span class="s2">(</span><span class="s1">buffer</span><span class="s2">[</span><span class="s1">index </span><span class="s2">- </span><span class="s7">1</span><span class="s2">] !== </span><span class="s7">0</span><span class="s2">) </span><span class="s0">throw new </span><span class="s1">BSONError</span><span class="s2">(</span><span class="s3">'invalid array terminator byte'</span><span class="s2">);</span>
+      <span class="s0">if </span><span class="s2">(</span><span class="s1">index </span><span class="s2">!== </span><span class="s1">stopIndex</span><span class="s2">) </span><span class="s0">throw new </span><span class="s1">BSONError</span><span class="s2">(</span><span class="s3">'corrupted array bson'</span><span class="s2">);</span>
+    <span class="s2">} </span><span class="s0">else if </span><span class="s2">(</span><span class="s1">elementType </span><span class="s2">=== </span><span class="s1">constants</span><span class="s2">.</span><span class="s1">BSON_DATA_UNDEFINED</span><span class="s2">) {</span>
+      <span class="s1">value </span><span class="s2">= </span><span class="s1">undefined</span><span class="s2">;</span>
+    <span class="s2">} </span><span class="s0">else if </span><span class="s2">(</span><span class="s1">elementType </span><span class="s2">=== </span><span class="s1">constants</span><span class="s2">.</span><span class="s1">BSON_DATA_NULL</span><span class="s2">) {</span>
+      <span class="s1">value </span><span class="s2">= </span><span class="s0">null</span><span class="s2">;</span>
+    <span class="s2">} </span><span class="s0">else if </span><span class="s2">(</span><span class="s1">elementType </span><span class="s2">=== </span><span class="s1">constants</span><span class="s2">.</span><span class="s1">BSON_DATA_LONG</span><span class="s2">) {</span>
+      <span class="s0">if </span><span class="s2">(</span><span class="s1">useBigInt64</span><span class="s2">) {</span>
+        <span class="s1">value </span><span class="s2">= </span><span class="s1">NumberUtils</span><span class="s2">.</span><span class="s1">getBigInt64LE</span><span class="s2">(</span><span class="s1">buffer</span><span class="s2">, </span><span class="s1">index</span><span class="s2">);</span>
+        <span class="s1">index </span><span class="s2">+= </span><span class="s7">8</span><span class="s2">;</span>
+      <span class="s2">} </span><span class="s0">else </span><span class="s2">{</span>
+        <span class="s6">// Unpack the low and high bits</span>
+        <span class="s0">const </span><span class="s1">lowBits </span><span class="s2">= </span><span class="s1">NumberUtils</span><span class="s2">.</span><span class="s1">getInt32LE</span><span class="s2">(</span><span class="s1">buffer</span><span class="s2">, </span><span class="s1">index</span><span class="s2">);</span>
+        <span class="s0">const </span><span class="s1">highBits </span><span class="s2">= </span><span class="s1">NumberUtils</span><span class="s2">.</span><span class="s1">getInt32LE</span><span class="s2">(</span><span class="s1">buffer</span><span class="s2">, </span><span class="s1">index </span><span class="s2">+ </span><span class="s7">4</span><span class="s2">);</span>
+        <span class="s1">index </span><span class="s2">+= </span><span class="s7">8</span><span class="s2">;</span>
+
+        <span class="s0">const </span><span class="s1">long </span><span class="s2">= </span><span class="s0">new </span><span class="s1">Long</span><span class="s2">(</span><span class="s1">lowBits</span><span class="s2">, </span><span class="s1">highBits</span><span class="s2">);</span>
+        <span class="s6">// Promote the long if possible</span>
+        <span class="s0">if </span><span class="s2">(</span><span class="s1">promoteLongs </span><span class="s2">&amp;&amp; </span><span class="s1">promoteValues </span><span class="s2">=== </span><span class="s0">true</span><span class="s2">) {</span>
+          <span class="s1">value </span><span class="s2">=</span>
+            <span class="s1">long</span><span class="s2">.</span><span class="s1">lessThanOrEqual</span><span class="s2">(</span><span class="s1">JS_INT_MAX_LONG</span><span class="s2">) &amp;&amp; </span><span class="s1">long</span><span class="s2">.</span><span class="s1">greaterThanOrEqual</span><span class="s2">(</span><span class="s1">JS_INT_MIN_LONG</span><span class="s2">)</span>
+              <span class="s2">? </span><span class="s1">long</span><span class="s2">.</span><span class="s1">toNumber</span><span class="s2">()</span>
+              <span class="s2">: </span><span class="s1">long</span><span class="s2">;</span>
+        <span class="s2">} </span><span class="s0">else </span><span class="s2">{</span>
+          <span class="s1">value </span><span class="s2">= </span><span class="s1">long</span><span class="s2">;</span>
+        <span class="s2">}</span>
+      <span class="s2">}</span>
+    <span class="s2">} </span><span class="s0">else if </span><span class="s2">(</span><span class="s1">elementType </span><span class="s2">=== </span><span class="s1">constants</span><span class="s2">.</span><span class="s1">BSON_DATA_DECIMAL128</span><span class="s2">) {</span>
+      <span class="s6">// Buffer to contain the decimal bytes</span>
+      <span class="s0">const </span><span class="s1">bytes </span><span class="s2">= </span><span class="s1">ByteUtils</span><span class="s2">.</span><span class="s1">allocateUnsafe</span><span class="s2">(</span><span class="s7">16</span><span class="s2">);</span>
+      <span class="s6">// Copy the next 16 bytes into the bytes buffer</span>
+      <span class="s0">for </span><span class="s2">(</span><span class="s0">let </span><span class="s1">i </span><span class="s2">= </span><span class="s7">0</span><span class="s2">; </span><span class="s1">i </span><span class="s2">&lt; </span><span class="s7">16</span><span class="s2">; </span><span class="s1">i</span><span class="s2">++) </span><span class="s1">bytes</span><span class="s2">[</span><span class="s1">i</span><span class="s2">] = </span><span class="s1">buffer</span><span class="s2">[</span><span class="s1">index </span><span class="s2">+ </span><span class="s1">i</span><span class="s2">];</span>
+      <span class="s6">// Update index</span>
+      <span class="s1">index </span><span class="s2">= </span><span class="s1">index </span><span class="s2">+ </span><span class="s7">16</span><span class="s2">;</span>
+      <span class="s6">// Assign the new Decimal128 value</span>
+      <span class="s1">value </span><span class="s2">= </span><span class="s0">new </span><span class="s1">Decimal128</span><span class="s2">(</span><span class="s1">bytes</span><span class="s2">);</span>
+    <span class="s2">} </span><span class="s0">else if </span><span class="s2">(</span><span class="s1">elementType </span><span class="s2">=== </span><span class="s1">constants</span><span class="s2">.</span><span class="s1">BSON_DATA_BINARY</span><span class="s2">) {</span>
+      <span class="s0">let </span><span class="s1">binarySize </span><span class="s2">= </span><span class="s1">NumberUtils</span><span class="s2">.</span><span class="s1">getInt32LE</span><span class="s2">(</span><span class="s1">buffer</span><span class="s2">, </span><span class="s1">index</span><span class="s2">);</span>
+      <span class="s1">index </span><span class="s2">+= </span><span class="s7">4</span><span class="s2">;</span>
+      <span class="s0">const </span><span class="s1">totalBinarySize </span><span class="s2">= </span><span class="s1">binarySize</span><span class="s2">;</span>
+      <span class="s0">const </span><span class="s1">subType </span><span class="s2">= </span><span class="s1">buffer</span><span class="s2">[</span><span class="s1">index</span><span class="s2">++];</span>
+
+      <span class="s6">// Did we have a negative binary size, throw</span>
+      <span class="s0">if </span><span class="s2">(</span><span class="s1">binarySize </span><span class="s2">&lt; </span><span class="s7">0</span><span class="s2">) </span><span class="s0">throw new </span><span class="s1">BSONError</span><span class="s2">(</span><span class="s3">'Negative binary type element size found'</span><span class="s2">);</span>
+
+      <span class="s6">// Is the length longer than the document</span>
+      <span class="s0">if </span><span class="s2">(</span><span class="s1">binarySize </span><span class="s2">&gt; </span><span class="s1">buffer</span><span class="s2">.</span><span class="s1">byteLength</span><span class="s2">)</span>
+        <span class="s0">throw new </span><span class="s1">BSONError</span><span class="s2">(</span><span class="s3">'Binary type size larger than document size'</span><span class="s2">);</span>
+
+      <span class="s6">// If we have subtype 2 skip the 4 bytes for the size</span>
+      <span class="s0">if </span><span class="s2">(</span><span class="s1">subType </span><span class="s2">=== </span><span class="s1">Binary</span><span class="s2">.</span><span class="s1">SUBTYPE_BYTE_ARRAY</span><span class="s2">) {</span>
+        <span class="s1">binarySize </span><span class="s2">= </span><span class="s1">NumberUtils</span><span class="s2">.</span><span class="s1">getInt32LE</span><span class="s2">(</span><span class="s1">buffer</span><span class="s2">, </span><span class="s1">index</span><span class="s2">);</span>
+        <span class="s1">index </span><span class="s2">+= </span><span class="s7">4</span><span class="s2">;</span>
+        <span class="s0">if </span><span class="s2">(</span><span class="s1">binarySize </span><span class="s2">&lt; </span><span class="s7">0</span><span class="s2">)</span>
+          <span class="s0">throw new </span><span class="s1">BSONError</span><span class="s2">(</span><span class="s3">'Negative binary type element size found for subtype 0x02'</span><span class="s2">);</span>
+        <span class="s0">if </span><span class="s2">(</span><span class="s1">binarySize </span><span class="s2">&gt; </span><span class="s1">totalBinarySize </span><span class="s2">- </span><span class="s7">4</span><span class="s2">)</span>
+          <span class="s0">throw new </span><span class="s1">BSONError</span><span class="s2">(</span><span class="s3">'Binary type with subtype 0x02 contains too long binary size'</span><span class="s2">);</span>
+        <span class="s0">if </span><span class="s2">(</span><span class="s1">binarySize </span><span class="s2">&lt; </span><span class="s1">totalBinarySize </span><span class="s2">- </span><span class="s7">4</span><span class="s2">)</span>
+          <span class="s0">throw new </span><span class="s1">BSONError</span><span class="s2">(</span><span class="s3">'Binary type with subtype 0x02 contains too short binary size'</span><span class="s2">);</span>
+      <span class="s2">}</span>
+
+      <span class="s0">if </span><span class="s2">(</span><span class="s1">promoteBuffers </span><span class="s2">&amp;&amp; </span><span class="s1">promoteValues</span><span class="s2">) {</span>
+        <span class="s1">value </span><span class="s2">= </span><span class="s1">ByteUtils</span><span class="s2">.</span><span class="s1">toLocalBufferType</span><span class="s2">(</span><span class="s1">buffer</span><span class="s2">.</span><span class="s1">subarray</span><span class="s2">(</span><span class="s1">index</span><span class="s2">, </span><span class="s1">index </span><span class="s2">+ </span><span class="s1">binarySize</span><span class="s2">));</span>
+      <span class="s2">} </span><span class="s0">else </span><span class="s2">{</span>
+        <span class="s1">value </span><span class="s2">= </span><span class="s0">new </span><span class="s1">Binary</span><span class="s2">(</span><span class="s1">buffer</span><span class="s2">.</span><span class="s1">subarray</span><span class="s2">(</span><span class="s1">index</span><span class="s2">, </span><span class="s1">index </span><span class="s2">+ </span><span class="s1">binarySize</span><span class="s2">), </span><span class="s1">subType</span><span class="s2">);</span>
+        <span class="s0">if </span><span class="s2">(</span><span class="s1">subType </span><span class="s2">=== </span><span class="s1">constants</span><span class="s2">.</span><span class="s1">BSON_BINARY_SUBTYPE_UUID_NEW </span><span class="s2">&amp;&amp; </span><span class="s1">UUID</span><span class="s2">.</span><span class="s1">isValid</span><span class="s2">(</span><span class="s1">value</span><span class="s2">)) {</span>
+          <span class="s1">value </span><span class="s2">= </span><span class="s1">value</span><span class="s2">.</span><span class="s1">toUUID</span><span class="s2">();</span>
+        <span class="s2">}</span>
+      <span class="s2">}</span>
+
+      <span class="s6">// Update the index</span>
+      <span class="s1">index </span><span class="s2">= </span><span class="s1">index </span><span class="s2">+ </span><span class="s1">binarySize</span><span class="s2">;</span>
+    <span class="s2">} </span><span class="s0">else if </span><span class="s2">(</span><span class="s1">elementType </span><span class="s2">=== </span><span class="s1">constants</span><span class="s2">.</span><span class="s1">BSON_DATA_REGEXP </span><span class="s2">&amp;&amp; </span><span class="s1">bsonRegExp </span><span class="s2">=== </span><span class="s0">false</span><span class="s2">) {</span>
+      <span class="s6">// Get the start search index</span>
+      <span class="s1">i </span><span class="s2">= </span><span class="s1">index</span><span class="s2">;</span>
+      <span class="s6">// Locate the end of the c string</span>
+      <span class="s0">while </span><span class="s2">(</span><span class="s1">buffer</span><span class="s2">[</span><span class="s1">i</span><span class="s2">] !== </span><span class="s7">0x00 </span><span class="s2">&amp;&amp; </span><span class="s1">i </span><span class="s2">&lt; </span><span class="s1">buffer</span><span class="s2">.</span><span class="s1">length</span><span class="s2">) {</span>
+        <span class="s1">i</span><span class="s2">++;</span>
+      <span class="s2">}</span>
+      <span class="s6">// If are at the end of the buffer there is a problem with the document</span>
+      <span class="s0">if </span><span class="s2">(</span><span class="s1">i </span><span class="s2">&gt;= </span><span class="s1">buffer</span><span class="s2">.</span><span class="s1">length</span><span class="s2">) </span><span class="s0">throw new </span><span class="s1">BSONError</span><span class="s2">(</span><span class="s3">'Bad BSON Document: illegal CString'</span><span class="s2">);</span>
+      <span class="s6">// Return the C string</span>
+      <span class="s0">const </span><span class="s1">source </span><span class="s2">= </span><span class="s1">ByteUtils</span><span class="s2">.</span><span class="s1">toUTF8</span><span class="s2">(</span><span class="s1">buffer</span><span class="s2">, </span><span class="s1">index</span><span class="s2">, </span><span class="s1">i</span><span class="s2">, </span><span class="s0">false</span><span class="s2">);</span>
+      <span class="s6">// Create the regexp</span>
+      <span class="s1">index </span><span class="s2">= </span><span class="s1">i </span><span class="s2">+ </span><span class="s7">1</span><span class="s2">;</span>
+
+      <span class="s6">// Get the start search index</span>
+      <span class="s1">i </span><span class="s2">= </span><span class="s1">index</span><span class="s2">;</span>
+      <span class="s6">// Locate the end of the c string</span>
+      <span class="s0">while </span><span class="s2">(</span><span class="s1">buffer</span><span class="s2">[</span><span class="s1">i</span><span class="s2">] !== </span><span class="s7">0x00 </span><span class="s2">&amp;&amp; </span><span class="s1">i </span><span class="s2">&lt; </span><span class="s1">buffer</span><span class="s2">.</span><span class="s1">length</span><span class="s2">) {</span>
+        <span class="s1">i</span><span class="s2">++;</span>
+      <span class="s2">}</span>
+      <span class="s6">// If are at the end of the buffer there is a problem with the document</span>
+      <span class="s0">if </span><span class="s2">(</span><span class="s1">i </span><span class="s2">&gt;= </span><span class="s1">buffer</span><span class="s2">.</span><span class="s1">length</span><span class="s2">) </span><span class="s0">throw new </span><span class="s1">BSONError</span><span class="s2">(</span><span class="s3">'Bad BSON Document: illegal CString'</span><span class="s2">);</span>
+      <span class="s6">// Return the C string</span>
+      <span class="s0">const </span><span class="s1">regExpOptions </span><span class="s2">= </span><span class="s1">ByteUtils</span><span class="s2">.</span><span class="s1">toUTF8</span><span class="s2">(</span><span class="s1">buffer</span><span class="s2">, </span><span class="s1">index</span><span class="s2">, </span><span class="s1">i</span><span class="s2">, </span><span class="s0">false</span><span class="s2">);</span>
+      <span class="s1">index </span><span class="s2">= </span><span class="s1">i </span><span class="s2">+ </span><span class="s7">1</span><span class="s2">;</span>
+
+      <span class="s6">// For each option add the corresponding one for javascript</span>
+      <span class="s0">const </span><span class="s1">optionsArray </span><span class="s2">= </span><span class="s0">new </span><span class="s1">Array</span><span class="s2">(</span><span class="s1">regExpOptions</span><span class="s2">.</span><span class="s1">length</span><span class="s2">);</span>
+
+      <span class="s6">// Parse options</span>
+      <span class="s0">for </span><span class="s2">(</span><span class="s1">i </span><span class="s2">= </span><span class="s7">0</span><span class="s2">; </span><span class="s1">i </span><span class="s2">&lt; </span><span class="s1">regExpOptions</span><span class="s2">.</span><span class="s1">length</span><span class="s2">; </span><span class="s1">i</span><span class="s2">++) {</span>
+        <span class="s0">switch </span><span class="s2">(</span><span class="s1">regExpOptions</span><span class="s2">[</span><span class="s1">i</span><span class="s2">]) {</span>
+          <span class="s0">case </span><span class="s3">'m'</span><span class="s2">:</span>
+            <span class="s1">optionsArray</span><span class="s2">[</span><span class="s1">i</span><span class="s2">] = </span><span class="s3">'m'</span><span class="s2">;</span>
+            <span class="s0">break</span><span class="s2">;</span>
+          <span class="s0">case </span><span class="s3">'s'</span><span class="s2">:</span>
+            <span class="s1">optionsArray</span><span class="s2">[</span><span class="s1">i</span><span class="s2">] = </span><span class="s3">'g'</span><span class="s2">;</span>
+            <span class="s0">break</span><span class="s2">;</span>
+          <span class="s0">case </span><span class="s3">'i'</span><span class="s2">:</span>
+            <span class="s1">optionsArray</span><span class="s2">[</span><span class="s1">i</span><span class="s2">] = </span><span class="s3">'i'</span><span class="s2">;</span>
+            <span class="s0">break</span><span class="s2">;</span>
+        <span class="s2">}</span>
+      <span class="s2">}</span>
+
+      <span class="s1">value </span><span class="s2">= </span><span class="s0">new </span><span class="s1">RegExp</span><span class="s2">(</span><span class="s1">source</span><span class="s2">, </span><span class="s1">optionsArray</span><span class="s2">.</span><span class="s1">join</span><span class="s2">(</span><span class="s3">''</span><span class="s2">));</span>
+    <span class="s2">} </span><span class="s0">else if </span><span class="s2">(</span><span class="s1">elementType </span><span class="s2">=== </span><span class="s1">constants</span><span class="s2">.</span><span class="s1">BSON_DATA_REGEXP </span><span class="s2">&amp;&amp; </span><span class="s1">bsonRegExp </span><span class="s2">=== </span><span class="s0">true</span><span class="s2">) {</span>
+      <span class="s6">// Get the start search index</span>
+      <span class="s1">i </span><span class="s2">= </span><span class="s1">index</span><span class="s2">;</span>
+      <span class="s6">// Locate the end of the c string</span>
+      <span class="s0">while </span><span class="s2">(</span><span class="s1">buffer</span><span class="s2">[</span><span class="s1">i</span><span class="s2">] !== </span><span class="s7">0x00 </span><span class="s2">&amp;&amp; </span><span class="s1">i </span><span class="s2">&lt; </span><span class="s1">buffer</span><span class="s2">.</span><span class="s1">length</span><span class="s2">) {</span>
+        <span class="s1">i</span><span class="s2">++;</span>
+      <span class="s2">}</span>
+      <span class="s6">// If are at the end of the buffer there is a problem with the document</span>
+      <span class="s0">if </span><span class="s2">(</span><span class="s1">i </span><span class="s2">&gt;= </span><span class="s1">buffer</span><span class="s2">.</span><span class="s1">length</span><span class="s2">) </span><span class="s0">throw new </span><span class="s1">BSONError</span><span class="s2">(</span><span class="s3">'Bad BSON Document: illegal CString'</span><span class="s2">);</span>
+      <span class="s6">// Return the C string</span>
+      <span class="s0">const </span><span class="s1">source </span><span class="s2">= </span><span class="s1">ByteUtils</span><span class="s2">.</span><span class="s1">toUTF8</span><span class="s2">(</span><span class="s1">buffer</span><span class="s2">, </span><span class="s1">index</span><span class="s2">, </span><span class="s1">i</span><span class="s2">, </span><span class="s0">false</span><span class="s2">);</span>
+      <span class="s1">index </span><span class="s2">= </span><span class="s1">i </span><span class="s2">+ </span><span class="s7">1</span><span class="s2">;</span>
+
+      <span class="s6">// Get the start search index</span>
+      <span class="s1">i </span><span class="s2">= </span><span class="s1">index</span><span class="s2">;</span>
+      <span class="s6">// Locate the end of the c string</span>
+      <span class="s0">while </span><span class="s2">(</span><span class="s1">buffer</span><span class="s2">[</span><span class="s1">i</span><span class="s2">] !== </span><span class="s7">0x00 </span><span class="s2">&amp;&amp; </span><span class="s1">i </span><span class="s2">&lt; </span><span class="s1">buffer</span><span class="s2">.</span><span class="s1">length</span><span class="s2">) {</span>
+        <span class="s1">i</span><span class="s2">++;</span>
+      <span class="s2">}</span>
+      <span class="s6">// If are at the end of the buffer there is a problem with the document</span>
+      <span class="s0">if </span><span class="s2">(</span><span class="s1">i </span><span class="s2">&gt;= </span><span class="s1">buffer</span><span class="s2">.</span><span class="s1">length</span><span class="s2">) </span><span class="s0">throw new </span><span class="s1">BSONError</span><span class="s2">(</span><span class="s3">'Bad BSON Document: illegal CString'</span><span class="s2">);</span>
+      <span class="s6">// Return the C string</span>
+      <span class="s0">const </span><span class="s1">regExpOptions </span><span class="s2">= </span><span class="s1">ByteUtils</span><span class="s2">.</span><span class="s1">toUTF8</span><span class="s2">(</span><span class="s1">buffer</span><span class="s2">, </span><span class="s1">index</span><span class="s2">, </span><span class="s1">i</span><span class="s2">, </span><span class="s0">false</span><span class="s2">);</span>
+      <span class="s1">index </span><span class="s2">= </span><span class="s1">i </span><span class="s2">+ </span><span class="s7">1</span><span class="s2">;</span>
+
+      <span class="s6">// Set the object</span>
+      <span class="s1">value </span><span class="s2">= </span><span class="s0">new </span><span class="s1">BSONRegExp</span><span class="s2">(</span><span class="s1">source</span><span class="s2">, </span><span class="s1">regExpOptions</span><span class="s2">);</span>
+    <span class="s2">} </span><span class="s0">else if </span><span class="s2">(</span><span class="s1">elementType </span><span class="s2">=== </span><span class="s1">constants</span><span class="s2">.</span><span class="s1">BSON_DATA_SYMBOL</span><span class="s2">) {</span>
+      <span class="s0">const </span><span class="s1">stringSize </span><span class="s2">= </span><span class="s1">NumberUtils</span><span class="s2">.</span><span class="s1">getInt32LE</span><span class="s2">(</span><span class="s1">buffer</span><span class="s2">, </span><span class="s1">index</span><span class="s2">);</span>
+      <span class="s1">index </span><span class="s2">+= </span><span class="s7">4</span><span class="s2">;</span>
+      <span class="s0">if </span><span class="s2">(</span>
+        <span class="s1">stringSize </span><span class="s2">&lt;= </span><span class="s7">0 </span><span class="s2">||</span>
+        <span class="s1">stringSize </span><span class="s2">&gt; </span><span class="s1">buffer</span><span class="s2">.</span><span class="s1">length </span><span class="s2">- </span><span class="s1">index </span><span class="s2">||</span>
+        <span class="s1">buffer</span><span class="s2">[</span><span class="s1">index </span><span class="s2">+ </span><span class="s1">stringSize </span><span class="s2">- </span><span class="s7">1</span><span class="s2">] !== </span><span class="s7">0</span>
+      <span class="s2">) {</span>
+        <span class="s0">throw new </span><span class="s1">BSONError</span><span class="s2">(</span><span class="s3">'bad string length in bson'</span><span class="s2">);</span>
+      <span class="s2">}</span>
+      <span class="s0">const </span><span class="s1">symbol </span><span class="s2">= </span><span class="s1">ByteUtils</span><span class="s2">.</span><span class="s1">toUTF8</span><span class="s2">(</span><span class="s1">buffer</span><span class="s2">, </span><span class="s1">index</span><span class="s2">, </span><span class="s1">index </span><span class="s2">+ </span><span class="s1">stringSize </span><span class="s2">- </span><span class="s7">1</span><span class="s2">, </span><span class="s1">shouldValidateKey</span><span class="s2">);</span>
+      <span class="s1">value </span><span class="s2">= </span><span class="s1">promoteValues </span><span class="s2">? </span><span class="s1">symbol </span><span class="s2">: </span><span class="s0">new </span><span class="s1">BSONSymbol</span><span class="s2">(</span><span class="s1">symbol</span><span class="s2">);</span>
+      <span class="s1">index </span><span class="s2">= </span><span class="s1">index </span><span class="s2">+ </span><span class="s1">stringSize</span><span class="s2">;</span>
+    <span class="s2">} </span><span class="s0">else if </span><span class="s2">(</span><span class="s1">elementType </span><span class="s2">=== </span><span class="s1">constants</span><span class="s2">.</span><span class="s1">BSON_DATA_TIMESTAMP</span><span class="s2">) {</span>
+      <span class="s1">value </span><span class="s2">= </span><span class="s0">new </span><span class="s1">Timestamp</span><span class="s2">({</span>
+        <span class="s1">i</span><span class="s2">: </span><span class="s1">NumberUtils</span><span class="s2">.</span><span class="s1">getUint32LE</span><span class="s2">(</span><span class="s1">buffer</span><span class="s2">, </span><span class="s1">index</span><span class="s2">),</span>
+        <span class="s1">t</span><span class="s2">: </span><span class="s1">NumberUtils</span><span class="s2">.</span><span class="s1">getUint32LE</span><span class="s2">(</span><span class="s1">buffer</span><span class="s2">, </span><span class="s1">index </span><span class="s2">+ </span><span class="s7">4</span><span class="s2">)</span>
+      <span class="s2">});</span>
+      <span class="s1">index </span><span class="s2">+= </span><span class="s7">8</span><span class="s2">;</span>
+    <span class="s2">} </span><span class="s0">else if </span><span class="s2">(</span><span class="s1">elementType </span><span class="s2">=== </span><span class="s1">constants</span><span class="s2">.</span><span class="s1">BSON_DATA_MIN_KEY</span><span class="s2">) {</span>
+      <span class="s1">value </span><span class="s2">= </span><span class="s0">new </span><span class="s1">MinKey</span><span class="s2">();</span>
+    <span class="s2">} </span><span class="s0">else if </span><span class="s2">(</span><span class="s1">elementType </span><span class="s2">=== </span><span class="s1">constants</span><span class="s2">.</span><span class="s1">BSON_DATA_MAX_KEY</span><span class="s2">) {</span>
+      <span class="s1">value </span><span class="s2">= </span><span class="s0">new </span><span class="s1">MaxKey</span><span class="s2">();</span>
+    <span class="s2">} </span><span class="s0">else if </span><span class="s2">(</span><span class="s1">elementType </span><span class="s2">=== </span><span class="s1">constants</span><span class="s2">.</span><span class="s1">BSON_DATA_CODE</span><span class="s2">) {</span>
+      <span class="s0">const </span><span class="s1">stringSize </span><span class="s2">= </span><span class="s1">NumberUtils</span><span class="s2">.</span><span class="s1">getInt32LE</span><span class="s2">(</span><span class="s1">buffer</span><span class="s2">, </span><span class="s1">index</span><span class="s2">);</span>
+      <span class="s1">index </span><span class="s2">+= </span><span class="s7">4</span><span class="s2">;</span>
+      <span class="s0">if </span><span class="s2">(</span>
+        <span class="s1">stringSize </span><span class="s2">&lt;= </span><span class="s7">0 </span><span class="s2">||</span>
+        <span class="s1">stringSize </span><span class="s2">&gt; </span><span class="s1">buffer</span><span class="s2">.</span><span class="s1">length </span><span class="s2">- </span><span class="s1">index </span><span class="s2">||</span>
+        <span class="s1">buffer</span><span class="s2">[</span><span class="s1">index </span><span class="s2">+ </span><span class="s1">stringSize </span><span class="s2">- </span><span class="s7">1</span><span class="s2">] !== </span><span class="s7">0</span>
+      <span class="s2">) {</span>
+        <span class="s0">throw new </span><span class="s1">BSONError</span><span class="s2">(</span><span class="s3">'bad string length in bson'</span><span class="s2">);</span>
+      <span class="s2">}</span>
+      <span class="s0">const </span><span class="s1">functionString </span><span class="s2">= </span><span class="s1">ByteUtils</span><span class="s2">.</span><span class="s1">toUTF8</span><span class="s2">(</span>
+        <span class="s1">buffer</span><span class="s2">,</span>
+        <span class="s1">index</span><span class="s2">,</span>
+        <span class="s1">index </span><span class="s2">+ </span><span class="s1">stringSize </span><span class="s2">- </span><span class="s7">1</span><span class="s2">,</span>
+        <span class="s1">shouldValidateKey</span>
+      <span class="s2">);</span>
+
+      <span class="s1">value </span><span class="s2">= </span><span class="s0">new </span><span class="s1">Code</span><span class="s2">(</span><span class="s1">functionString</span><span class="s2">);</span>
+
+      <span class="s6">// Update parse index position</span>
+      <span class="s1">index </span><span class="s2">= </span><span class="s1">index </span><span class="s2">+ </span><span class="s1">stringSize</span><span class="s2">;</span>
+    <span class="s2">} </span><span class="s0">else if </span><span class="s2">(</span><span class="s1">elementType </span><span class="s2">=== </span><span class="s1">constants</span><span class="s2">.</span><span class="s1">BSON_DATA_CODE_W_SCOPE</span><span class="s2">) {</span>
+      <span class="s0">const </span><span class="s1">totalSize </span><span class="s2">= </span><span class="s1">NumberUtils</span><span class="s2">.</span><span class="s1">getInt32LE</span><span class="s2">(</span><span class="s1">buffer</span><span class="s2">, </span><span class="s1">index</span><span class="s2">);</span>
+      <span class="s1">index </span><span class="s2">+= </span><span class="s7">4</span><span class="s2">;</span>
+
+      <span class="s6">// Element cannot be shorter than totalSize + stringSize + documentSize + terminator</span>
+      <span class="s0">if </span><span class="s2">(</span><span class="s1">totalSize </span><span class="s2">&lt; </span><span class="s7">4 </span><span class="s2">+ </span><span class="s7">4 </span><span class="s2">+ </span><span class="s7">4 </span><span class="s2">+ </span><span class="s7">1</span><span class="s2">) {</span>
+        <span class="s0">throw new </span><span class="s1">BSONError</span><span class="s2">(</span><span class="s3">'code_w_scope total size shorter minimum expected length'</span><span class="s2">);</span>
+      <span class="s2">}</span>
+
+      <span class="s6">// Get the code string size</span>
+      <span class="s0">const </span><span class="s1">stringSize </span><span class="s2">= </span><span class="s1">NumberUtils</span><span class="s2">.</span><span class="s1">getInt32LE</span><span class="s2">(</span><span class="s1">buffer</span><span class="s2">, </span><span class="s1">index</span><span class="s2">);</span>
+      <span class="s1">index </span><span class="s2">+= </span><span class="s7">4</span><span class="s2">;</span>
+      <span class="s6">// Check if we have a valid string</span>
+      <span class="s0">if </span><span class="s2">(</span>
+        <span class="s1">stringSize </span><span class="s2">&lt;= </span><span class="s7">0 </span><span class="s2">||</span>
+        <span class="s1">stringSize </span><span class="s2">&gt; </span><span class="s1">buffer</span><span class="s2">.</span><span class="s1">length </span><span class="s2">- </span><span class="s1">index </span><span class="s2">||</span>
+        <span class="s1">buffer</span><span class="s2">[</span><span class="s1">index </span><span class="s2">+ </span><span class="s1">stringSize </span><span class="s2">- </span><span class="s7">1</span><span class="s2">] !== </span><span class="s7">0</span>
+      <span class="s2">) {</span>
+        <span class="s0">throw new </span><span class="s1">BSONError</span><span class="s2">(</span><span class="s3">'bad string length in bson'</span><span class="s2">);</span>
+      <span class="s2">}</span>
+
+      <span class="s6">// Javascript function</span>
+      <span class="s0">const </span><span class="s1">functionString </span><span class="s2">= </span><span class="s1">ByteUtils</span><span class="s2">.</span><span class="s1">toUTF8</span><span class="s2">(</span>
+        <span class="s1">buffer</span><span class="s2">,</span>
+        <span class="s1">index</span><span class="s2">,</span>
+        <span class="s1">index </span><span class="s2">+ </span><span class="s1">stringSize </span><span class="s2">- </span><span class="s7">1</span><span class="s2">,</span>
+        <span class="s1">shouldValidateKey</span>
+      <span class="s2">);</span>
+      <span class="s6">// Update parse index position</span>
+      <span class="s1">index </span><span class="s2">= </span><span class="s1">index </span><span class="s2">+ </span><span class="s1">stringSize</span><span class="s2">;</span>
+      <span class="s6">// Parse the element</span>
+      <span class="s0">const </span><span class="s1">_index </span><span class="s2">= </span><span class="s1">index</span><span class="s2">;</span>
+      <span class="s6">// Decode the size of the object document</span>
+      <span class="s0">const </span><span class="s1">objectSize </span><span class="s2">= </span><span class="s1">NumberUtils</span><span class="s2">.</span><span class="s1">getInt32LE</span><span class="s2">(</span><span class="s1">buffer</span><span class="s2">, </span><span class="s1">index</span><span class="s2">);</span>
+      <span class="s6">// Decode the scope object</span>
+      <span class="s0">const </span><span class="s1">scopeObject </span><span class="s2">= </span><span class="s1">deserializeObject</span><span class="s2">(</span><span class="s1">buffer</span><span class="s2">, </span><span class="s1">_index</span><span class="s2">, </span><span class="s1">options</span><span class="s2">, </span><span class="s0">false</span><span class="s2">);</span>
+      <span class="s6">// Adjust the index</span>
+      <span class="s1">index </span><span class="s2">= </span><span class="s1">index </span><span class="s2">+ </span><span class="s1">objectSize</span><span class="s2">;</span>
+
+      <span class="s6">// Check if field length is too short</span>
+      <span class="s0">if </span><span class="s2">(</span><span class="s1">totalSize </span><span class="s2">&lt; </span><span class="s7">4 </span><span class="s2">+ </span><span class="s7">4 </span><span class="s2">+ </span><span class="s1">objectSize </span><span class="s2">+ </span><span class="s1">stringSize</span><span class="s2">) {</span>
+        <span class="s0">throw new </span><span class="s1">BSONError</span><span class="s2">(</span><span class="s3">'code_w_scope total size is too short, truncating scope'</span><span class="s2">);</span>
+      <span class="s2">}</span>
+
+      <span class="s6">// Check if totalSize field is too long</span>
+      <span class="s0">if </span><span class="s2">(</span><span class="s1">totalSize </span><span class="s2">&gt; </span><span class="s7">4 </span><span class="s2">+ </span><span class="s7">4 </span><span class="s2">+ </span><span class="s1">objectSize </span><span class="s2">+ </span><span class="s1">stringSize</span><span class="s2">) {</span>
+        <span class="s0">throw new </span><span class="s1">BSONError</span><span class="s2">(</span><span class="s3">'code_w_scope total size is too long, clips outer document'</span><span class="s2">);</span>
+      <span class="s2">}</span>
+
+      <span class="s1">value </span><span class="s2">= </span><span class="s0">new </span><span class="s1">Code</span><span class="s2">(</span><span class="s1">functionString</span><span class="s2">, </span><span class="s1">scopeObject</span><span class="s2">);</span>
+    <span class="s2">} </span><span class="s0">else if </span><span class="s2">(</span><span class="s1">elementType </span><span class="s2">=== </span><span class="s1">constants</span><span class="s2">.</span><span class="s1">BSON_DATA_DBPOINTER</span><span class="s2">) {</span>
+      <span class="s6">// Get the code string size</span>
+      <span class="s0">const </span><span class="s1">stringSize </span><span class="s2">= </span><span class="s1">NumberUtils</span><span class="s2">.</span><span class="s1">getInt32LE</span><span class="s2">(</span><span class="s1">buffer</span><span class="s2">, </span><span class="s1">index</span><span class="s2">);</span>
+      <span class="s1">index </span><span class="s2">+= </span><span class="s7">4</span><span class="s2">;</span>
+      <span class="s6">// Check if we have a valid string</span>
+      <span class="s0">if </span><span class="s2">(</span>
+        <span class="s1">stringSize </span><span class="s2">&lt;= </span><span class="s7">0 </span><span class="s2">||</span>
+        <span class="s1">stringSize </span><span class="s2">&gt; </span><span class="s1">buffer</span><span class="s2">.</span><span class="s1">length </span><span class="s2">- </span><span class="s1">index </span><span class="s2">||</span>
+        <span class="s1">buffer</span><span class="s2">[</span><span class="s1">index </span><span class="s2">+ </span><span class="s1">stringSize </span><span class="s2">- </span><span class="s7">1</span><span class="s2">] !== </span><span class="s7">0</span>
+      <span class="s2">)</span>
+        <span class="s0">throw new </span><span class="s1">BSONError</span><span class="s2">(</span><span class="s3">'bad string length in bson'</span><span class="s2">);</span>
+      <span class="s6">// Namespace</span>
+      <span class="s0">const </span><span class="s1">namespace </span><span class="s2">= </span><span class="s1">ByteUtils</span><span class="s2">.</span><span class="s1">toUTF8</span><span class="s2">(</span><span class="s1">buffer</span><span class="s2">, </span><span class="s1">index</span><span class="s2">, </span><span class="s1">index </span><span class="s2">+ </span><span class="s1">stringSize </span><span class="s2">- </span><span class="s7">1</span><span class="s2">, </span><span class="s1">shouldValidateKey</span><span class="s2">);</span>
+      <span class="s6">// Update parse index position</span>
+      <span class="s1">index </span><span class="s2">= </span><span class="s1">index </span><span class="s2">+ </span><span class="s1">stringSize</span><span class="s2">;</span>
+
+      <span class="s6">// Read the oid</span>
+      <span class="s0">const </span><span class="s1">oidBuffer </span><span class="s2">= </span><span class="s1">ByteUtils</span><span class="s2">.</span><span class="s1">allocateUnsafe</span><span class="s2">(</span><span class="s7">12</span><span class="s2">);</span>
+      <span class="s0">for </span><span class="s2">(</span><span class="s0">let </span><span class="s1">i </span><span class="s2">= </span><span class="s7">0</span><span class="s2">; </span><span class="s1">i </span><span class="s2">&lt; </span><span class="s7">12</span><span class="s2">; </span><span class="s1">i</span><span class="s2">++) </span><span class="s1">oidBuffer</span><span class="s2">[</span><span class="s1">i</span><span class="s2">] = </span><span class="s1">buffer</span><span class="s2">[</span><span class="s1">index </span><span class="s2">+ </span><span class="s1">i</span><span class="s2">];</span>
+      <span class="s0">const </span><span class="s1">oid </span><span class="s2">= </span><span class="s0">new </span><span class="s1">ObjectId</span><span class="s2">(</span><span class="s1">oidBuffer</span><span class="s2">);</span>
+
+      <span class="s6">// Update the index</span>
+      <span class="s1">index </span><span class="s2">= </span><span class="s1">index </span><span class="s2">+ </span><span class="s7">12</span><span class="s2">;</span>
+
+      <span class="s6">// Upgrade to DBRef type</span>
+      <span class="s1">value </span><span class="s2">= </span><span class="s0">new </span><span class="s1">DBRef</span><span class="s2">(</span><span class="s1">namespace</span><span class="s2">, </span><span class="s1">oid</span><span class="s2">);</span>
+    <span class="s2">} </span><span class="s0">else </span><span class="s2">{</span>
+      <span class="s0">throw new </span><span class="s1">BSONError</span><span class="s2">(</span>
+        <span class="s3">`Detected unknown BSON type </span><span class="s1">$</span><span class="s2">{</span><span class="s1">elementType</span><span class="s2">.</span><span class="s1">toString</span><span class="s2">(</span><span class="s7">16</span><span class="s2">)} </span><span class="s3">for fieldname &quot;</span><span class="s1">$</span><span class="s2">{</span><span class="s1">name</span><span class="s2">}</span><span class="s3">&quot;`</span>
+      <span class="s2">);</span>
+    <span class="s2">}</span>
+    <span class="s0">if </span><span class="s2">(</span><span class="s1">name </span><span class="s2">=== </span><span class="s3">'__proto__'</span><span class="s2">) {</span>
+      <span class="s1">Object</span><span class="s2">.</span><span class="s1">defineProperty</span><span class="s2">(</span><span class="s1">object</span><span class="s2">, </span><span class="s1">name</span><span class="s2">, {</span>
+        <span class="s1">value</span><span class="s2">,</span>
+        <span class="s1">writable</span><span class="s2">: </span><span class="s0">true</span><span class="s2">,</span>
+        <span class="s1">enumerable</span><span class="s2">: </span><span class="s0">true</span><span class="s2">,</span>
+        <span class="s1">configurable</span><span class="s2">: </span><span class="s0">true</span>
+      <span class="s2">});</span>
+    <span class="s2">} </span><span class="s0">else </span><span class="s2">{</span>
+      <span class="s1">object</span><span class="s2">[</span><span class="s1">name</span><span class="s2">] = </span><span class="s1">value</span><span class="s2">;</span>
+    <span class="s2">}</span>
+  <span class="s2">}</span>
+
+  <span class="s6">// Check if the deserialization was against a valid array/object</span>
+  <span class="s0">if </span><span class="s2">(</span><span class="s1">size </span><span class="s2">!== </span><span class="s1">index </span><span class="s2">- </span><span class="s1">startIndex</span><span class="s2">) {</span>
+    <span class="s0">if </span><span class="s2">(</span><span class="s1">isArray</span><span class="s2">) </span><span class="s0">throw new </span><span class="s1">BSONError</span><span class="s2">(</span><span class="s3">'corrupt array bson'</span><span class="s2">);</span>
+    <span class="s0">throw new </span><span class="s1">BSONError</span><span class="s2">(</span><span class="s3">'corrupt object bson'</span><span class="s2">);</span>
+  <span class="s2">}</span>
+
+  <span class="s6">// if we did not find &quot;$ref&quot;, &quot;$id&quot;, &quot;$db&quot;, or found an extraneous $key, don't make a DBRef</span>
+  <span class="s0">if </span><span class="s2">(!</span><span class="s1">isPossibleDBRef</span><span class="s2">) </span><span class="s0">return </span><span class="s1">object</span><span class="s2">;</span>
+
+  <span class="s0">if </span><span class="s2">(</span><span class="s1">isDBRefLike</span><span class="s2">(</span><span class="s1">object</span><span class="s2">)) {</span>
+    <span class="s0">const </span><span class="s1">copy </span><span class="s2">= </span><span class="s1">Object</span><span class="s2">.</span><span class="s1">assign</span><span class="s2">({}, </span><span class="s1">object</span><span class="s2">) as </span><span class="s1">Partial</span><span class="s2">&lt;</span><span class="s1">DBRefLike</span><span class="s2">&gt;;</span>
+    <span class="s0">delete </span><span class="s1">copy</span><span class="s2">.</span><span class="s1">$ref</span><span class="s2">;</span>
+    <span class="s0">delete </span><span class="s1">copy</span><span class="s2">.</span><span class="s1">$id</span><span class="s2">;</span>
+    <span class="s0">delete </span><span class="s1">copy</span><span class="s2">.</span><span class="s1">$db</span><span class="s2">;</span>
+    <span class="s0">return new </span><span class="s1">DBRef</span><span class="s2">(</span><span class="s1">object</span><span class="s2">.</span><span class="s1">$ref</span><span class="s2">, </span><span class="s1">object</span><span class="s2">.</span><span class="s1">$id</span><span class="s2">, </span><span class="s1">object</span><span class="s2">.</span><span class="s1">$db</span><span class="s2">, </span><span class="s1">copy</span><span class="s2">);</span>
+  <span class="s2">}</span>
+
+  <span class="s0">return </span><span class="s1">object</span><span class="s2">;</span>
+<span class="s2">}</span>
+</pre>
+</body>
+</html>

@@ -1,0 +1,140 @@
+<html>
+<head>
+<title>double.ts</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+<style type="text/css">
+.s0 { color: #cf8e6d;}
+.s1 { color: #bcbec4;}
+.s2 { color: #bcbec4;}
+.s3 { color: #6aab73;}
+.s4 { color: #5f826b; font-style: italic;}
+.s5 { color: #67a37c; font-style: italic;}
+.s6 { color: #42c3d4;}
+.s7 { color: #2aacb8;}
+.s8 { color: #7a7e85;}
+</style>
+</head>
+<body bgcolor="#1e1f22">
+<table CELLSPACING=0 CELLPADDING=5 COLS=1 WIDTH="100%" BGCOLOR="#606060" >
+<tr><td><center>
+<font face="Arial, Helvetica" color="#000000">
+double.ts</font>
+</center></td></tr></table>
+<pre><span class="s0">import </span><span class="s2">{ </span><span class="s1">BSONValue </span><span class="s2">} </span><span class="s1">from </span><span class="s3">'./bson_value'</span><span class="s2">;</span>
+<span class="s0">import </span><span class="s2">{ </span><span class="s1">BSONError </span><span class="s2">} </span><span class="s1">from </span><span class="s3">'./error'</span><span class="s2">;</span>
+<span class="s0">import </span><span class="s1">type </span><span class="s2">{ </span><span class="s1">EJSONOptions </span><span class="s2">} </span><span class="s1">from </span><span class="s3">'./extended_json'</span><span class="s2">;</span>
+<span class="s0">import </span><span class="s2">{ </span><span class="s1">type InspectFn</span><span class="s2">, </span><span class="s1">defaultInspect </span><span class="s2">} </span><span class="s1">from </span><span class="s3">'./parser/utils'</span><span class="s2">;</span>
+
+<span class="s4">/** </span><span class="s5">@public </span><span class="s4">*/</span>
+<span class="s0">export interface </span><span class="s1">DoubleExtended </span><span class="s2">{</span>
+  <span class="s1">$numberDouble</span><span class="s2">: </span><span class="s1">string</span><span class="s2">;</span>
+<span class="s2">}</span>
+
+<span class="s4">/**</span>
+ <span class="s4">* A class representation of the BSON Double type.</span>
+ <span class="s4">* </span><span class="s5">@public</span>
+ <span class="s4">* </span><span class="s5">@category </span><span class="s4">BSONType</span>
+ <span class="s4">*/</span>
+<span class="s0">export class </span><span class="s1">Double </span><span class="s0">extends </span><span class="s1">BSONValue </span><span class="s2">{</span>
+  <span class="s1">get _bsontype</span><span class="s2">(): </span><span class="s3">'Double' </span><span class="s2">{</span>
+    <span class="s0">return </span><span class="s3">'Double'</span><span class="s2">;</span>
+  <span class="s2">}</span>
+
+  <span class="s1">value</span><span class="s2">!: </span><span class="s1">number</span><span class="s2">;</span>
+  <span class="s4">/**</span>
+   <span class="s4">* Create a Double type</span>
+   <span class="s4">*</span>
+   <span class="s4">* </span><span class="s5">@param </span><span class="s4">value - the number we want to represent as a double.</span>
+   <span class="s4">*/</span>
+  <span class="s1">constructor</span><span class="s2">(</span><span class="s1">value</span><span class="s2">: </span><span class="s1">number</span><span class="s2">) {</span>
+    <span class="s0">super</span><span class="s2">();</span>
+    <span class="s0">if </span><span class="s2">((</span><span class="s1">value </span><span class="s2">as </span><span class="s1">unknown</span><span class="s2">) </span><span class="s0">instanceof </span><span class="s1">Number</span><span class="s2">) {</span>
+      <span class="s1">value </span><span class="s2">= </span><span class="s1">value</span><span class="s2">.</span><span class="s1">valueOf</span><span class="s2">();</span>
+    <span class="s2">}</span>
+
+    <span class="s0">this</span><span class="s2">.</span><span class="s1">value </span><span class="s2">= +</span><span class="s1">value</span><span class="s2">;</span>
+  <span class="s2">}</span>
+
+  <span class="s4">/**</span>
+   <span class="s4">* Attempt to create an double type from string.</span>
+   <span class="s4">*</span>
+   <span class="s4">* This method will throw a BSONError on any string input that is not representable as a IEEE-754 64-bit double.</span>
+   <span class="s4">* Notably, this method will also throw on the following string formats:</span>
+   <span class="s4">* - Strings in non-decimal and non-exponential formats (binary, hex, or octal digits)</span>
+   <span class="s4">* - Strings with characters other than numeric, floating point, or leading sign characters (Note: 'Infinity', '-Infinity', and 'NaN' input strings are still allowed)</span>
+   <span class="s4">* - Strings with leading and/or trailing whitespace</span>
+   <span class="s4">*</span>
+   <span class="s4">* Strings with leading zeros, however, are also allowed</span>
+   <span class="s4">*</span>
+   <span class="s4">* </span><span class="s5">@param </span><span class="s4">value - the string we want to represent as a double.</span>
+   <span class="s4">*/</span>
+  <span class="s0">static </span><span class="s1">fromString</span><span class="s2">(</span><span class="s1">value</span><span class="s2">: </span><span class="s1">string</span><span class="s2">): </span><span class="s1">Double </span><span class="s2">{</span>
+    <span class="s0">const </span><span class="s1">coercedValue </span><span class="s2">= </span><span class="s1">Number</span><span class="s2">(</span><span class="s1">value</span><span class="s2">);</span>
+
+    <span class="s0">if </span><span class="s2">(</span><span class="s1">value </span><span class="s2">=== </span><span class="s3">'NaN'</span><span class="s2">) </span><span class="s0">return new </span><span class="s1">Double</span><span class="s2">(</span><span class="s1">NaN</span><span class="s2">);</span>
+    <span class="s0">if </span><span class="s2">(</span><span class="s1">value </span><span class="s2">=== </span><span class="s3">'Infinity'</span><span class="s2">) </span><span class="s0">return new </span><span class="s1">Double</span><span class="s2">(</span><span class="s1">Infinity</span><span class="s2">);</span>
+    <span class="s0">if </span><span class="s2">(</span><span class="s1">value </span><span class="s2">=== </span><span class="s3">'-Infinity'</span><span class="s2">) </span><span class="s0">return new </span><span class="s1">Double</span><span class="s2">(-</span><span class="s1">Infinity</span><span class="s2">);</span>
+
+    <span class="s0">if </span><span class="s2">(!</span><span class="s1">Number</span><span class="s2">.</span><span class="s1">isFinite</span><span class="s2">(</span><span class="s1">coercedValue</span><span class="s2">)) {</span>
+      <span class="s0">throw new </span><span class="s1">BSONError</span><span class="s2">(</span><span class="s3">`Input: </span><span class="s1">$</span><span class="s2">{</span><span class="s1">value</span><span class="s2">} </span><span class="s3">is not representable as a Double`</span><span class="s2">);</span>
+    <span class="s2">}</span>
+    <span class="s0">if </span><span class="s2">(</span><span class="s1">value</span><span class="s2">.</span><span class="s1">trim</span><span class="s2">() !== </span><span class="s1">value</span><span class="s2">) {</span>
+      <span class="s0">throw new </span><span class="s1">BSONError</span><span class="s2">(</span><span class="s3">`Input: '</span><span class="s1">$</span><span class="s2">{</span><span class="s1">value</span><span class="s2">}</span><span class="s3">' contains whitespace`</span><span class="s2">);</span>
+    <span class="s2">}</span>
+    <span class="s0">if </span><span class="s2">(</span><span class="s1">value </span><span class="s2">=== </span><span class="s3">''</span><span class="s2">) {</span>
+      <span class="s0">throw new </span><span class="s1">BSONError</span><span class="s2">(</span><span class="s3">`Input is an empty string`</span><span class="s2">);</span>
+    <span class="s2">}</span>
+    <span class="s0">if </span><span class="s2">(</span><span class="s6">/[^-0-9.+eE]/</span><span class="s2">.</span><span class="s1">test</span><span class="s2">(</span><span class="s1">value</span><span class="s2">)) {</span>
+      <span class="s0">throw new </span><span class="s1">BSONError</span><span class="s2">(</span><span class="s3">`Input: '</span><span class="s1">$</span><span class="s2">{</span><span class="s1">value</span><span class="s2">}</span><span class="s3">' is not in decimal or exponential notation`</span><span class="s2">);</span>
+    <span class="s2">}</span>
+    <span class="s0">return new </span><span class="s1">Double</span><span class="s2">(</span><span class="s1">coercedValue</span><span class="s2">);</span>
+  <span class="s2">}</span>
+
+  <span class="s4">/**</span>
+   <span class="s4">* Access the number value.</span>
+   <span class="s4">*</span>
+   <span class="s4">* </span><span class="s5">@returns </span><span class="s4">returns the wrapped double number.</span>
+   <span class="s4">*/</span>
+  <span class="s1">valueOf</span><span class="s2">(): </span><span class="s1">number </span><span class="s2">{</span>
+    <span class="s0">return this</span><span class="s2">.</span><span class="s1">value</span><span class="s2">;</span>
+  <span class="s2">}</span>
+
+  <span class="s1">toJSON</span><span class="s2">(): </span><span class="s1">number </span><span class="s2">{</span>
+    <span class="s0">return this</span><span class="s2">.</span><span class="s1">value</span><span class="s2">;</span>
+  <span class="s2">}</span>
+
+  <span class="s1">toString</span><span class="s2">(</span><span class="s1">radix</span><span class="s2">?: </span><span class="s1">number</span><span class="s2">): </span><span class="s1">string </span><span class="s2">{</span>
+    <span class="s0">return this</span><span class="s2">.</span><span class="s1">value</span><span class="s2">.</span><span class="s1">toString</span><span class="s2">(</span><span class="s1">radix</span><span class="s2">);</span>
+  <span class="s2">}</span>
+
+  <span class="s4">/** </span><span class="s5">@internal </span><span class="s4">*/</span>
+  <span class="s1">toExtendedJSON</span><span class="s2">(</span><span class="s1">options</span><span class="s2">?: </span><span class="s1">EJSONOptions</span><span class="s2">): </span><span class="s1">number </span><span class="s2">| </span><span class="s1">DoubleExtended </span><span class="s2">{</span>
+    <span class="s0">if </span><span class="s2">(</span><span class="s1">options </span><span class="s2">&amp;&amp; (</span><span class="s1">options</span><span class="s2">.</span><span class="s1">legacy </span><span class="s2">|| (</span><span class="s1">options</span><span class="s2">.</span><span class="s1">relaxed </span><span class="s2">&amp;&amp; </span><span class="s1">isFinite</span><span class="s2">(</span><span class="s0">this</span><span class="s2">.</span><span class="s1">value</span><span class="s2">)))) {</span>
+      <span class="s0">return this</span><span class="s2">.</span><span class="s1">value</span><span class="s2">;</span>
+    <span class="s2">}</span>
+
+    <span class="s0">if </span><span class="s2">(</span><span class="s1">Object</span><span class="s2">.</span><span class="s1">is</span><span class="s2">(</span><span class="s1">Math</span><span class="s2">.</span><span class="s1">sign</span><span class="s2">(</span><span class="s0">this</span><span class="s2">.</span><span class="s1">value</span><span class="s2">), -</span><span class="s7">0</span><span class="s2">)) {</span>
+      <span class="s8">// NOTE: JavaScript has +0 and -0, apparently to model limit calculations. If a user</span>
+      <span class="s8">// explicitly provided `-0` then we need to ensure the sign makes it into the output</span>
+      <span class="s0">return </span><span class="s2">{ </span><span class="s1">$numberDouble</span><span class="s2">: </span><span class="s3">'-0.0' </span><span class="s2">};</span>
+    <span class="s2">}</span>
+
+    <span class="s0">return </span><span class="s2">{</span>
+      <span class="s1">$numberDouble</span><span class="s2">: </span><span class="s1">Number</span><span class="s2">.</span><span class="s1">isInteger</span><span class="s2">(</span><span class="s0">this</span><span class="s2">.</span><span class="s1">value</span><span class="s2">) ? </span><span class="s0">this</span><span class="s2">.</span><span class="s1">value</span><span class="s2">.</span><span class="s1">toFixed</span><span class="s2">(</span><span class="s7">1</span><span class="s2">) : </span><span class="s0">this</span><span class="s2">.</span><span class="s1">value</span><span class="s2">.</span><span class="s1">toString</span><span class="s2">()</span>
+    <span class="s2">};</span>
+  <span class="s2">}</span>
+
+  <span class="s4">/** </span><span class="s5">@internal </span><span class="s4">*/</span>
+  <span class="s0">static </span><span class="s1">fromExtendedJSON</span><span class="s2">(</span><span class="s1">doc</span><span class="s2">: </span><span class="s1">DoubleExtended</span><span class="s2">, </span><span class="s1">options</span><span class="s2">?: </span><span class="s1">EJSONOptions</span><span class="s2">): </span><span class="s1">number </span><span class="s2">| </span><span class="s1">Double </span><span class="s2">{</span>
+    <span class="s0">const </span><span class="s1">doubleValue </span><span class="s2">= </span><span class="s1">parseFloat</span><span class="s2">(</span><span class="s1">doc</span><span class="s2">.</span><span class="s1">$numberDouble</span><span class="s2">);</span>
+    <span class="s0">return </span><span class="s1">options </span><span class="s2">&amp;&amp; </span><span class="s1">options</span><span class="s2">.</span><span class="s1">relaxed </span><span class="s2">? </span><span class="s1">doubleValue </span><span class="s2">: </span><span class="s0">new </span><span class="s1">Double</span><span class="s2">(</span><span class="s1">doubleValue</span><span class="s2">);</span>
+  <span class="s2">}</span>
+
+  <span class="s1">inspect</span><span class="s2">(</span><span class="s1">depth</span><span class="s2">?: </span><span class="s1">number</span><span class="s2">, </span><span class="s1">options</span><span class="s2">?: </span><span class="s1">unknown</span><span class="s2">, </span><span class="s1">inspect</span><span class="s2">?: </span><span class="s1">InspectFn</span><span class="s2">): </span><span class="s1">string </span><span class="s2">{</span>
+    <span class="s1">inspect </span><span class="s2">??= </span><span class="s1">defaultInspect</span><span class="s2">;</span>
+    <span class="s0">return </span><span class="s3">`new Double(</span><span class="s1">$</span><span class="s2">{</span><span class="s1">inspect</span><span class="s2">(</span><span class="s0">this</span><span class="s2">.</span><span class="s1">value</span><span class="s2">, </span><span class="s1">options</span><span class="s2">)}</span><span class="s3">)`</span><span class="s2">;</span>
+  <span class="s2">}</span>
+<span class="s2">}</span>
+</pre>
+</body>
+</html>

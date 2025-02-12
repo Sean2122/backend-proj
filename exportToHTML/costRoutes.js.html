@@ -1,0 +1,50 @@
+<html>
+<head>
+<title>costRoutes.js</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+<style type="text/css">
+.s0 { color: #cf8e6d;}
+.s1 { color: #bcbec4;}
+.s2 { color: #bcbec4;}
+.s3 { color: #6aab73;}
+.s4 { color: #7a7e85;}
+.s5 { color: #2aacb8;}
+</style>
+</head>
+<body bgcolor="#1e1f22">
+<table CELLSPACING=0 CELLPADDING=5 COLS=1 WIDTH="100%" BGCOLOR="#606060" >
+<tr><td><center>
+<font face="Arial, Helvetica" color="#000000">
+costRoutes.js</font>
+</center></td></tr></table>
+<pre><span class="s0">const </span><span class="s1">express </span><span class="s2">= </span><span class="s1">require</span><span class="s2">(</span><span class="s3">'express'</span><span class="s2">);</span>
+<span class="s0">const </span><span class="s1">router </span><span class="s2">= </span><span class="s1">express</span><span class="s2">.</span><span class="s1">Router</span><span class="s2">();</span>
+<span class="s0">const </span><span class="s1">Cost </span><span class="s2">= </span><span class="s1">require</span><span class="s2">(</span><span class="s3">'../models/Cost'</span><span class="s2">);</span>
+
+<span class="s4">// Add cost item</span>
+<span class="s1">router</span><span class="s2">.</span><span class="s1">post</span><span class="s2">(</span><span class="s3">'/add'</span><span class="s2">, </span><span class="s1">async </span><span class="s2">(</span><span class="s1">req</span><span class="s2">, </span><span class="s1">res</span><span class="s2">) =&gt; {</span>
+    <span class="s0">try </span><span class="s2">{</span>
+        <span class="s0">const </span><span class="s2">{ </span><span class="s1">description</span><span class="s2">, </span><span class="s1">category</span><span class="s2">, </span><span class="s1">userid</span><span class="s2">, </span><span class="s1">sum</span><span class="s2">, </span><span class="s1">createdAt </span><span class="s2">} = </span><span class="s1">req</span><span class="s2">.</span><span class="s1">body</span><span class="s2">;</span>
+
+        <span class="s4">// Validate all required fields</span>
+        <span class="s0">if </span><span class="s2">(!</span><span class="s1">description </span><span class="s2">|| !</span><span class="s1">category </span><span class="s2">|| !</span><span class="s1">userid </span><span class="s2">|| !</span><span class="s1">sum</span><span class="s2">) {</span>
+            <span class="s0">return </span><span class="s1">res</span><span class="s2">.</span><span class="s1">status</span><span class="s2">(</span><span class="s5">400</span><span class="s2">).</span><span class="s1">json</span><span class="s2">({ </span><span class="s1">message</span><span class="s2">: </span><span class="s3">'All fields (description, category, userid, and sum) are required' </span><span class="s2">});</span>
+        <span class="s2">}</span>
+
+        <span class="s4">// Use current date for createdAt if not provided</span>
+        <span class="s0">const </span><span class="s1">newCreatedAt </span><span class="s2">= </span><span class="s1">createdAt </span><span class="s2">|| </span><span class="s0">new </span><span class="s1">Date</span><span class="s2">();</span>
+
+        <span class="s0">const </span><span class="s1">newCost </span><span class="s2">= </span><span class="s0">new </span><span class="s1">Cost</span><span class="s2">({ </span><span class="s1">description</span><span class="s2">, </span><span class="s1">category</span><span class="s2">, </span><span class="s1">userid</span><span class="s2">, </span><span class="s1">sum</span><span class="s2">, </span><span class="s1">createdAt</span><span class="s2">: </span><span class="s1">newCreatedAt </span><span class="s2">});</span>
+        <span class="s0">await </span><span class="s1">newCost</span><span class="s2">.</span><span class="s1">save</span><span class="s2">();</span>
+
+        <span class="s4">// Respond with the newly added cost item</span>
+        <span class="s1">res</span><span class="s2">.</span><span class="s1">json</span><span class="s2">(</span><span class="s1">newCost</span><span class="s2">);</span>
+    <span class="s2">} </span><span class="s0">catch </span><span class="s2">(</span><span class="s1">err</span><span class="s2">) {</span>
+        <span class="s1">res</span><span class="s2">.</span><span class="s1">status</span><span class="s2">(</span><span class="s5">500</span><span class="s2">).</span><span class="s1">json</span><span class="s2">({ </span><span class="s1">message</span><span class="s2">: </span><span class="s3">'Error adding cost'</span><span class="s2">, </span><span class="s1">error</span><span class="s2">: </span><span class="s1">err</span><span class="s2">.</span><span class="s1">message </span><span class="s2">});</span>
+    <span class="s2">}</span>
+<span class="s2">});</span>
+
+<span class="s1">module</span><span class="s2">.</span><span class="s1">exports </span><span class="s2">= </span><span class="s1">router</span><span class="s2">;</span>
+</pre>
+</body>
+</html>

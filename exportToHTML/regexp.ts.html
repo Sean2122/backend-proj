@@ -1,0 +1,138 @@
+<html>
+<head>
+<title>regexp.ts</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+<style type="text/css">
+.s0 { color: #cf8e6d;}
+.s1 { color: #bcbec4;}
+.s2 { color: #bcbec4;}
+.s3 { color: #6aab73;}
+.s4 { color: #5f826b; font-style: italic;}
+.s5 { color: #67a37c; font-style: italic;}
+.s6 { color: #2aacb8;}
+.s7 { color: #7a7e85;}
+</style>
+</head>
+<body bgcolor="#1e1f22">
+<table CELLSPACING=0 CELLPADDING=5 COLS=1 WIDTH="100%" BGCOLOR="#606060" >
+<tr><td><center>
+<font face="Arial, Helvetica" color="#000000">
+regexp.ts</font>
+</center></td></tr></table>
+<pre><span class="s0">import </span><span class="s2">{ </span><span class="s1">BSONValue </span><span class="s2">} </span><span class="s1">from </span><span class="s3">'./bson_value'</span><span class="s2">;</span>
+<span class="s0">import </span><span class="s2">{ </span><span class="s1">BSONError </span><span class="s2">} </span><span class="s1">from </span><span class="s3">'./error'</span><span class="s2">;</span>
+<span class="s0">import </span><span class="s1">type </span><span class="s2">{ </span><span class="s1">EJSONOptions </span><span class="s2">} </span><span class="s1">from </span><span class="s3">'./extended_json'</span><span class="s2">;</span>
+<span class="s0">import </span><span class="s2">{ </span><span class="s1">type InspectFn</span><span class="s2">, </span><span class="s1">defaultInspect</span><span class="s2">, </span><span class="s1">getStylizeFunction </span><span class="s2">} </span><span class="s1">from </span><span class="s3">'./parser/utils'</span><span class="s2">;</span>
+
+<span class="s0">function </span><span class="s1">alphabetize</span><span class="s2">(</span><span class="s1">str</span><span class="s2">: </span><span class="s1">string</span><span class="s2">): </span><span class="s1">string </span><span class="s2">{</span>
+  <span class="s0">return </span><span class="s1">str</span><span class="s2">.</span><span class="s1">split</span><span class="s2">(</span><span class="s3">''</span><span class="s2">).</span><span class="s1">sort</span><span class="s2">().</span><span class="s1">join</span><span class="s2">(</span><span class="s3">''</span><span class="s2">);</span>
+<span class="s2">}</span>
+
+<span class="s4">/** </span><span class="s5">@public </span><span class="s4">*/</span>
+<span class="s0">export interface </span><span class="s1">BSONRegExpExtendedLegacy </span><span class="s2">{</span>
+  <span class="s1">$regex</span><span class="s2">: </span><span class="s1">string </span><span class="s2">| </span><span class="s1">BSONRegExp</span><span class="s2">;</span>
+  <span class="s1">$options</span><span class="s2">: </span><span class="s1">string</span><span class="s2">;</span>
+<span class="s2">}</span>
+
+<span class="s4">/** </span><span class="s5">@public </span><span class="s4">*/</span>
+<span class="s0">export interface </span><span class="s1">BSONRegExpExtended </span><span class="s2">{</span>
+  <span class="s1">$regularExpression</span><span class="s2">: {</span>
+    <span class="s1">pattern</span><span class="s2">: </span><span class="s1">string</span><span class="s2">;</span>
+    <span class="s1">options</span><span class="s2">: </span><span class="s1">string</span><span class="s2">;</span>
+  <span class="s2">};</span>
+<span class="s2">}</span>
+
+<span class="s4">/**</span>
+ <span class="s4">* A class representation of the BSON RegExp type.</span>
+ <span class="s4">* </span><span class="s5">@public</span>
+ <span class="s4">* </span><span class="s5">@category </span><span class="s4">BSONType</span>
+ <span class="s4">*/</span>
+<span class="s0">export class </span><span class="s1">BSONRegExp </span><span class="s0">extends </span><span class="s1">BSONValue </span><span class="s2">{</span>
+  <span class="s1">get _bsontype</span><span class="s2">(): </span><span class="s3">'BSONRegExp' </span><span class="s2">{</span>
+    <span class="s0">return </span><span class="s3">'BSONRegExp'</span><span class="s2">;</span>
+  <span class="s2">}</span>
+
+  <span class="s1">pattern</span><span class="s2">!: </span><span class="s1">string</span><span class="s2">;</span>
+  <span class="s1">options</span><span class="s2">!: </span><span class="s1">string</span><span class="s2">;</span>
+  <span class="s4">/**</span>
+   <span class="s4">* </span><span class="s5">@param </span><span class="s4">pattern - The regular expression pattern to match</span>
+   <span class="s4">* </span><span class="s5">@param </span><span class="s4">options - The regular expression options</span>
+   <span class="s4">*/</span>
+  <span class="s1">constructor</span><span class="s2">(</span><span class="s1">pattern</span><span class="s2">: </span><span class="s1">string</span><span class="s2">, </span><span class="s1">options</span><span class="s2">?: </span><span class="s1">string</span><span class="s2">) {</span>
+    <span class="s0">super</span><span class="s2">();</span>
+    <span class="s0">this</span><span class="s2">.</span><span class="s1">pattern </span><span class="s2">= </span><span class="s1">pattern</span><span class="s2">;</span>
+    <span class="s0">this</span><span class="s2">.</span><span class="s1">options </span><span class="s2">= </span><span class="s1">alphabetize</span><span class="s2">(</span><span class="s1">options </span><span class="s2">?? </span><span class="s3">''</span><span class="s2">);</span>
+
+    <span class="s0">if </span><span class="s2">(</span><span class="s0">this</span><span class="s2">.</span><span class="s1">pattern</span><span class="s2">.</span><span class="s1">indexOf</span><span class="s2">(</span><span class="s3">'</span><span class="s0">\x00</span><span class="s3">'</span><span class="s2">) !== -</span><span class="s6">1</span><span class="s2">) {</span>
+      <span class="s0">throw new </span><span class="s1">BSONError</span><span class="s2">(</span>
+        <span class="s3">`BSON Regex patterns cannot contain null bytes, found: </span><span class="s1">$</span><span class="s2">{</span><span class="s1">JSON</span><span class="s2">.</span><span class="s1">stringify</span><span class="s2">(</span><span class="s0">this</span><span class="s2">.</span><span class="s1">pattern</span><span class="s2">)}</span><span class="s3">`</span>
+      <span class="s2">);</span>
+    <span class="s2">}</span>
+    <span class="s0">if </span><span class="s2">(</span><span class="s0">this</span><span class="s2">.</span><span class="s1">options</span><span class="s2">.</span><span class="s1">indexOf</span><span class="s2">(</span><span class="s3">'</span><span class="s0">\x00</span><span class="s3">'</span><span class="s2">) !== -</span><span class="s6">1</span><span class="s2">) {</span>
+      <span class="s0">throw new </span><span class="s1">BSONError</span><span class="s2">(</span>
+        <span class="s3">`BSON Regex options cannot contain null bytes, found: </span><span class="s1">$</span><span class="s2">{</span><span class="s1">JSON</span><span class="s2">.</span><span class="s1">stringify</span><span class="s2">(</span><span class="s0">this</span><span class="s2">.</span><span class="s1">options</span><span class="s2">)}</span><span class="s3">`</span>
+      <span class="s2">);</span>
+    <span class="s2">}</span>
+
+    <span class="s7">// Validate options</span>
+    <span class="s0">for </span><span class="s2">(</span><span class="s0">let </span><span class="s1">i </span><span class="s2">= </span><span class="s6">0</span><span class="s2">; </span><span class="s1">i </span><span class="s2">&lt; </span><span class="s0">this</span><span class="s2">.</span><span class="s1">options</span><span class="s2">.</span><span class="s1">length</span><span class="s2">; </span><span class="s1">i</span><span class="s2">++) {</span>
+      <span class="s0">if </span><span class="s2">(</span>
+        <span class="s2">!(</span>
+          <span class="s0">this</span><span class="s2">.</span><span class="s1">options</span><span class="s2">[</span><span class="s1">i</span><span class="s2">] === </span><span class="s3">'i' </span><span class="s2">||</span>
+          <span class="s0">this</span><span class="s2">.</span><span class="s1">options</span><span class="s2">[</span><span class="s1">i</span><span class="s2">] === </span><span class="s3">'m' </span><span class="s2">||</span>
+          <span class="s0">this</span><span class="s2">.</span><span class="s1">options</span><span class="s2">[</span><span class="s1">i</span><span class="s2">] === </span><span class="s3">'x' </span><span class="s2">||</span>
+          <span class="s0">this</span><span class="s2">.</span><span class="s1">options</span><span class="s2">[</span><span class="s1">i</span><span class="s2">] === </span><span class="s3">'l' </span><span class="s2">||</span>
+          <span class="s0">this</span><span class="s2">.</span><span class="s1">options</span><span class="s2">[</span><span class="s1">i</span><span class="s2">] === </span><span class="s3">'s' </span><span class="s2">||</span>
+          <span class="s0">this</span><span class="s2">.</span><span class="s1">options</span><span class="s2">[</span><span class="s1">i</span><span class="s2">] === </span><span class="s3">'u'</span>
+        <span class="s2">)</span>
+      <span class="s2">) {</span>
+        <span class="s0">throw new </span><span class="s1">BSONError</span><span class="s2">(</span><span class="s3">`The regular expression option [</span><span class="s1">$</span><span class="s2">{</span><span class="s0">this</span><span class="s2">.</span><span class="s1">options</span><span class="s2">[</span><span class="s1">i</span><span class="s2">]}</span><span class="s3">] is not supported`</span><span class="s2">);</span>
+      <span class="s2">}</span>
+    <span class="s2">}</span>
+  <span class="s2">}</span>
+
+  <span class="s0">static </span><span class="s1">parseOptions</span><span class="s2">(</span><span class="s1">options</span><span class="s2">?: </span><span class="s1">string</span><span class="s2">): </span><span class="s1">string </span><span class="s2">{</span>
+    <span class="s0">return </span><span class="s1">options </span><span class="s2">? </span><span class="s1">options</span><span class="s2">.</span><span class="s1">split</span><span class="s2">(</span><span class="s3">''</span><span class="s2">).</span><span class="s1">sort</span><span class="s2">().</span><span class="s1">join</span><span class="s2">(</span><span class="s3">''</span><span class="s2">) : </span><span class="s3">''</span><span class="s2">;</span>
+  <span class="s2">}</span>
+
+  <span class="s4">/** </span><span class="s5">@internal </span><span class="s4">*/</span>
+  <span class="s1">toExtendedJSON</span><span class="s2">(</span><span class="s1">options</span><span class="s2">?: </span><span class="s1">EJSONOptions</span><span class="s2">): </span><span class="s1">BSONRegExpExtendedLegacy </span><span class="s2">| </span><span class="s1">BSONRegExpExtended </span><span class="s2">{</span>
+    <span class="s1">options </span><span class="s2">= </span><span class="s1">options </span><span class="s2">|| {};</span>
+    <span class="s0">if </span><span class="s2">(</span><span class="s1">options</span><span class="s2">.</span><span class="s1">legacy</span><span class="s2">) {</span>
+      <span class="s0">return </span><span class="s2">{ </span><span class="s1">$regex</span><span class="s2">: </span><span class="s0">this</span><span class="s2">.</span><span class="s1">pattern</span><span class="s2">, </span><span class="s1">$options</span><span class="s2">: </span><span class="s0">this</span><span class="s2">.</span><span class="s1">options </span><span class="s2">};</span>
+    <span class="s2">}</span>
+    <span class="s0">return </span><span class="s2">{ </span><span class="s1">$regularExpression</span><span class="s2">: { </span><span class="s1">pattern</span><span class="s2">: </span><span class="s0">this</span><span class="s2">.</span><span class="s1">pattern</span><span class="s2">, </span><span class="s1">options</span><span class="s2">: </span><span class="s0">this</span><span class="s2">.</span><span class="s1">options </span><span class="s2">} };</span>
+  <span class="s2">}</span>
+
+  <span class="s4">/** </span><span class="s5">@internal </span><span class="s4">*/</span>
+  <span class="s0">static </span><span class="s1">fromExtendedJSON</span><span class="s2">(</span><span class="s1">doc</span><span class="s2">: </span><span class="s1">BSONRegExpExtendedLegacy </span><span class="s2">| </span><span class="s1">BSONRegExpExtended</span><span class="s2">): </span><span class="s1">BSONRegExp </span><span class="s2">{</span>
+    <span class="s0">if </span><span class="s2">(</span><span class="s3">'$regex' </span><span class="s0">in </span><span class="s1">doc</span><span class="s2">) {</span>
+      <span class="s0">if </span><span class="s2">(</span><span class="s0">typeof </span><span class="s1">doc</span><span class="s2">.</span><span class="s1">$regex </span><span class="s2">!== </span><span class="s3">'string'</span><span class="s2">) {</span>
+        <span class="s7">// This is for $regex query operators that have extended json values.</span>
+        <span class="s0">if </span><span class="s2">(</span><span class="s1">doc</span><span class="s2">.</span><span class="s1">$regex</span><span class="s2">.</span><span class="s1">_bsontype </span><span class="s2">=== </span><span class="s3">'BSONRegExp'</span><span class="s2">) {</span>
+          <span class="s0">return </span><span class="s1">doc </span><span class="s2">as </span><span class="s1">unknown </span><span class="s2">as </span><span class="s1">BSONRegExp</span><span class="s2">;</span>
+        <span class="s2">}</span>
+      <span class="s2">} </span><span class="s0">else </span><span class="s2">{</span>
+        <span class="s0">return new </span><span class="s1">BSONRegExp</span><span class="s2">(</span><span class="s1">doc</span><span class="s2">.</span><span class="s1">$regex</span><span class="s2">, </span><span class="s1">BSONRegExp</span><span class="s2">.</span><span class="s1">parseOptions</span><span class="s2">(</span><span class="s1">doc</span><span class="s2">.</span><span class="s1">$options</span><span class="s2">));</span>
+      <span class="s2">}</span>
+    <span class="s2">}</span>
+    <span class="s0">if </span><span class="s2">(</span><span class="s3">'$regularExpression' </span><span class="s0">in </span><span class="s1">doc</span><span class="s2">) {</span>
+      <span class="s0">return new </span><span class="s1">BSONRegExp</span><span class="s2">(</span>
+        <span class="s1">doc</span><span class="s2">.</span><span class="s1">$regularExpression</span><span class="s2">.</span><span class="s1">pattern</span><span class="s2">,</span>
+        <span class="s1">BSONRegExp</span><span class="s2">.</span><span class="s1">parseOptions</span><span class="s2">(</span><span class="s1">doc</span><span class="s2">.</span><span class="s1">$regularExpression</span><span class="s2">.</span><span class="s1">options</span><span class="s2">)</span>
+      <span class="s2">);</span>
+    <span class="s2">}</span>
+    <span class="s0">throw new </span><span class="s1">BSONError</span><span class="s2">(</span><span class="s3">`Unexpected BSONRegExp EJSON object form: </span><span class="s1">$</span><span class="s2">{</span><span class="s1">JSON</span><span class="s2">.</span><span class="s1">stringify</span><span class="s2">(</span><span class="s1">doc</span><span class="s2">)}</span><span class="s3">`</span><span class="s2">);</span>
+  <span class="s2">}</span>
+
+  <span class="s1">inspect</span><span class="s2">(</span><span class="s1">depth</span><span class="s2">?: </span><span class="s1">number</span><span class="s2">, </span><span class="s1">options</span><span class="s2">?: </span><span class="s1">unknown</span><span class="s2">, </span><span class="s1">inspect</span><span class="s2">?: </span><span class="s1">InspectFn</span><span class="s2">): </span><span class="s1">string </span><span class="s2">{</span>
+    <span class="s0">const </span><span class="s1">stylize </span><span class="s2">= </span><span class="s1">getStylizeFunction</span><span class="s2">(</span><span class="s1">options</span><span class="s2">) ?? (</span><span class="s1">v </span><span class="s2">=&gt; </span><span class="s1">v</span><span class="s2">);</span>
+    <span class="s1">inspect </span><span class="s2">??= </span><span class="s1">defaultInspect</span><span class="s2">;</span>
+    <span class="s0">const </span><span class="s1">pattern </span><span class="s2">= </span><span class="s1">stylize</span><span class="s2">(</span><span class="s1">inspect</span><span class="s2">(</span><span class="s0">this</span><span class="s2">.</span><span class="s1">pattern</span><span class="s2">), </span><span class="s3">'regexp'</span><span class="s2">);</span>
+    <span class="s0">const </span><span class="s1">flags </span><span class="s2">= </span><span class="s1">stylize</span><span class="s2">(</span><span class="s1">inspect</span><span class="s2">(</span><span class="s0">this</span><span class="s2">.</span><span class="s1">options</span><span class="s2">), </span><span class="s3">'regexp'</span><span class="s2">);</span>
+    <span class="s0">return </span><span class="s3">`new BSONRegExp(</span><span class="s1">$</span><span class="s2">{</span><span class="s1">pattern</span><span class="s2">}</span><span class="s3">, </span><span class="s1">$</span><span class="s2">{</span><span class="s1">flags</span><span class="s2">}</span><span class="s3">)`</span><span class="s2">;</span>
+  <span class="s2">}</span>
+<span class="s2">}</span>
+</pre>
+</body>
+</html>

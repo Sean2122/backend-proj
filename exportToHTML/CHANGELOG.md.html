@@ -1,0 +1,642 @@
+<html>
+<head>
+<title>CHANGELOG.md</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+<style type="text/css">
+.s0 { color: #cf8e6d;}
+.s1 { color: #bcbec4;}
+.s2 { color: #bcbec4;}
+.s3 { color: #56a8f5;}
+</style>
+</head>
+<body bgcolor="#1e1f22">
+<table CELLSPACING=0 CELLPADDING=5 COLS=1 WIDTH="100%" BGCOLOR="#606060" >
+<tr><td><center>
+<font face="Arial, Helvetica" color="#000000">
+CHANGELOG.md</font>
+</center></td></tr></table>
+<pre><span class="s0">## </span><span class="s1">**</span><span class="s2">6.14.0</span><span class="s1">**</span>
+<span class="s0">- </span><span class="s1">[</span><span class="s2">New</span><span class="s1">] </span><span class="s2">`parse`</span><span class="s1">: </span><span class="s2">add `throwOnParameterLimitExceeded` option </span><span class="s1">(</span><span class="s2">#517</span><span class="s1">)</span>
+<span class="s0">- </span><span class="s1">[</span><span class="s2">Refactor</span><span class="s1">] </span><span class="s2">`parse`</span><span class="s1">: </span><span class="s2">use `utils.combine` more</span>
+<span class="s0">- </span><span class="s1">[</span><span class="s2">patch</span><span class="s1">] </span><span class="s2">`parse`</span><span class="s1">: </span><span class="s2">add explicit `throwOnLimitExceeded` default</span>
+<span class="s0">- </span><span class="s1">[</span><span class="s2">actions</span><span class="s1">] </span><span class="s2">use shared action; re-add finishers</span>
+<span class="s0">- </span><span class="s1">[</span><span class="s2">meta</span><span class="s1">] </span><span class="s2">Fix changelog formatting bug</span>
+<span class="s0">- </span><span class="s1">[</span><span class="s2">Deps</span><span class="s1">] </span><span class="s2">update `side-channel`</span>
+<span class="s0">- </span><span class="s1">[</span><span class="s2">Dev Deps</span><span class="s1">] </span><span class="s2">update `es-value-fixtures`, `has-bigints`, `has-proto`, `has-symbols`</span>
+<span class="s0">- </span><span class="s1">[</span><span class="s2">Tests</span><span class="s1">] </span><span class="s2">increase coverage</span>
+
+<span class="s0">## </span><span class="s1">**</span><span class="s2">6.13.1</span><span class="s1">**</span>
+<span class="s0">- </span><span class="s1">[</span><span class="s2">Fix</span><span class="s1">] </span><span class="s2">`stringify`</span><span class="s1">: </span><span class="s2">avoid a crash when a `filter` key is `null`</span>
+<span class="s0">- </span><span class="s1">[</span><span class="s2">Fix</span><span class="s1">] </span><span class="s2">`utils.merge`</span><span class="s1">: </span><span class="s2">functions should not be stringified into keys</span>
+<span class="s0">- </span><span class="s1">[</span><span class="s2">Fix</span><span class="s1">] </span><span class="s2">`parse`</span><span class="s1">: </span><span class="s2">avoid a crash with interpretNumericEntities</span><span class="s1">: </span><span class="s2">true, comma</span><span class="s1">: </span><span class="s2">true, and iso charset</span>
+<span class="s0">- </span><span class="s1">[</span><span class="s2">Fix</span><span class="s1">] </span><span class="s2">`stringify`</span><span class="s1">: </span><span class="s2">ensure a non-string `filter` does not crash</span>
+<span class="s0">- </span><span class="s1">[</span><span class="s2">Refactor</span><span class="s1">] </span><span class="s2">use `</span><span class="s1">__</span><span class="s2">proto</span><span class="s1">__</span><span class="s2">` syntax instead of `Object.create` for null objects</span>
+<span class="s0">- </span><span class="s1">[</span><span class="s2">Refactor</span><span class="s1">] </span><span class="s2">misc cleanup</span>
+<span class="s0">- </span><span class="s1">[</span><span class="s2">Tests</span><span class="s1">] </span><span class="s2">`utils.merge`</span><span class="s1">: </span><span class="s2">add some coverage</span>
+<span class="s0">- </span><span class="s1">[</span><span class="s2">Tests</span><span class="s1">] </span><span class="s2">fix a test case</span>
+<span class="s0">- </span><span class="s1">[</span><span class="s2">actions</span><span class="s1">] </span><span class="s2">split out node 10-20, and 20+</span>
+<span class="s0">- </span><span class="s1">[</span><span class="s2">Dev Deps</span><span class="s1">] </span><span class="s2">update `es-value-fixtures`, `mock-property`, `object-inspect`, `tape`</span>
+
+<span class="s0">## </span><span class="s1">**</span><span class="s2">6.13.0</span><span class="s1">**</span>
+<span class="s0">- </span><span class="s1">[</span><span class="s2">New</span><span class="s1">] </span><span class="s2">`parse`</span><span class="s1">: </span><span class="s2">add `strictDepth` option </span><span class="s1">(</span><span class="s2">#511</span><span class="s1">)</span>
+<span class="s0">- </span><span class="s1">[</span><span class="s2">Tests</span><span class="s1">] </span><span class="s2">use `npm audit` instead of `aud`</span>
+
+<span class="s0">## </span><span class="s1">**</span><span class="s2">6.12.3</span><span class="s1">**</span>
+<span class="s0">- </span><span class="s1">[</span><span class="s2">Fix</span><span class="s1">] </span><span class="s2">`parse`</span><span class="s1">: </span><span class="s2">properly account for `strictNullHandling` when `allowEmptyArrays`</span>
+<span class="s0">- </span><span class="s1">[</span><span class="s2">meta</span><span class="s1">] </span><span class="s2">fix changelog indentation</span>
+
+<span class="s0">## </span><span class="s1">**</span><span class="s2">6.12.2</span><span class="s1">**</span>
+<span class="s0">- </span><span class="s1">[</span><span class="s2">Fix</span><span class="s1">] </span><span class="s2">`parse`</span><span class="s1">: </span><span class="s2">parse encoded square brackets </span><span class="s1">(</span><span class="s2">#506</span><span class="s1">)</span>
+<span class="s0">- </span><span class="s1">[</span><span class="s2">readme</span><span class="s1">] </span><span class="s2">add CII best practices badge</span>
+
+<span class="s0">## </span><span class="s1">**</span><span class="s2">6.12.1</span><span class="s1">**</span>
+<span class="s0">- </span><span class="s1">[</span><span class="s2">Fix</span><span class="s1">] </span><span class="s2">`parse`</span><span class="s1">: </span><span class="s2">Disable `decodeDotInKeys` by default to restore previous behavior </span><span class="s1">(</span><span class="s2">#501</span><span class="s1">)</span>
+<span class="s0">- </span><span class="s1">[</span><span class="s2">Performance</span><span class="s1">] </span><span class="s2">`utils`</span><span class="s1">: </span><span class="s2">Optimize performance under large data volumes, reduce memory usage, and speed up processing </span><span class="s1">(</span><span class="s2">#502</span><span class="s1">)</span>
+<span class="s0">- </span><span class="s1">[</span><span class="s2">Refactor</span><span class="s1">] </span><span class="s2">`utils`</span><span class="s1">: </span><span class="s2">use `+=`</span>
+<span class="s0">- </span><span class="s1">[</span><span class="s2">Tests</span><span class="s1">] </span><span class="s2">increase coverage</span>
+
+<span class="s0">## </span><span class="s1">**</span><span class="s2">6.12.0</span><span class="s1">**</span>
+
+<span class="s0">- </span><span class="s1">[</span><span class="s2">New</span><span class="s1">] </span><span class="s2">`parse`/`stringify`</span><span class="s1">: </span><span class="s2">add `decodeDotInKeys`/`encodeDotKeys` options </span><span class="s1">(</span><span class="s2">#488</span><span class="s1">)</span>
+<span class="s0">- </span><span class="s1">[</span><span class="s2">New</span><span class="s1">] </span><span class="s2">`parse`</span><span class="s1">: </span><span class="s2">add `duplicates` option</span>
+<span class="s0">- </span><span class="s1">[</span><span class="s2">New</span><span class="s1">] </span><span class="s2">`parse`/`stringify`</span><span class="s1">: </span><span class="s2">add `allowEmptyArrays` option to allow </span><span class="s1">[] </span><span class="s2">in object values </span><span class="s1">(</span><span class="s2">#487</span><span class="s1">)</span>
+<span class="s0">- </span><span class="s1">[</span><span class="s2">Refactor</span><span class="s1">] </span><span class="s2">`parse`/`stringify`</span><span class="s1">: </span><span class="s2">move allowDots config logic to its own variable</span>
+<span class="s0">- </span><span class="s1">[</span><span class="s2">Refactor</span><span class="s1">] </span><span class="s2">`stringify`</span><span class="s1">: </span><span class="s2">move option-handling code into `normalizeStringifyOptions`</span>
+<span class="s0">- </span><span class="s1">[</span><span class="s2">readme</span><span class="s1">] </span><span class="s2">update readme, add logos </span><span class="s1">(</span><span class="s2">#484</span><span class="s1">)</span>
+<span class="s0">- </span><span class="s1">[</span><span class="s2">readme</span><span class="s1">] </span><span class="s2">`stringify`</span><span class="s1">: </span><span class="s2">clarify default `arrayFormat` behavior</span>
+<span class="s0">- </span><span class="s1">[</span><span class="s2">readme</span><span class="s1">] </span><span class="s2">fix line wrapping</span>
+<span class="s0">- </span><span class="s1">[</span><span class="s2">readme</span><span class="s1">] </span><span class="s2">remove dead badges</span>
+<span class="s0">- </span><span class="s1">[</span><span class="s2">Deps</span><span class="s1">] </span><span class="s2">update `side-channel`</span>
+<span class="s0">- </span><span class="s1">[</span><span class="s2">meta</span><span class="s1">] </span><span class="s2">make the dist build 50% smaller</span>
+<span class="s0">- </span><span class="s1">[</span><span class="s2">meta</span><span class="s1">] </span><span class="s2">add `sideEffects` flag</span>
+<span class="s0">- </span><span class="s1">[</span><span class="s2">meta</span><span class="s1">] </span><span class="s2">run build in prepack, not prepublish</span>
+<span class="s0">- </span><span class="s1">[</span><span class="s2">Tests</span><span class="s1">] </span><span class="s2">`parse`</span><span class="s1">: </span><span class="s2">remove useless tests; add coverage</span>
+<span class="s0">- </span><span class="s1">[</span><span class="s2">Tests</span><span class="s1">] </span><span class="s2">`stringify`</span><span class="s1">: </span><span class="s2">increase coverage</span>
+<span class="s0">- </span><span class="s1">[</span><span class="s2">Tests</span><span class="s1">] </span><span class="s2">use `mock-property`</span>
+<span class="s0">- </span><span class="s1">[</span><span class="s2">Tests</span><span class="s1">] </span><span class="s2">`stringify`</span><span class="s1">: </span><span class="s2">improve coverage</span>
+<span class="s0">- </span><span class="s1">[</span><span class="s2">Dev Deps</span><span class="s1">] </span><span class="s2">update `@ljharb/eslint-config `, `aud`, `has-override-mistake`, `has-property-descriptors`, `mock-property`, `npmignore`, `object-inspect`, `tape`</span>
+<span class="s0">- </span><span class="s1">[</span><span class="s2">Dev Deps</span><span class="s1">] </span><span class="s2">pin `glob`, since v10.3.8+ requires a broken `jackspeak`</span>
+<span class="s0">- </span><span class="s1">[</span><span class="s2">Dev Deps</span><span class="s1">] </span><span class="s2">pin `jackspeak` since 2.1.2+ depends on npm aliases, which kill the install process in npm </span><span class="s1">&lt; </span><span class="s2">6</span>
+
+<span class="s0">## </span><span class="s1">**</span><span class="s2">6.11.2</span><span class="s1">**</span>
+<span class="s0">- </span><span class="s1">[</span><span class="s2">Fix</span><span class="s1">] </span><span class="s2">`parse`</span><span class="s1">: </span><span class="s2">Fix parsing when the global Object prototype is frozen </span><span class="s1">(</span><span class="s2">#473</span><span class="s1">)</span>
+<span class="s0">- </span><span class="s1">[</span><span class="s2">Tests</span><span class="s1">] </span><span class="s2">add passing test cases with empty keys </span><span class="s1">(</span><span class="s2">#473</span><span class="s1">)</span>
+
+<span class="s0">## </span><span class="s1">**</span><span class="s2">6.11.1</span><span class="s1">**</span>
+<span class="s0">- </span><span class="s1">[</span><span class="s2">Fix</span><span class="s1">] </span><span class="s2">`stringify`</span><span class="s1">: </span><span class="s2">encode comma values more consistently </span><span class="s1">(</span><span class="s2">#463</span><span class="s1">)</span>
+<span class="s0">- </span><span class="s1">[</span><span class="s2">readme</span><span class="s1">] </span><span class="s2">add usage of `filter` option for injecting custom serialization, i.e. of custom types </span><span class="s1">(</span><span class="s2">#447</span><span class="s1">)</span>
+<span class="s0">- </span><span class="s1">[</span><span class="s2">meta</span><span class="s1">] </span><span class="s2">remove extraneous code backticks </span><span class="s1">(</span><span class="s2">#457</span><span class="s1">)</span>
+<span class="s0">- </span><span class="s1">[</span><span class="s2">meta</span><span class="s1">] </span><span class="s2">fix changelog markdown</span>
+<span class="s0">- </span><span class="s1">[</span><span class="s2">actions</span><span class="s1">] </span><span class="s2">update checkout action</span>
+<span class="s0">- </span><span class="s1">[</span><span class="s2">actions</span><span class="s1">] </span><span class="s2">restrict action permissions</span>
+<span class="s0">- </span><span class="s1">[</span><span class="s2">Dev Deps</span><span class="s1">] </span><span class="s2">update `@ljharb/eslint-config`, `aud`, `object-inspect`, `tape`</span>
+
+<span class="s0">## </span><span class="s1">**</span><span class="s2">6.11.0</span><span class="s1">**</span>
+<span class="s0">- </span><span class="s1">[</span><span class="s2">New</span><span class="s1">] [</span><span class="s2">Fix</span><span class="s1">] </span><span class="s2">`stringify`</span><span class="s1">: </span><span class="s2">revert 0e903c0; add `commaRoundTrip` option </span><span class="s1">(</span><span class="s2">#442</span><span class="s1">)</span>
+<span class="s0">- </span><span class="s1">[</span><span class="s2">readme</span><span class="s1">] </span><span class="s2">fix version badge</span>
+
+<span class="s0">## </span><span class="s1">**</span><span class="s2">6.10.5</span><span class="s1">**</span>
+<span class="s0">- </span><span class="s1">[</span><span class="s2">Fix</span><span class="s1">] </span><span class="s2">`stringify`</span><span class="s1">: </span><span class="s2">with `arrayFormat</span><span class="s1">: </span><span class="s2">comma`, properly include an explicit `</span><span class="s1">[]</span><span class="s2">` on a single-item array </span><span class="s1">(</span><span class="s2">#434</span><span class="s1">)</span>
+
+<span class="s0">## </span><span class="s1">**</span><span class="s2">6.10.4</span><span class="s1">**</span>
+<span class="s0">- </span><span class="s1">[</span><span class="s2">Fix</span><span class="s1">] </span><span class="s2">`stringify`</span><span class="s1">: </span><span class="s2">with `arrayFormat</span><span class="s1">: </span><span class="s2">comma`, include an explicit `</span><span class="s1">[]</span><span class="s2">` on a single-item array </span><span class="s1">(</span><span class="s2">#441</span><span class="s1">)</span>
+<span class="s0">- </span><span class="s1">[</span><span class="s2">meta</span><span class="s1">] </span><span class="s2">use `npmignore` to autogenerate an npmignore file</span>
+<span class="s0">- </span><span class="s1">[</span><span class="s2">Dev Deps</span><span class="s1">] </span><span class="s2">update `eslint`, `@ljharb/eslint-config`, `aud`, `has-symbol`, `object-inspect`, `tape`</span>
+
+<span class="s0">## </span><span class="s1">**</span><span class="s2">6.10.3</span><span class="s1">**</span>
+<span class="s0">- </span><span class="s1">[</span><span class="s2">Fix</span><span class="s1">] </span><span class="s2">`parse`</span><span class="s1">: </span><span class="s2">ignore `</span><span class="s1">__</span><span class="s2">proto</span><span class="s1">__</span><span class="s2">` keys </span><span class="s1">(</span><span class="s2">#428</span><span class="s1">)</span>
+<span class="s0">- </span><span class="s1">[</span><span class="s2">Robustness</span><span class="s1">] </span><span class="s2">`stringify`</span><span class="s1">: </span><span class="s2">avoid relying on a global `undefined` </span><span class="s1">(</span><span class="s2">#427</span><span class="s1">)</span>
+<span class="s0">- </span><span class="s1">[</span><span class="s2">actions</span><span class="s1">] </span><span class="s2">reuse common workflows</span>
+<span class="s0">- </span><span class="s1">[</span><span class="s2">Dev Deps</span><span class="s1">] </span><span class="s2">update `eslint`, `@ljharb/eslint-config`, `object-inspect`, `tape`</span>
+
+<span class="s0">## </span><span class="s1">**</span><span class="s2">6.10.2</span><span class="s1">**</span>
+<span class="s0">- </span><span class="s1">[</span><span class="s2">Fix</span><span class="s1">] </span><span class="s2">`stringify`</span><span class="s1">: </span><span class="s2">actually fix cyclic references </span><span class="s1">(</span><span class="s2">#426</span><span class="s1">)</span>
+<span class="s0">- </span><span class="s1">[</span><span class="s2">Fix</span><span class="s1">] </span><span class="s2">`stringify`</span><span class="s1">: </span><span class="s2">avoid encoding arrayformat comma when `encodeValuesOnly = true` </span><span class="s1">(</span><span class="s2">#424</span><span class="s1">)</span>
+<span class="s0">- </span><span class="s1">[</span><span class="s2">readme</span><span class="s1">] </span><span class="s2">remove travis badge; add github actions/codecov badges; update URLs</span>
+<span class="s0">- </span><span class="s1">[</span><span class="s2">Docs</span><span class="s1">] </span><span class="s2">add note and links for coercing primitive values </span><span class="s1">(</span><span class="s2">#408</span><span class="s1">)</span>
+<span class="s0">- </span><span class="s1">[</span><span class="s2">actions</span><span class="s1">] </span><span class="s2">update codecov uploader</span>
+<span class="s0">- </span><span class="s1">[</span><span class="s2">actions</span><span class="s1">] </span><span class="s2">update workflows</span>
+<span class="s0">- </span><span class="s1">[</span><span class="s2">Tests</span><span class="s1">] </span><span class="s2">clean up stringify tests slightly</span>
+<span class="s0">- </span><span class="s1">[</span><span class="s2">Dev Deps</span><span class="s1">] </span><span class="s2">update `eslint`, `@ljharb/eslint-config`, `aud`, `object-inspect`, `safe-publish-latest`, `tape`</span>
+
+<span class="s0">## </span><span class="s1">**</span><span class="s2">6.10.1</span><span class="s1">**</span>
+<span class="s0">- </span><span class="s1">[</span><span class="s2">Fix</span><span class="s1">] </span><span class="s2">`stringify`</span><span class="s1">: </span><span class="s2">avoid exception on repeated object values </span><span class="s1">(</span><span class="s2">#402</span><span class="s1">)</span>
+
+<span class="s0">## </span><span class="s1">**</span><span class="s2">6.10.0</span><span class="s1">**</span>
+<span class="s0">- </span><span class="s1">[</span><span class="s2">New</span><span class="s1">] </span><span class="s2">`stringify`</span><span class="s1">: </span><span class="s2">throw on cycles, instead of an infinite loop </span><span class="s1">(</span><span class="s2">#395, #394, #393</span><span class="s1">)</span>
+<span class="s0">- </span><span class="s1">[</span><span class="s2">New</span><span class="s1">] </span><span class="s2">`parse`</span><span class="s1">: </span><span class="s2">add `allowSparse` option for collapsing arrays with missing indices </span><span class="s1">(</span><span class="s2">#312</span><span class="s1">)</span>
+<span class="s0">- </span><span class="s1">[</span><span class="s2">meta</span><span class="s1">] </span><span class="s2">fix README.md </span><span class="s1">(</span><span class="s2">#399</span><span class="s1">)</span>
+<span class="s0">- </span><span class="s1">[</span><span class="s2">meta</span><span class="s1">] </span><span class="s2">only run `npm run dist` in publish, not install</span>
+<span class="s0">- </span><span class="s1">[</span><span class="s2">Dev Deps</span><span class="s1">] </span><span class="s2">update `eslint`, `@ljharb/eslint-config`, `aud`, `has-symbols`, `tape`</span>
+<span class="s0">- </span><span class="s1">[</span><span class="s2">Tests</span><span class="s1">] </span><span class="s2">fix tests on node v0.6</span>
+<span class="s0">- </span><span class="s1">[</span><span class="s2">Tests</span><span class="s1">] </span><span class="s2">use `ljharb/actions/node/install` instead of `ljharb/actions/node/run`</span>
+<span class="s0">- </span><span class="s1">[</span><span class="s2">Tests</span><span class="s1">] </span><span class="s2">Revert </span><span class="s1">&quot;[</span><span class="s2">meta</span><span class="s1">] </span><span class="s2">ignore eclint transitive audit warning</span><span class="s1">&quot;</span>
+
+<span class="s0">## </span><span class="s1">**</span><span class="s2">6.9.7</span><span class="s1">**</span>
+<span class="s0">- </span><span class="s1">[</span><span class="s2">Fix</span><span class="s1">] </span><span class="s2">`parse`</span><span class="s1">: </span><span class="s2">ignore `</span><span class="s1">__</span><span class="s2">proto</span><span class="s1">__</span><span class="s2">` keys </span><span class="s1">(</span><span class="s2">#428</span><span class="s1">)</span>
+<span class="s0">- </span><span class="s1">[</span><span class="s2">Fix</span><span class="s1">] </span><span class="s2">`stringify`</span><span class="s1">: </span><span class="s2">avoid encoding arrayformat comma when `encodeValuesOnly = true` </span><span class="s1">(</span><span class="s2">#424</span><span class="s1">)</span>
+<span class="s0">- </span><span class="s1">[</span><span class="s2">Robustness</span><span class="s1">] </span><span class="s2">`stringify`</span><span class="s1">: </span><span class="s2">avoid relying on a global `undefined` </span><span class="s1">(</span><span class="s2">#427</span><span class="s1">)</span>
+<span class="s0">- </span><span class="s1">[</span><span class="s2">readme</span><span class="s1">] </span><span class="s2">remove travis badge; add github actions/codecov badges; update URLs</span>
+<span class="s0">- </span><span class="s1">[</span><span class="s2">Docs</span><span class="s1">] </span><span class="s2">add note and links for coercing primitive values </span><span class="s1">(</span><span class="s2">#408</span><span class="s1">)</span>
+<span class="s0">- </span><span class="s1">[</span><span class="s2">Tests</span><span class="s1">] </span><span class="s2">clean up stringify tests slightly</span>
+<span class="s0">- </span><span class="s1">[</span><span class="s2">meta</span><span class="s1">] </span><span class="s2">fix README.md </span><span class="s1">(</span><span class="s2">#399</span><span class="s1">)</span>
+<span class="s0">- </span><span class="s2">Revert </span><span class="s1">&quot;[</span><span class="s2">meta</span><span class="s1">] </span><span class="s2">ignore eclint transitive audit warning</span><span class="s1">&quot;</span>
+<span class="s0">- </span><span class="s1">[</span><span class="s2">actions</span><span class="s1">] </span><span class="s2">backport actions from main</span>
+<span class="s0">- </span><span class="s1">[</span><span class="s2">Dev Deps</span><span class="s1">] </span><span class="s2">backport updates from main</span>
+
+<span class="s0">## </span><span class="s1">**</span><span class="s2">6.9.6</span><span class="s1">**</span>
+<span class="s0">- </span><span class="s1">[</span><span class="s2">Fix</span><span class="s1">] </span><span class="s2">restore `dist` dir; mistakenly removed in d4f6c32</span>
+
+<span class="s0">## </span><span class="s1">**</span><span class="s2">6.9.5</span><span class="s1">**</span>
+<span class="s0">- </span><span class="s1">[</span><span class="s2">Fix</span><span class="s1">] </span><span class="s2">`stringify`</span><span class="s1">: </span><span class="s2">do not encode parens for RFC1738</span>
+<span class="s0">- </span><span class="s1">[</span><span class="s2">Fix</span><span class="s1">] </span><span class="s2">`stringify`</span><span class="s1">: </span><span class="s2">fix arrayFormat comma with empty array/objects </span><span class="s1">(</span><span class="s2">#350</span><span class="s1">)</span>
+<span class="s0">- </span><span class="s1">[</span><span class="s2">Refactor</span><span class="s1">] </span><span class="s2">`format`</span><span class="s1">: </span><span class="s2">remove `util.assign` call</span>
+<span class="s0">- </span><span class="s1">[</span><span class="s2">meta</span><span class="s1">] </span><span class="s2">add </span><span class="s1">&quot;</span><span class="s2">Allow Edits</span><span class="s1">&quot; </span><span class="s2">workflow; update rebase workflow</span>
+<span class="s0">- </span><span class="s1">[</span><span class="s2">actions</span><span class="s1">] </span><span class="s2">switch Automatic Rebase workflow to `pull_request_target` event</span>
+<span class="s0">- </span><span class="s1">[</span><span class="s2">Tests</span><span class="s1">] </span><span class="s2">`stringify`</span><span class="s1">: </span><span class="s2">add tests for #378</span>
+<span class="s0">- </span><span class="s1">[</span><span class="s2">Tests</span><span class="s1">] </span><span class="s2">migrate tests to Github Actions</span>
+<span class="s0">- </span><span class="s1">[</span><span class="s2">Tests</span><span class="s1">] </span><span class="s2">run `nyc` on all tests; use `tape` runner</span>
+<span class="s0">- </span><span class="s1">[</span><span class="s2">Dev Deps</span><span class="s1">] </span><span class="s2">update `eslint`, `@ljharb/eslint-config`, `browserify`, `mkdirp`, `object-inspect`, `tape`; add `aud`</span>
+
+<span class="s0">## </span><span class="s1">**</span><span class="s2">6.9.4</span><span class="s1">**</span>
+<span class="s0">- </span><span class="s1">[</span><span class="s2">Fix</span><span class="s1">] </span><span class="s2">`stringify`</span><span class="s1">: </span><span class="s2">when `arrayFormat` is `comma`, respect `serializeDate` </span><span class="s1">(</span><span class="s2">#364</span><span class="s1">)</span>
+<span class="s0">- </span><span class="s1">[</span><span class="s2">Refactor</span><span class="s1">] </span><span class="s2">`stringify`</span><span class="s1">: </span><span class="s2">reduce branching </span><span class="s1">(</span><span class="s2">part of #350</span><span class="s1">)</span>
+<span class="s0">- </span><span class="s1">[</span><span class="s2">Refactor</span><span class="s1">] </span><span class="s2">move `maybeMap` to `utils`</span>
+<span class="s0">- </span><span class="s1">[</span><span class="s2">Dev Deps</span><span class="s1">] </span><span class="s2">update `browserify`, `tape`</span>
+
+<span class="s0">## </span><span class="s1">**</span><span class="s2">6.9.3</span><span class="s1">**</span>
+<span class="s0">- </span><span class="s1">[</span><span class="s2">Fix</span><span class="s1">] </span><span class="s2">proper comma parsing of URL-encoded commas </span><span class="s1">(</span><span class="s2">#361</span><span class="s1">)</span>
+<span class="s0">- </span><span class="s1">[</span><span class="s2">Fix</span><span class="s1">] </span><span class="s2">parses comma delimited array while having percent-encoded comma treated as normal text </span><span class="s1">(</span><span class="s2">#336</span><span class="s1">)</span>
+
+<span class="s0">## </span><span class="s1">**</span><span class="s2">6.9.2</span><span class="s1">**</span>
+<span class="s0">- </span><span class="s1">[</span><span class="s2">Fix</span><span class="s1">] </span><span class="s2">`parse`</span><span class="s1">: </span><span class="s2">Fix parsing array from object with `comma` true </span><span class="s1">(</span><span class="s2">#359</span><span class="s1">)</span>
+<span class="s0">- </span><span class="s1">[</span><span class="s2">Fix</span><span class="s1">] </span><span class="s2">`parse`</span><span class="s1">: </span><span class="s2">throw a TypeError instead of an Error for bad charset </span><span class="s1">(</span><span class="s2">#349</span><span class="s1">)</span>
+<span class="s0">- </span><span class="s1">[</span><span class="s2">meta</span><span class="s1">] </span><span class="s2">ignore eclint transitive audit warning</span>
+<span class="s0">- </span><span class="s1">[</span><span class="s2">meta</span><span class="s1">] </span><span class="s2">fix indentation in package.json</span>
+<span class="s0">- </span><span class="s1">[</span><span class="s2">meta</span><span class="s1">] </span><span class="s2">add tidelift marketing copy</span>
+<span class="s0">- </span><span class="s1">[</span><span class="s2">Dev Deps</span><span class="s1">] </span><span class="s2">update `eslint`, `@ljharb/eslint-config`, `object-inspect`, `has-symbols`, `tape`, `mkdirp`, `iconv-lite`</span>
+<span class="s0">- </span><span class="s1">[</span><span class="s2">actions</span><span class="s1">] </span><span class="s2">add automatic rebasing / merge commit blocking</span>
+
+<span class="s0">## </span><span class="s1">**</span><span class="s2">6.9.1</span><span class="s1">**</span>
+<span class="s0">- </span><span class="s1">[</span><span class="s2">Fix</span><span class="s1">] </span><span class="s2">`parse`</span><span class="s1">: </span><span class="s2">with comma true, handle field that holds an array of arrays </span><span class="s1">(</span><span class="s2">#335</span><span class="s1">)</span>
+<span class="s0">- </span><span class="s1">[</span><span class="s2">Fix</span><span class="s1">] </span><span class="s2">`parse`</span><span class="s1">: </span><span class="s2">with comma true, do not split non-string values </span><span class="s1">(</span><span class="s2">#334</span><span class="s1">)</span>
+<span class="s0">- </span><span class="s1">[</span><span class="s2">meta</span><span class="s1">] </span><span class="s2">add `funding` field</span>
+<span class="s0">- </span><span class="s1">[</span><span class="s2">Dev Deps</span><span class="s1">] </span><span class="s2">update `eslint`, `@ljharb/eslint-config`</span>
+<span class="s0">- </span><span class="s1">[</span><span class="s2">Tests</span><span class="s1">] </span><span class="s2">use shared travis-ci config</span>
+
+<span class="s0">## </span><span class="s1">**</span><span class="s2">6.9.0</span><span class="s1">**</span>
+<span class="s0">- </span><span class="s1">[</span><span class="s2">New</span><span class="s1">] </span><span class="s2">`parse`/`stringify`</span><span class="s1">: </span><span class="s2">Pass extra key/value argument to `decoder` </span><span class="s1">(</span><span class="s2">#333</span><span class="s1">)</span>
+<span class="s0">- </span><span class="s1">[</span><span class="s2">Dev Deps</span><span class="s1">] </span><span class="s2">update `eslint`, `@ljharb/eslint-config`, `evalmd`</span>
+<span class="s0">- </span><span class="s1">[</span><span class="s2">Tests</span><span class="s1">] </span><span class="s2">`parse`</span><span class="s1">: </span><span class="s2">add passing `arrayFormat` tests</span>
+<span class="s0">- </span><span class="s1">[</span><span class="s2">Tests</span><span class="s1">] </span><span class="s2">add `posttest` using `npx aud` to run `npm audit` without a lockfile</span>
+<span class="s0">- </span><span class="s1">[</span><span class="s2">Tests</span><span class="s1">] </span><span class="s2">up to `node` `v12.10`, `v11.15`, `v10.16`, `v8.16`</span>
+<span class="s0">- </span><span class="s1">[</span><span class="s2">Tests</span><span class="s1">] </span><span class="s2">`Buffer.from` in node v5.0-v5.9 and v4.0-v4.4 requires a TypedArray</span>
+
+<span class="s0">## </span><span class="s1">**</span><span class="s2">6.8.3</span><span class="s1">**</span>
+<span class="s0">- </span><span class="s1">[</span><span class="s2">Fix</span><span class="s1">] </span><span class="s2">`parse`</span><span class="s1">: </span><span class="s2">ignore `</span><span class="s1">__</span><span class="s2">proto</span><span class="s1">__</span><span class="s2">` keys </span><span class="s1">(</span><span class="s2">#428</span><span class="s1">)</span>
+<span class="s0">- </span><span class="s1">[</span><span class="s2">Robustness</span><span class="s1">] </span><span class="s2">`stringify`</span><span class="s1">: </span><span class="s2">avoid relying on a global `undefined` </span><span class="s1">(</span><span class="s2">#427</span><span class="s1">)</span>
+<span class="s0">- </span><span class="s1">[</span><span class="s2">Fix</span><span class="s1">] </span><span class="s2">`stringify`</span><span class="s1">: </span><span class="s2">avoid encoding arrayformat comma when `encodeValuesOnly = true` </span><span class="s1">(</span><span class="s2">#424</span><span class="s1">)</span>
+<span class="s0">- </span><span class="s1">[</span><span class="s2">readme</span><span class="s1">] </span><span class="s2">remove travis badge; add github actions/codecov badges; update URLs</span>
+<span class="s0">- </span><span class="s1">[</span><span class="s2">Tests</span><span class="s1">] </span><span class="s2">clean up stringify tests slightly</span>
+<span class="s0">- </span><span class="s1">[</span><span class="s2">Docs</span><span class="s1">] </span><span class="s2">add note and links for coercing primitive values </span><span class="s1">(</span><span class="s2">#408</span><span class="s1">)</span>
+<span class="s0">- </span><span class="s1">[</span><span class="s2">meta</span><span class="s1">] </span><span class="s2">fix README.md </span><span class="s1">(</span><span class="s2">#399</span><span class="s1">)</span>
+<span class="s0">- </span><span class="s1">[</span><span class="s2">actions</span><span class="s1">] </span><span class="s2">backport actions from main</span>
+<span class="s0">- </span><span class="s1">[</span><span class="s2">Dev Deps</span><span class="s1">] </span><span class="s2">backport updates from main</span>
+<span class="s0">- </span><span class="s1">[</span><span class="s2">Refactor</span><span class="s1">] </span><span class="s2">`stringify`</span><span class="s1">: </span><span class="s2">reduce branching</span>
+<span class="s0">- </span><span class="s1">[</span><span class="s2">meta</span><span class="s1">] </span><span class="s2">do not publish workflow files</span>
+
+<span class="s0">## </span><span class="s1">**</span><span class="s2">6.8.2</span><span class="s1">**</span>
+<span class="s0">- </span><span class="s1">[</span><span class="s2">Fix</span><span class="s1">] </span><span class="s2">proper comma parsing of URL-encoded commas </span><span class="s1">(</span><span class="s2">#361</span><span class="s1">)</span>
+<span class="s0">- </span><span class="s1">[</span><span class="s2">Fix</span><span class="s1">] </span><span class="s2">parses comma delimited array while having percent-encoded comma treated as normal text </span><span class="s1">(</span><span class="s2">#336</span><span class="s1">)</span>
+
+<span class="s0">## </span><span class="s1">**</span><span class="s2">6.8.1</span><span class="s1">**</span>
+<span class="s0">- </span><span class="s1">[</span><span class="s2">Fix</span><span class="s1">] </span><span class="s2">`parse`</span><span class="s1">: </span><span class="s2">Fix parsing array from object with `comma` true </span><span class="s1">(</span><span class="s2">#359</span><span class="s1">)</span>
+<span class="s0">- </span><span class="s1">[</span><span class="s2">Fix</span><span class="s1">] </span><span class="s2">`parse`</span><span class="s1">: </span><span class="s2">throw a TypeError instead of an Error for bad charset </span><span class="s1">(</span><span class="s2">#349</span><span class="s1">)</span>
+<span class="s0">- </span><span class="s1">[</span><span class="s2">Fix</span><span class="s1">] </span><span class="s2">`parse`</span><span class="s1">: </span><span class="s2">with comma true, handle field that holds an array of arrays </span><span class="s1">(</span><span class="s2">#335</span><span class="s1">)</span>
+<span class="s0">- </span><span class="s1">[</span><span class="s2">fix</span><span class="s1">] </span><span class="s2">`parse`</span><span class="s1">: </span><span class="s2">with comma true, do not split non-string values </span><span class="s1">(</span><span class="s2">#334</span><span class="s1">)</span>
+<span class="s0">- </span><span class="s1">[</span><span class="s2">meta</span><span class="s1">] </span><span class="s2">add tidelift marketing copy</span>
+<span class="s0">- </span><span class="s1">[</span><span class="s2">meta</span><span class="s1">] </span><span class="s2">add `funding` field</span>
+<span class="s0">- </span><span class="s1">[</span><span class="s2">Dev Deps</span><span class="s1">] </span><span class="s2">update `eslint`, `@ljharb/eslint-config`, `tape`, `safe-publish-latest`, `evalmd`, `has-symbols`, `iconv-lite`, `mkdirp`, `object-inspect`</span>
+<span class="s0">- </span><span class="s1">[</span><span class="s2">Tests</span><span class="s1">] </span><span class="s2">`parse`</span><span class="s1">: </span><span class="s2">add passing `arrayFormat` tests</span>
+<span class="s0">- </span><span class="s1">[</span><span class="s2">Tests</span><span class="s1">] </span><span class="s2">use shared travis-ci configs</span>
+<span class="s0">- </span><span class="s1">[</span><span class="s2">Tests</span><span class="s1">] </span><span class="s2">`Buffer.from` in node v5.0-v5.9 and v4.0-v4.4 requires a TypedArray</span>
+<span class="s0">- </span><span class="s1">[</span><span class="s2">actions</span><span class="s1">] </span><span class="s2">add automatic rebasing / merge commit blocking</span>
+
+<span class="s0">## </span><span class="s1">**</span><span class="s2">6.8.0</span><span class="s1">**</span>
+<span class="s0">- </span><span class="s1">[</span><span class="s2">New</span><span class="s1">] </span><span class="s2">add `depth=false` to preserve the original key; </span><span class="s1">[</span><span class="s2">Fix</span><span class="s1">] </span><span class="s2">`depth=0` should preserve the original key </span><span class="s1">(</span><span class="s2">#326</span><span class="s1">)</span>
+<span class="s0">- </span><span class="s1">[</span><span class="s2">New</span><span class="s1">] [</span><span class="s2">Fix</span><span class="s1">] </span><span class="s2">stringify symbols and bigints</span>
+<span class="s0">- </span><span class="s1">[</span><span class="s2">Fix</span><span class="s1">] </span><span class="s2">ensure node 0.12 can stringify Symbols</span>
+<span class="s0">- </span><span class="s1">[</span><span class="s2">Fix</span><span class="s1">] </span><span class="s2">fix for an impossible situation</span><span class="s1">: </span><span class="s2">when the formatter is called with a non-string value</span>
+<span class="s0">- </span><span class="s1">[</span><span class="s2">Refactor</span><span class="s1">] </span><span class="s2">`formats`</span><span class="s1">: </span><span class="s2">tiny bit of cleanup.</span>
+<span class="s0">- </span><span class="s1">[</span><span class="s2">Dev Deps</span><span class="s1">] </span><span class="s2">update `eslint`, `@ljharb/eslint-config`, `browserify`, `safe-publish-latest`, `iconv-lite`, `tape`</span>
+<span class="s0">- </span><span class="s1">[</span><span class="s2">Tests</span><span class="s1">] </span><span class="s2">add tests for `depth=0` and `depth=false` behavior, both current and intuitive/intended </span><span class="s1">(</span><span class="s2">#326</span><span class="s1">)</span>
+<span class="s0">- </span><span class="s1">[</span><span class="s2">Tests</span><span class="s1">] </span><span class="s2">use `eclint` instead of `editorconfig-tools`</span>
+<span class="s0">- </span><span class="s1">[</span><span class="s2">docs</span><span class="s1">] </span><span class="s2">readme</span><span class="s1">: </span><span class="s2">add security note</span>
+<span class="s0">- </span><span class="s1">[</span><span class="s2">meta</span><span class="s1">] </span><span class="s2">add github sponsorship</span>
+<span class="s0">- </span><span class="s1">[</span><span class="s2">meta</span><span class="s1">] </span><span class="s2">add FUNDING.yml</span>
+<span class="s0">- </span><span class="s1">[</span><span class="s2">meta</span><span class="s1">] </span><span class="s2">Clean up license text so it’s properly detected as BSD-3-Clause</span>
+
+<span class="s0">## </span><span class="s1">**</span><span class="s2">6.7.3</span><span class="s1">**</span>
+<span class="s0">- </span><span class="s1">[</span><span class="s2">Fix</span><span class="s1">] </span><span class="s2">`parse`</span><span class="s1">: </span><span class="s2">ignore `</span><span class="s1">__</span><span class="s2">proto</span><span class="s1">__</span><span class="s2">` keys </span><span class="s1">(</span><span class="s2">#428</span><span class="s1">)</span>
+<span class="s0">- </span><span class="s1">[</span><span class="s2">Fix</span><span class="s1">] </span><span class="s2">`stringify`</span><span class="s1">: </span><span class="s2">avoid encoding arrayformat comma when `encodeValuesOnly = true` </span><span class="s1">(</span><span class="s2">#424</span><span class="s1">)</span>
+<span class="s0">- </span><span class="s1">[</span><span class="s2">Robustness</span><span class="s1">] </span><span class="s2">`stringify`</span><span class="s1">: </span><span class="s2">avoid relying on a global `undefined` </span><span class="s1">(</span><span class="s2">#427</span><span class="s1">)</span>
+<span class="s0">- </span><span class="s1">[</span><span class="s2">readme</span><span class="s1">] </span><span class="s2">remove travis badge; add github actions/codecov badges; update URLs</span>
+<span class="s0">- </span><span class="s1">[</span><span class="s2">Docs</span><span class="s1">] </span><span class="s2">add note and links for coercing primitive values </span><span class="s1">(</span><span class="s2">#408</span><span class="s1">)</span>
+<span class="s0">- </span><span class="s1">[</span><span class="s2">meta</span><span class="s1">] </span><span class="s2">fix README.md </span><span class="s1">(</span><span class="s2">#399</span><span class="s1">)</span>
+<span class="s0">- </span><span class="s1">[</span><span class="s2">meta</span><span class="s1">] </span><span class="s2">do not publish workflow files</span>
+<span class="s0">- </span><span class="s1">[</span><span class="s2">actions</span><span class="s1">] </span><span class="s2">backport actions from main</span>
+<span class="s0">- </span><span class="s1">[</span><span class="s2">Dev Deps</span><span class="s1">] </span><span class="s2">backport updates from main</span>
+<span class="s0">- </span><span class="s1">[</span><span class="s2">Tests</span><span class="s1">] </span><span class="s2">use `nyc` for coverage</span>
+<span class="s0">- </span><span class="s1">[</span><span class="s2">Tests</span><span class="s1">] </span><span class="s2">clean up stringify tests slightly</span>
+
+<span class="s0">## </span><span class="s1">**</span><span class="s2">6.7.2</span><span class="s1">**</span>
+<span class="s0">- </span><span class="s1">[</span><span class="s2">Fix</span><span class="s1">] </span><span class="s2">proper comma parsing of URL-encoded commas </span><span class="s1">(</span><span class="s2">#361</span><span class="s1">)</span>
+<span class="s0">- </span><span class="s1">[</span><span class="s2">Fix</span><span class="s1">] </span><span class="s2">parses comma delimited array while having percent-encoded comma treated as normal text </span><span class="s1">(</span><span class="s2">#336</span><span class="s1">)</span>
+
+<span class="s0">## </span><span class="s1">**</span><span class="s2">6.7.1</span><span class="s1">**</span>
+<span class="s0">- </span><span class="s1">[</span><span class="s2">Fix</span><span class="s1">] </span><span class="s2">`parse`</span><span class="s1">: </span><span class="s2">Fix parsing array from object with `comma` true </span><span class="s1">(</span><span class="s2">#359</span><span class="s1">)</span>
+<span class="s0">- </span><span class="s1">[</span><span class="s2">Fix</span><span class="s1">] </span><span class="s2">`parse`</span><span class="s1">: </span><span class="s2">with comma true, handle field that holds an array of arrays </span><span class="s1">(</span><span class="s2">#335</span><span class="s1">)</span>
+<span class="s0">- </span><span class="s1">[</span><span class="s2">fix</span><span class="s1">] </span><span class="s2">`parse`</span><span class="s1">: </span><span class="s2">with comma true, do not split non-string values </span><span class="s1">(</span><span class="s2">#334</span><span class="s1">)</span>
+<span class="s0">- </span><span class="s1">[</span><span class="s2">Fix</span><span class="s1">] </span><span class="s2">`parse`</span><span class="s1">: </span><span class="s2">throw a TypeError instead of an Error for bad charset </span><span class="s1">(</span><span class="s2">#349</span><span class="s1">)</span>
+<span class="s0">- </span><span class="s1">[</span><span class="s2">Fix</span><span class="s1">] </span><span class="s2">fix for an impossible situation</span><span class="s1">: </span><span class="s2">when the formatter is called with a non-string value</span>
+<span class="s0">- </span><span class="s1">[</span><span class="s2">Refactor</span><span class="s1">] </span><span class="s2">`formats`</span><span class="s1">: </span><span class="s2">tiny bit of cleanup.</span>
+<span class="s0">- </span><span class="s2">readme</span><span class="s1">: </span><span class="s2">add security note</span>
+<span class="s0">- </span><span class="s1">[</span><span class="s2">meta</span><span class="s1">] </span><span class="s2">add tidelift marketing copy</span>
+<span class="s0">- </span><span class="s1">[</span><span class="s2">meta</span><span class="s1">] </span><span class="s2">add `funding` field</span>
+<span class="s0">- </span><span class="s1">[</span><span class="s2">meta</span><span class="s1">] </span><span class="s2">add FUNDING.yml</span>
+<span class="s0">- </span><span class="s1">[</span><span class="s2">meta</span><span class="s1">] </span><span class="s2">Clean up license text so it’s properly detected as BSD-3-Clause</span>
+<span class="s0">- </span><span class="s1">[</span><span class="s2">Dev Deps</span><span class="s1">] </span><span class="s2">update `eslint`, `@ljharb/eslint-config`, `tape`, `safe-publish-latest`, `evalmd`, `iconv-lite`, `mkdirp`, `object-inspect`, `browserify`</span>
+<span class="s0">- </span><span class="s1">[</span><span class="s2">Tests</span><span class="s1">] </span><span class="s2">`parse`</span><span class="s1">: </span><span class="s2">add passing `arrayFormat` tests</span>
+<span class="s0">- </span><span class="s1">[</span><span class="s2">Tests</span><span class="s1">] </span><span class="s2">use shared travis-ci configs</span>
+<span class="s0">- </span><span class="s1">[</span><span class="s2">Tests</span><span class="s1">] </span><span class="s2">`Buffer.from` in node v5.0-v5.9 and v4.0-v4.4 requires a TypedArray</span>
+<span class="s0">- </span><span class="s1">[</span><span class="s2">Tests</span><span class="s1">] </span><span class="s2">add tests for `depth=0` and `depth=false` behavior, both current and intuitive/intended</span>
+<span class="s0">- </span><span class="s1">[</span><span class="s2">Tests</span><span class="s1">] </span><span class="s2">use `eclint` instead of `editorconfig-tools`</span>
+<span class="s0">- </span><span class="s1">[</span><span class="s2">actions</span><span class="s1">] </span><span class="s2">add automatic rebasing / merge commit blocking</span>
+
+<span class="s0">## </span><span class="s1">**</span><span class="s2">6.7.0</span><span class="s1">**</span>
+<span class="s0">- </span><span class="s1">[</span><span class="s2">New</span><span class="s1">] </span><span class="s2">`stringify`/`parse`</span><span class="s1">: </span><span class="s2">add `comma` as an `arrayFormat` option </span><span class="s1">(</span><span class="s2">#276, #219</span><span class="s1">)</span>
+<span class="s0">- </span><span class="s1">[</span><span class="s2">Fix</span><span class="s1">] </span><span class="s2">correctly parse nested arrays </span><span class="s1">(</span><span class="s2">#212</span><span class="s1">)</span>
+<span class="s0">- </span><span class="s1">[</span><span class="s2">Fix</span><span class="s1">] </span><span class="s2">`utils.merge`</span><span class="s1">: </span><span class="s2">avoid a crash with a null target and a truthy non-array source, also with an array source</span>
+<span class="s0">- </span><span class="s1">[</span><span class="s2">Robustness</span><span class="s1">] </span><span class="s2">`stringify`</span><span class="s1">: </span><span class="s2">cache `Object.prototype.hasOwnProperty`</span>
+<span class="s0">- </span><span class="s1">[</span><span class="s2">Refactor</span><span class="s1">] </span><span class="s2">`utils`</span><span class="s1">: </span><span class="s2">`isBuffer`</span><span class="s1">: </span><span class="s2">small tweak; add tests</span>
+<span class="s0">- </span><span class="s1">[</span><span class="s2">Refactor</span><span class="s1">] </span><span class="s2">use cached `Array.isArray`</span>
+<span class="s0">- </span><span class="s1">[</span><span class="s2">Refactor</span><span class="s1">] </span><span class="s2">`parse`/`stringify`</span><span class="s1">: </span><span class="s2">make a function to normalize the options</span>
+<span class="s0">- </span><span class="s1">[</span><span class="s2">Refactor</span><span class="s1">] </span><span class="s2">`utils`</span><span class="s1">: </span><span class="s2">reduce observable </span><span class="s1">[[</span><span class="s2">Get</span><span class="s1">]]</span><span class="s2">s</span>
+<span class="s0">- </span><span class="s1">[</span><span class="s2">Refactor</span><span class="s1">] </span><span class="s2">`stringify`/`utils`</span><span class="s1">: </span><span class="s2">cache `Array.isArray`</span>
+<span class="s0">- </span><span class="s1">[</span><span class="s2">Tests</span><span class="s1">] </span><span class="s2">always use `String</span><span class="s1">(</span><span class="s2">x</span><span class="s1">)</span><span class="s2">` over `x.toString</span><span class="s1">()</span><span class="s2">`</span>
+<span class="s0">- </span><span class="s1">[</span><span class="s2">Tests</span><span class="s1">] </span><span class="s2">fix Buffer tests to work in node </span><span class="s1">&lt; </span><span class="s2">4.5 and node </span><span class="s1">&lt; </span><span class="s2">5.10</span>
+<span class="s0">- </span><span class="s1">[</span><span class="s2">Tests</span><span class="s1">] </span><span class="s2">temporarily allow coverage to fail</span>
+
+<span class="s0">## </span><span class="s1">**</span><span class="s2">6.6.1</span><span class="s1">**</span>
+<span class="s0">- </span><span class="s1">[</span><span class="s2">Fix</span><span class="s1">] </span><span class="s2">`parse`</span><span class="s1">: </span><span class="s2">ignore `</span><span class="s1">__</span><span class="s2">proto</span><span class="s1">__</span><span class="s2">` keys </span><span class="s1">(</span><span class="s2">#428</span><span class="s1">)</span>
+<span class="s0">- </span><span class="s1">[</span><span class="s2">Fix</span><span class="s1">] </span><span class="s2">fix for an impossible situation</span><span class="s1">: </span><span class="s2">when the formatter is called with a non-string value</span>
+<span class="s0">- </span><span class="s1">[</span><span class="s2">Fix</span><span class="s1">] </span><span class="s2">`utils.merge`</span><span class="s1">: </span><span class="s2">avoid a crash with a null target and an array source</span>
+<span class="s0">- </span><span class="s1">[</span><span class="s2">Fix</span><span class="s1">] </span><span class="s2">`utils.merge`</span><span class="s1">: </span><span class="s2">avoid a crash with a null target and a truthy non-array source</span>
+<span class="s0">- </span><span class="s1">[</span><span class="s2">Fix</span><span class="s1">] </span><span class="s2">correctly parse nested arrays</span>
+<span class="s0">- </span><span class="s1">[</span><span class="s2">Robustness</span><span class="s1">] </span><span class="s2">`stringify`</span><span class="s1">: </span><span class="s2">avoid relying on a global `undefined` </span><span class="s1">(</span><span class="s2">#427</span><span class="s1">)</span>
+<span class="s0">- </span><span class="s1">[</span><span class="s2">Robustness</span><span class="s1">] </span><span class="s2">`stringify`</span><span class="s1">: </span><span class="s2">cache `Object.prototype.hasOwnProperty`</span>
+<span class="s0">- </span><span class="s1">[</span><span class="s2">Refactor</span><span class="s1">] </span><span class="s2">`formats`</span><span class="s1">: </span><span class="s2">tiny bit of cleanup.</span>
+<span class="s0">- </span><span class="s1">[</span><span class="s2">Refactor</span><span class="s1">] </span><span class="s2">`utils`</span><span class="s1">: </span><span class="s2">`isBuffer`</span><span class="s1">: </span><span class="s2">small tweak; add tests</span>
+<span class="s0">- </span><span class="s1">[</span><span class="s2">Refactor</span><span class="s1">]: </span><span class="s2">`stringify`/`utils`</span><span class="s1">: </span><span class="s2">cache `Array.isArray`</span>
+<span class="s0">- </span><span class="s1">[</span><span class="s2">Refactor</span><span class="s1">] </span><span class="s2">`utils`</span><span class="s1">: </span><span class="s2">reduce observable </span><span class="s1">[[</span><span class="s2">Get</span><span class="s1">]]</span><span class="s2">s</span>
+<span class="s0">- </span><span class="s1">[</span><span class="s2">Refactor</span><span class="s1">] </span><span class="s2">use cached `Array.isArray`</span>
+<span class="s0">- </span><span class="s1">[</span><span class="s2">Refactor</span><span class="s1">] </span><span class="s2">`parse`/`stringify`</span><span class="s1">: </span><span class="s2">make a function to normalize the options</span>
+<span class="s0">- </span><span class="s1">[</span><span class="s2">readme</span><span class="s1">] </span><span class="s2">remove travis badge; add github actions/codecov badges; update URLs</span>
+<span class="s0">- </span><span class="s1">[</span><span class="s2">Docs</span><span class="s1">] </span><span class="s2">Clarify the need for </span><span class="s1">&quot;</span><span class="s2">arrayLimit</span><span class="s1">&quot; </span><span class="s2">option</span>
+<span class="s0">- </span><span class="s1">[</span><span class="s2">meta</span><span class="s1">] </span><span class="s2">fix README.md </span><span class="s1">(</span><span class="s2">#399</span><span class="s1">)</span>
+<span class="s0">- </span><span class="s1">[</span><span class="s2">meta</span><span class="s1">] </span><span class="s2">do not publish workflow files</span>
+<span class="s0">- </span><span class="s1">[</span><span class="s2">meta</span><span class="s1">] </span><span class="s2">Clean up license text so it’s properly detected as BSD-3-Clause</span>
+<span class="s0">- </span><span class="s1">[</span><span class="s2">meta</span><span class="s1">] </span><span class="s2">add FUNDING.yml</span>
+<span class="s0">- </span><span class="s1">[</span><span class="s2">meta</span><span class="s1">] </span><span class="s2">Fixes typo in CHANGELOG.md</span>
+<span class="s0">- </span><span class="s1">[</span><span class="s2">actions</span><span class="s1">] </span><span class="s2">backport actions from main</span>
+<span class="s0">- </span><span class="s1">[</span><span class="s2">Tests</span><span class="s1">] </span><span class="s2">fix Buffer tests to work in node </span><span class="s1">&lt; </span><span class="s2">4.5 and node </span><span class="s1">&lt; </span><span class="s2">5.10</span>
+<span class="s0">- </span><span class="s1">[</span><span class="s2">Tests</span><span class="s1">] </span><span class="s2">always use `String</span><span class="s1">(</span><span class="s2">x</span><span class="s1">)</span><span class="s2">` over `x.toString</span><span class="s1">()</span><span class="s2">`</span>
+<span class="s0">- </span><span class="s1">[</span><span class="s2">Dev Deps</span><span class="s1">] </span><span class="s2">backport from main</span>
+
+<span class="s0">## </span><span class="s1">**</span><span class="s2">6.6.0</span><span class="s1">**</span>
+<span class="s0">- </span><span class="s1">[</span><span class="s2">New</span><span class="s1">] </span><span class="s2">Add support for iso-8859-1, utf8 </span><span class="s1">&quot;</span><span class="s2">sentinel</span><span class="s1">&quot; </span><span class="s2">and numeric entities </span><span class="s1">(</span><span class="s2">#268</span><span class="s1">)</span>
+<span class="s0">- </span><span class="s1">[</span><span class="s2">New</span><span class="s1">] </span><span class="s2">move two-value combine to a `utils` function </span><span class="s1">(</span><span class="s2">#189</span><span class="s1">)</span>
+<span class="s0">- </span><span class="s1">[</span><span class="s2">Fix</span><span class="s1">] </span><span class="s2">`stringify`</span><span class="s1">: </span><span class="s2">fix a crash with `strictNullHandling` and a custom `filter`/`serializeDate` </span><span class="s1">(</span><span class="s2">#279</span><span class="s1">)</span>
+<span class="s0">- </span><span class="s1">[</span><span class="s2">Fix</span><span class="s1">] </span><span class="s2">when `parseArrays` is false, properly handle keys ending in `</span><span class="s1">[]</span><span class="s2">` </span><span class="s1">(</span><span class="s2">#260</span><span class="s1">)</span>
+<span class="s0">- </span><span class="s1">[</span><span class="s2">Fix</span><span class="s1">] </span><span class="s2">`stringify`</span><span class="s1">: </span><span class="s2">do not crash in an obscure combo of `interpretNumericEntities`, a bad custom `decoder`, &amp; `iso-8859-1`</span>
+<span class="s0">- </span><span class="s1">[</span><span class="s2">Fix</span><span class="s1">] </span><span class="s2">`utils`</span><span class="s1">: </span><span class="s2">`merge`</span><span class="s1">: </span><span class="s2">fix crash when `source` is a truthy primitive &amp; no options are provided</span>
+<span class="s0">- </span><span class="s1">[</span><span class="s2">refactor</span><span class="s1">] </span><span class="s2">`stringify`</span><span class="s1">: </span><span class="s2">Avoid arr = arr.concat</span><span class="s1">(</span><span class="s2">...</span><span class="s1">)</span><span class="s2">, push to the existing instance </span><span class="s1">(</span><span class="s2">#269</span><span class="s1">)</span>
+<span class="s0">- </span><span class="s1">[</span><span class="s2">Refactor</span><span class="s1">] </span><span class="s2">`parse`</span><span class="s1">: </span><span class="s2">only need to reassign the var once</span>
+<span class="s0">- </span><span class="s1">[</span><span class="s2">Refactor</span><span class="s1">] </span><span class="s2">`parse`/`stringify`</span><span class="s1">: </span><span class="s2">clean up `charset` options checking; fix defaults</span>
+<span class="s0">- </span><span class="s1">[</span><span class="s2">Refactor</span><span class="s1">] </span><span class="s2">add missing defaults</span>
+<span class="s0">- </span><span class="s1">[</span><span class="s2">Refactor</span><span class="s1">] </span><span class="s2">`parse`</span><span class="s1">: </span><span class="s2">one less `concat` call</span>
+<span class="s0">- </span><span class="s1">[</span><span class="s2">Refactor</span><span class="s1">] </span><span class="s2">`utils`</span><span class="s1">: </span><span class="s2">`compactQueue`</span><span class="s1">: </span><span class="s2">make it explicitly side-effecting</span>
+<span class="s0">- </span><span class="s1">[</span><span class="s2">Dev Deps</span><span class="s1">] </span><span class="s2">update `browserify`, `eslint`, `@ljharb/eslint-config`, `iconv-lite`, `safe-publish-latest`, `tape`</span>
+<span class="s0">- </span><span class="s1">[</span><span class="s2">Tests</span><span class="s1">] </span><span class="s2">up to `node` `v10.10`, `v9.11`, `v8.12`, `v6.14`, `v4.9`; pin included builds to LTS</span>
+
+<span class="s0">## </span><span class="s1">**</span><span class="s2">6.5.3</span><span class="s1">**</span>
+<span class="s0">- </span><span class="s1">[</span><span class="s2">Fix</span><span class="s1">] </span><span class="s2">`parse`</span><span class="s1">: </span><span class="s2">ignore `</span><span class="s1">__</span><span class="s2">proto</span><span class="s1">__</span><span class="s2">` keys </span><span class="s1">(</span><span class="s2">#428</span><span class="s1">)</span>
+<span class="s0">- </span><span class="s1">[</span><span class="s2">Fix</span><span class="s1">] </span><span class="s2">`utils.merge`</span><span class="s1">: </span><span class="s2">avoid a crash with a null target and a truthy non-array source</span>
+<span class="s0">- </span><span class="s1">[</span><span class="s2">Fix</span><span class="s1">] </span><span class="s2">correctly parse nested arrays</span>
+<span class="s0">- </span><span class="s1">[</span><span class="s2">Fix</span><span class="s1">] </span><span class="s2">`stringify`</span><span class="s1">: </span><span class="s2">fix a crash with `strictNullHandling` and a custom `filter`/`serializeDate` </span><span class="s1">(</span><span class="s2">#279</span><span class="s1">)</span>
+<span class="s0">- </span><span class="s1">[</span><span class="s2">Fix</span><span class="s1">] </span><span class="s2">`utils`</span><span class="s1">: </span><span class="s2">`merge`</span><span class="s1">: </span><span class="s2">fix crash when `source` is a truthy primitive &amp; no options are provided</span>
+<span class="s0">- </span><span class="s1">[</span><span class="s2">Fix</span><span class="s1">] </span><span class="s2">when `parseArrays` is false, properly handle keys ending in `</span><span class="s1">[]</span><span class="s2">`</span>
+<span class="s0">- </span><span class="s1">[</span><span class="s2">Fix</span><span class="s1">] </span><span class="s2">fix for an impossible situation</span><span class="s1">: </span><span class="s2">when the formatter is called with a non-string value</span>
+<span class="s0">- </span><span class="s1">[</span><span class="s2">Fix</span><span class="s1">] </span><span class="s2">`utils.merge`</span><span class="s1">: </span><span class="s2">avoid a crash with a null target and an array source</span>
+<span class="s0">- </span><span class="s1">[</span><span class="s2">Refactor</span><span class="s1">] </span><span class="s2">`utils`</span><span class="s1">: </span><span class="s2">reduce observable </span><span class="s1">[[</span><span class="s2">Get</span><span class="s1">]]</span><span class="s2">s</span>
+<span class="s0">- </span><span class="s1">[</span><span class="s2">Refactor</span><span class="s1">] </span><span class="s2">use cached `Array.isArray`</span>
+<span class="s0">- </span><span class="s1">[</span><span class="s2">Refactor</span><span class="s1">] </span><span class="s2">`stringify`</span><span class="s1">: </span><span class="s2">Avoid arr = arr.concat</span><span class="s1">(</span><span class="s2">...</span><span class="s1">)</span><span class="s2">, push to the existing instance </span><span class="s1">(</span><span class="s2">#269</span><span class="s1">)</span>
+<span class="s0">- </span><span class="s1">[</span><span class="s2">Refactor</span><span class="s1">] </span><span class="s2">`parse`</span><span class="s1">: </span><span class="s2">only need to reassign the var once</span>
+<span class="s0">- </span><span class="s1">[</span><span class="s2">Robustness</span><span class="s1">] </span><span class="s2">`stringify`</span><span class="s1">: </span><span class="s2">avoid relying on a global `undefined` </span><span class="s1">(</span><span class="s2">#427</span><span class="s1">)</span>
+<span class="s0">- </span><span class="s1">[</span><span class="s2">readme</span><span class="s1">] </span><span class="s2">remove travis badge; add github actions/codecov badges; update URLs</span>
+<span class="s0">- </span><span class="s1">[</span><span class="s2">Docs</span><span class="s1">] </span><span class="s2">Clean up license text so it’s properly detected as BSD-3-Clause</span>
+<span class="s0">- </span><span class="s1">[</span><span class="s2">Docs</span><span class="s1">] </span><span class="s2">Clarify the need for </span><span class="s1">&quot;</span><span class="s2">arrayLimit</span><span class="s1">&quot; </span><span class="s2">option</span>
+<span class="s0">- </span><span class="s1">[</span><span class="s2">meta</span><span class="s1">] </span><span class="s2">fix README.md </span><span class="s1">(</span><span class="s2">#399</span><span class="s1">)</span>
+<span class="s0">- </span><span class="s1">[</span><span class="s2">meta</span><span class="s1">] </span><span class="s2">add FUNDING.yml</span>
+<span class="s0">- </span><span class="s1">[</span><span class="s2">actions</span><span class="s1">] </span><span class="s2">backport actions from main</span>
+<span class="s0">- </span><span class="s1">[</span><span class="s2">Tests</span><span class="s1">] </span><span class="s2">always use `String</span><span class="s1">(</span><span class="s2">x</span><span class="s1">)</span><span class="s2">` over `x.toString</span><span class="s1">()</span><span class="s2">`</span>
+<span class="s0">- </span><span class="s1">[</span><span class="s2">Tests</span><span class="s1">] </span><span class="s2">remove nonexistent tape option</span>
+<span class="s0">- </span><span class="s1">[</span><span class="s2">Dev Deps</span><span class="s1">] </span><span class="s2">backport from main</span>
+
+<span class="s0">## </span><span class="s1">**</span><span class="s2">6.5.2</span><span class="s1">**</span>
+<span class="s0">- </span><span class="s1">[</span><span class="s2">Fix</span><span class="s1">] </span><span class="s2">use `safer-buffer` instead of `Buffer` constructor</span>
+<span class="s0">- </span><span class="s1">[</span><span class="s2">Refactor</span><span class="s1">] </span><span class="s2">utils</span><span class="s1">: </span><span class="s2">`module.exports` one thing, instead of mutating `exports` </span><span class="s1">(</span><span class="s2">#230</span><span class="s1">)</span>
+<span class="s0">- </span><span class="s1">[</span><span class="s2">Dev Deps</span><span class="s1">] </span><span class="s2">update `browserify`, `eslint`, `iconv-lite`, `safer-buffer`, `tape`, `browserify`</span>
+
+<span class="s0">## </span><span class="s1">**</span><span class="s2">6.5.1</span><span class="s1">**</span>
+<span class="s0">- </span><span class="s1">[</span><span class="s2">Fix</span><span class="s1">] </span><span class="s2">Fix parsing &amp; compacting very deep objects </span><span class="s1">(</span><span class="s2">#224</span><span class="s1">)</span>
+<span class="s0">- </span><span class="s1">[</span><span class="s2">Refactor</span><span class="s1">] </span><span class="s2">name utils functions</span>
+<span class="s0">- </span><span class="s1">[</span><span class="s2">Dev Deps</span><span class="s1">] </span><span class="s2">update `eslint`, `@ljharb/eslint-config`, `tape`</span>
+<span class="s0">- </span><span class="s1">[</span><span class="s2">Tests</span><span class="s1">] </span><span class="s2">up to `node` `v8.4`; use `nvm install-latest-npm` so newer npm doesn’t break older node</span>
+<span class="s0">- </span><span class="s1">[</span><span class="s2">Tests</span><span class="s1">] </span><span class="s2">Use precise dist for Node.js 0.6 runtime </span><span class="s1">(</span><span class="s2">#225</span><span class="s1">)</span>
+<span class="s0">- </span><span class="s1">[</span><span class="s2">Tests</span><span class="s1">] </span><span class="s2">make 0.6 required, now that it’s passing</span>
+<span class="s0">- </span><span class="s1">[</span><span class="s2">Tests</span><span class="s1">] </span><span class="s2">on `node` `v8.2`; fix npm on node 0.6</span>
+
+<span class="s0">## </span><span class="s1">**</span><span class="s2">6.5.0</span><span class="s1">**</span>
+<span class="s0">- </span><span class="s1">[</span><span class="s2">New</span><span class="s1">] </span><span class="s2">add `utils.assign`</span>
+<span class="s0">- </span><span class="s1">[</span><span class="s2">New</span><span class="s1">] </span><span class="s2">pass default encoder/decoder to custom encoder/decoder functions </span><span class="s1">(</span><span class="s2">#206</span><span class="s1">)</span>
+<span class="s0">- </span><span class="s1">[</span><span class="s2">New</span><span class="s1">] </span><span class="s2">`parse`/`stringify`</span><span class="s1">: </span><span class="s2">add `ignoreQueryPrefix`/`addQueryPrefix` options, respectively </span><span class="s1">(</span><span class="s2">#213</span><span class="s1">)</span>
+<span class="s0">- </span><span class="s1">[</span><span class="s2">Fix</span><span class="s1">] </span><span class="s2">Handle stringifying empty objects with addQueryPrefix </span><span class="s1">(</span><span class="s2">#217</span><span class="s1">)</span>
+<span class="s0">- </span><span class="s1">[</span><span class="s2">Fix</span><span class="s1">] </span><span class="s2">do not mutate `options` argument </span><span class="s1">(</span><span class="s2">#207</span><span class="s1">)</span>
+<span class="s0">- </span><span class="s1">[</span><span class="s2">Refactor</span><span class="s1">] </span><span class="s2">`parse`</span><span class="s1">: </span><span class="s2">cache index to reuse in else statement </span><span class="s1">(</span><span class="s2">#182</span><span class="s1">)</span>
+<span class="s0">- </span><span class="s1">[</span><span class="s2">Docs</span><span class="s1">] </span><span class="s2">add various badges to readme </span><span class="s1">(</span><span class="s2">#208</span><span class="s1">)</span>
+<span class="s0">- </span><span class="s1">[</span><span class="s2">Dev Deps</span><span class="s1">] </span><span class="s2">update `eslint`, `browserify`, `iconv-lite`, `tape`</span>
+<span class="s0">- </span><span class="s1">[</span><span class="s2">Tests</span><span class="s1">] </span><span class="s2">up to `node` `v8.1`, `v7.10`, `v6.11`; npm v4.6 breaks on node </span><span class="s1">&lt; </span><span class="s2">v1; npm v5+ breaks on node </span><span class="s1">&lt; </span><span class="s2">v4</span>
+<span class="s0">- </span><span class="s1">[</span><span class="s2">Tests</span><span class="s1">] </span><span class="s2">add `editorconfig-tools`</span>
+
+<span class="s0">## </span><span class="s1">**</span><span class="s2">6.4.1</span><span class="s1">**</span>
+<span class="s0">- </span><span class="s1">[</span><span class="s2">Fix</span><span class="s1">] </span><span class="s2">`parse`</span><span class="s1">: </span><span class="s2">ignore `</span><span class="s1">__</span><span class="s2">proto</span><span class="s1">__</span><span class="s2">` keys </span><span class="s1">(</span><span class="s2">#428</span><span class="s1">)</span>
+<span class="s0">- </span><span class="s1">[</span><span class="s2">Fix</span><span class="s1">] </span><span class="s2">fix for an impossible situation</span><span class="s1">: </span><span class="s2">when the formatter is called with a non-string value</span>
+<span class="s0">- </span><span class="s1">[</span><span class="s2">Fix</span><span class="s1">] </span><span class="s2">use `safer-buffer` instead of `Buffer` constructor</span>
+<span class="s0">- </span><span class="s1">[</span><span class="s2">Fix</span><span class="s1">] </span><span class="s2">`utils.merge`</span><span class="s1">: </span><span class="s2">avoid a crash with a null target and an array source</span>
+<span class="s0">- </span><span class="s1">[</span><span class="s2">Fix</span><span class="s1">] </span><span class="s2">`utils.merge`</span><span class="s1">: </span><span class="s2">avoid a crash with a null target and a truthy non-array source</span>
+<span class="s0">- </span><span class="s1">[</span><span class="s2">Fix</span><span class="s1">] </span><span class="s2">`stringify`</span><span class="s1">: </span><span class="s2">fix a crash with `strictNullHandling` and a custom `filter`/`serializeDate` </span><span class="s1">(</span><span class="s2">#279</span><span class="s1">)</span>
+<span class="s0">- </span><span class="s1">[</span><span class="s2">Fix</span><span class="s1">] </span><span class="s2">`utils`</span><span class="s1">: </span><span class="s2">`merge`</span><span class="s1">: </span><span class="s2">fix crash when `source` is a truthy primitive &amp; no options are provided</span>
+<span class="s0">- </span><span class="s1">[</span><span class="s2">Fix</span><span class="s1">] </span><span class="s2">when `parseArrays` is false, properly handle keys ending in `</span><span class="s1">[]</span><span class="s2">`</span>
+<span class="s0">- </span><span class="s1">[</span><span class="s2">Robustness</span><span class="s1">] </span><span class="s2">`stringify`</span><span class="s1">: </span><span class="s2">avoid relying on a global `undefined` </span><span class="s1">(</span><span class="s2">#427</span><span class="s1">)</span>
+<span class="s0">- </span><span class="s1">[</span><span class="s2">Refactor</span><span class="s1">] </span><span class="s2">use cached `Array.isArray`</span>
+<span class="s0">- </span><span class="s1">[</span><span class="s2">Refactor</span><span class="s1">] </span><span class="s2">`stringify`</span><span class="s1">: </span><span class="s2">Avoid arr = arr.concat</span><span class="s1">(</span><span class="s2">...</span><span class="s1">)</span><span class="s2">, push to the existing instance </span><span class="s1">(</span><span class="s2">#269</span><span class="s1">)</span>
+<span class="s0">- </span><span class="s1">[</span><span class="s2">readme</span><span class="s1">] </span><span class="s2">remove travis badge; add github actions/codecov badges; update URLs</span>
+<span class="s0">- </span><span class="s1">[</span><span class="s2">Docs</span><span class="s1">] </span><span class="s2">Clarify the need for </span><span class="s1">&quot;</span><span class="s2">arrayLimit</span><span class="s1">&quot; </span><span class="s2">option</span>
+<span class="s0">- </span><span class="s1">[</span><span class="s2">meta</span><span class="s1">] </span><span class="s2">fix README.md </span><span class="s1">(</span><span class="s2">#399</span><span class="s1">)</span>
+<span class="s0">- </span><span class="s1">[</span><span class="s2">meta</span><span class="s1">] </span><span class="s2">Clean up license text so it’s properly detected as BSD-3-Clause</span>
+<span class="s0">- </span><span class="s1">[</span><span class="s2">meta</span><span class="s1">] </span><span class="s2">add FUNDING.yml</span>
+<span class="s0">- </span><span class="s1">[</span><span class="s2">actions</span><span class="s1">] </span><span class="s2">backport actions from main</span>
+<span class="s0">- </span><span class="s1">[</span><span class="s2">Tests</span><span class="s1">] </span><span class="s2">remove nonexistent tape option</span>
+<span class="s0">- </span><span class="s1">[</span><span class="s2">Dev Deps</span><span class="s1">] </span><span class="s2">backport from main</span>
+
+<span class="s0">## </span><span class="s1">**</span><span class="s2">6.4.0</span><span class="s1">**</span>
+<span class="s0">- </span><span class="s1">[</span><span class="s2">New</span><span class="s1">] </span><span class="s2">`qs.stringify`</span><span class="s1">: </span><span class="s2">add `encodeValuesOnly` option</span>
+<span class="s0">- </span><span class="s1">[</span><span class="s2">Fix</span><span class="s1">] </span><span class="s2">follow `allowPrototypes` option during merge </span><span class="s1">(</span><span class="s2">#201, #201</span><span class="s1">)</span>
+<span class="s0">- </span><span class="s1">[</span><span class="s2">Fix</span><span class="s1">] </span><span class="s2">support keys starting with brackets </span><span class="s1">(</span><span class="s2">#202, #200</span><span class="s1">)</span>
+<span class="s0">- </span><span class="s1">[</span><span class="s2">Fix</span><span class="s1">] </span><span class="s2">chmod a-x</span>
+<span class="s0">- </span><span class="s1">[</span><span class="s2">Dev Deps</span><span class="s1">] </span><span class="s2">update `eslint`</span>
+<span class="s0">- </span><span class="s1">[</span><span class="s2">Tests</span><span class="s1">] </span><span class="s2">up to `node` `v7.7`, `v6.10`,` v4.8`; disable osx builds since they block linux builds</span>
+<span class="s0">- </span><span class="s1">[</span><span class="s2">eslint</span><span class="s1">] </span><span class="s2">reduce warnings</span>
+
+<span class="s0">## </span><span class="s1">**</span><span class="s2">6.3.3</span><span class="s1">**</span>
+<span class="s0">- </span><span class="s1">[</span><span class="s2">Fix</span><span class="s1">] </span><span class="s2">`parse`</span><span class="s1">: </span><span class="s2">ignore `</span><span class="s1">__</span><span class="s2">proto</span><span class="s1">__</span><span class="s2">` keys </span><span class="s1">(</span><span class="s2">#428</span><span class="s1">)</span>
+<span class="s0">- </span><span class="s1">[</span><span class="s2">Fix</span><span class="s1">] </span><span class="s2">fix for an impossible situation</span><span class="s1">: </span><span class="s2">when the formatter is called with a non-string value</span>
+<span class="s0">- </span><span class="s1">[</span><span class="s2">Fix</span><span class="s1">] </span><span class="s2">`utils.merge`</span><span class="s1">: </span><span class="s2">avoid a crash with a null target and an array source</span>
+<span class="s0">- </span><span class="s1">[</span><span class="s2">Fix</span><span class="s1">] </span><span class="s2">`utils.merge`</span><span class="s1">: </span><span class="s2">avoid a crash with a null target and a truthy non-array source</span>
+<span class="s0">- </span><span class="s1">[</span><span class="s2">Fix</span><span class="s1">] </span><span class="s2">`stringify`</span><span class="s1">: </span><span class="s2">fix a crash with `strictNullHandling` and a custom `filter`/`serializeDate` </span><span class="s1">(</span><span class="s2">#279</span><span class="s1">)</span>
+<span class="s0">- </span><span class="s1">[</span><span class="s2">Fix</span><span class="s1">] </span><span class="s2">`utils`</span><span class="s1">: </span><span class="s2">`merge`</span><span class="s1">: </span><span class="s2">fix crash when `source` is a truthy primitive &amp; no options are provided</span>
+<span class="s0">- </span><span class="s1">[</span><span class="s2">Fix</span><span class="s1">] </span><span class="s2">when `parseArrays` is false, properly handle keys ending in `</span><span class="s1">[]</span><span class="s2">`</span>
+<span class="s0">- </span><span class="s1">[</span><span class="s2">Robustness</span><span class="s1">] </span><span class="s2">`stringify`</span><span class="s1">: </span><span class="s2">avoid relying on a global `undefined` </span><span class="s1">(</span><span class="s2">#427</span><span class="s1">)</span>
+<span class="s0">- </span><span class="s1">[</span><span class="s2">Refactor</span><span class="s1">] </span><span class="s2">use cached `Array.isArray`</span>
+<span class="s0">- </span><span class="s1">[</span><span class="s2">Refactor</span><span class="s1">] </span><span class="s2">`stringify`</span><span class="s1">: </span><span class="s2">Avoid arr = arr.concat</span><span class="s1">(</span><span class="s2">...</span><span class="s1">)</span><span class="s2">, push to the existing instance </span><span class="s1">(</span><span class="s2">#269</span><span class="s1">)</span>
+<span class="s0">- </span><span class="s1">[</span><span class="s2">Docs</span><span class="s1">] </span><span class="s2">Clarify the need for </span><span class="s1">&quot;</span><span class="s2">arrayLimit</span><span class="s1">&quot; </span><span class="s2">option</span>
+<span class="s0">- </span><span class="s1">[</span><span class="s2">meta</span><span class="s1">] </span><span class="s2">fix README.md </span><span class="s1">(</span><span class="s2">#399</span><span class="s1">)</span>
+<span class="s0">- </span><span class="s1">[</span><span class="s2">meta</span><span class="s1">] </span><span class="s2">Clean up license text so it’s properly detected as BSD-3-Clause</span>
+<span class="s0">- </span><span class="s1">[</span><span class="s2">meta</span><span class="s1">] </span><span class="s2">add FUNDING.yml</span>
+<span class="s0">- </span><span class="s1">[</span><span class="s2">actions</span><span class="s1">] </span><span class="s2">backport actions from main</span>
+<span class="s0">- </span><span class="s1">[</span><span class="s2">Tests</span><span class="s1">] </span><span class="s2">use `safer-buffer` instead of `Buffer` constructor</span>
+<span class="s0">- </span><span class="s1">[</span><span class="s2">Tests</span><span class="s1">] </span><span class="s2">remove nonexistent tape option</span>
+<span class="s0">- </span><span class="s1">[</span><span class="s2">Dev Deps</span><span class="s1">] </span><span class="s2">backport from main</span>
+
+<span class="s0">## </span><span class="s1">**</span><span class="s2">6.3.2</span><span class="s1">**</span>
+<span class="s0">- </span><span class="s1">[</span><span class="s2">Fix</span><span class="s1">] </span><span class="s2">follow `allowPrototypes` option during merge </span><span class="s1">(</span><span class="s2">#201, #200</span><span class="s1">)</span>
+<span class="s0">- </span><span class="s1">[</span><span class="s2">Dev Deps</span><span class="s1">] </span><span class="s2">update `eslint`</span>
+<span class="s0">- </span><span class="s1">[</span><span class="s2">Fix</span><span class="s1">] </span><span class="s2">chmod a-x</span>
+<span class="s0">- </span><span class="s1">[</span><span class="s2">Fix</span><span class="s1">] </span><span class="s2">support keys starting with brackets </span><span class="s1">(</span><span class="s2">#202, #200</span><span class="s1">)</span>
+<span class="s0">- </span><span class="s1">[</span><span class="s2">Tests</span><span class="s1">] </span><span class="s2">up to `node` `v7.7`, `v6.10`,` v4.8`; disable osx builds since they block linux builds</span>
+
+<span class="s0">## </span><span class="s1">**</span><span class="s2">6.3.1</span><span class="s1">**</span>
+<span class="s0">- </span><span class="s1">[</span><span class="s2">Fix</span><span class="s1">] </span><span class="s2">ensure that `allowPrototypes</span><span class="s1">: </span><span class="s2">false` does not ever shadow Object.prototype properties </span><span class="s1">(</span><span class="s2">thanks, @snyk</span><span class="s1">!)</span>
+<span class="s0">- </span><span class="s1">[</span><span class="s2">Dev Deps</span><span class="s1">] </span><span class="s2">update `eslint`, `@ljharb/eslint-config`, `browserify`, `iconv-lite`, `qs-iconv`, `tape`</span>
+<span class="s0">- </span><span class="s1">[</span><span class="s2">Tests</span><span class="s1">] </span><span class="s2">on all node minors; improve test matrix</span>
+<span class="s0">- </span><span class="s1">[</span><span class="s2">Docs</span><span class="s1">] </span><span class="s2">document stringify option `allowDots` </span><span class="s1">(</span><span class="s2">#195</span><span class="s1">)</span>
+<span class="s0">- </span><span class="s1">[</span><span class="s2">Docs</span><span class="s1">] </span><span class="s2">add empty object and array values example </span><span class="s1">(</span><span class="s2">#195</span><span class="s1">)</span>
+<span class="s0">- </span><span class="s1">[</span><span class="s2">Docs</span><span class="s1">] </span><span class="s2">Fix minor inconsistency/typo </span><span class="s1">(</span><span class="s2">#192</span><span class="s1">)</span>
+<span class="s0">- </span><span class="s1">[</span><span class="s2">Docs</span><span class="s1">] </span><span class="s2">document stringify option `sort` </span><span class="s1">(</span><span class="s2">#191</span><span class="s1">)</span>
+<span class="s0">- </span><span class="s1">[</span><span class="s2">Refactor</span><span class="s1">] </span><span class="s2">`stringify`</span><span class="s1">: </span><span class="s2">throw faster with an invalid encoder</span>
+<span class="s0">- </span><span class="s1">[</span><span class="s2">Refactor</span><span class="s1">] </span><span class="s2">remove unnecessary escapes </span><span class="s1">(</span><span class="s2">#184</span><span class="s1">)</span>
+<span class="s0">- </span><span class="s2">Remove contributing.md, since `qs` is no longer part of `hapi` </span><span class="s1">(</span><span class="s2">#183</span><span class="s1">)</span>
+
+<span class="s0">## </span><span class="s1">**</span><span class="s2">6.3.0</span><span class="s1">**</span>
+<span class="s0">- </span><span class="s1">[</span><span class="s2">New</span><span class="s1">] </span><span class="s2">Add support for RFC 1738 </span><span class="s1">(</span><span class="s2">#174, #173</span><span class="s1">)</span>
+<span class="s0">- </span><span class="s1">[</span><span class="s2">New</span><span class="s1">] </span><span class="s2">`stringify`</span><span class="s1">: </span><span class="s2">Add `serializeDate` option to customize Date serialization </span><span class="s1">(</span><span class="s2">#159</span><span class="s1">)</span>
+<span class="s0">- </span><span class="s1">[</span><span class="s2">Fix</span><span class="s1">] </span><span class="s2">ensure `utils.merge` handles merging two arrays</span>
+<span class="s0">- </span><span class="s1">[</span><span class="s2">Refactor</span><span class="s1">] </span><span class="s2">only constructors should be capitalized</span>
+<span class="s0">- </span><span class="s1">[</span><span class="s2">Refactor</span><span class="s1">] </span><span class="s2">capitalized var names are for constructors only</span>
+<span class="s0">- </span><span class="s1">[</span><span class="s2">Refactor</span><span class="s1">] </span><span class="s2">avoid using a sparse array</span>
+<span class="s0">- </span><span class="s1">[</span><span class="s2">Robustness</span><span class="s1">] </span><span class="s2">`formats`</span><span class="s1">: </span><span class="s2">cache `String#replace`</span>
+<span class="s0">- </span><span class="s1">[</span><span class="s2">Dev Deps</span><span class="s1">] </span><span class="s2">update `browserify`, `eslint`, `@ljharb/eslint-config`; add `safe-publish-latest`</span>
+<span class="s0">- </span><span class="s1">[</span><span class="s2">Tests</span><span class="s1">] </span><span class="s2">up to `node` `v6.8`, `v4.6`; improve test matrix</span>
+<span class="s0">- </span><span class="s1">[</span><span class="s2">Tests</span><span class="s1">] </span><span class="s2">flesh out arrayLimit/arrayFormat tests </span><span class="s1">(</span><span class="s2">#107</span><span class="s1">)</span>
+<span class="s0">- </span><span class="s1">[</span><span class="s2">Tests</span><span class="s1">] </span><span class="s2">skip Object.create tests when null objects are not available</span>
+<span class="s0">- </span><span class="s1">[</span><span class="s2">Tests</span><span class="s1">] </span><span class="s2">Turn on eslint for test files </span><span class="s1">(</span><span class="s2">#175</span><span class="s1">)</span>
+
+<span class="s0">## </span><span class="s1">**</span><span class="s2">6.2.4</span><span class="s1">**</span>
+<span class="s0">- </span><span class="s1">[</span><span class="s2">Fix</span><span class="s1">] </span><span class="s2">`parse`</span><span class="s1">: </span><span class="s2">ignore `</span><span class="s1">__</span><span class="s2">proto</span><span class="s1">__</span><span class="s2">` keys </span><span class="s1">(</span><span class="s2">#428</span><span class="s1">)</span>
+<span class="s0">- </span><span class="s1">[</span><span class="s2">Fix</span><span class="s1">] </span><span class="s2">`utils.merge`</span><span class="s1">: </span><span class="s2">avoid a crash with a null target and an array source</span>
+<span class="s0">- </span><span class="s1">[</span><span class="s2">Fix</span><span class="s1">] </span><span class="s2">`utils.merge`</span><span class="s1">: </span><span class="s2">avoid a crash with a null target and a truthy non-array source</span>
+<span class="s0">- </span><span class="s1">[</span><span class="s2">Fix</span><span class="s1">] </span><span class="s2">`utils`</span><span class="s1">: </span><span class="s2">`merge`</span><span class="s1">: </span><span class="s2">fix crash when `source` is a truthy primitive &amp; no options are provided</span>
+<span class="s0">- </span><span class="s1">[</span><span class="s2">Fix</span><span class="s1">] </span><span class="s2">when `parseArrays` is false, properly handle keys ending in `</span><span class="s1">[]</span><span class="s2">`</span>
+<span class="s0">- </span><span class="s1">[</span><span class="s2">Robustness</span><span class="s1">] </span><span class="s2">`stringify`</span><span class="s1">: </span><span class="s2">avoid relying on a global `undefined` </span><span class="s1">(</span><span class="s2">#427</span><span class="s1">)</span>
+<span class="s0">- </span><span class="s1">[</span><span class="s2">Refactor</span><span class="s1">] </span><span class="s2">use cached `Array.isArray`</span>
+<span class="s0">- </span><span class="s1">[</span><span class="s2">Docs</span><span class="s1">] </span><span class="s2">Clarify the need for </span><span class="s1">&quot;</span><span class="s2">arrayLimit</span><span class="s1">&quot; </span><span class="s2">option</span>
+<span class="s0">- </span><span class="s1">[</span><span class="s2">meta</span><span class="s1">] </span><span class="s2">fix README.md </span><span class="s1">(</span><span class="s2">#399</span><span class="s1">)</span>
+<span class="s0">- </span><span class="s1">[</span><span class="s2">meta</span><span class="s1">] </span><span class="s2">Clean up license text so it’s properly detected as BSD-3-Clause</span>
+<span class="s0">- </span><span class="s1">[</span><span class="s2">meta</span><span class="s1">] </span><span class="s2">add FUNDING.yml</span>
+<span class="s0">- </span><span class="s1">[</span><span class="s2">actions</span><span class="s1">] </span><span class="s2">backport actions from main</span>
+<span class="s0">- </span><span class="s1">[</span><span class="s2">Tests</span><span class="s1">] </span><span class="s2">use `safer-buffer` instead of `Buffer` constructor</span>
+<span class="s0">- </span><span class="s1">[</span><span class="s2">Tests</span><span class="s1">] </span><span class="s2">remove nonexistent tape option</span>
+<span class="s0">- </span><span class="s1">[</span><span class="s2">Dev Deps</span><span class="s1">] </span><span class="s2">backport from main</span>
+
+<span class="s0">## </span><span class="s1">**</span><span class="s2">6.2.3</span><span class="s1">**</span>
+<span class="s0">- </span><span class="s1">[</span><span class="s2">Fix</span><span class="s1">] </span><span class="s2">follow `allowPrototypes` option during merge </span><span class="s1">(</span><span class="s2">#201, #200</span><span class="s1">)</span>
+<span class="s0">- </span><span class="s1">[</span><span class="s2">Fix</span><span class="s1">] </span><span class="s2">chmod a-x</span>
+<span class="s0">- </span><span class="s1">[</span><span class="s2">Fix</span><span class="s1">] </span><span class="s2">support keys starting with brackets </span><span class="s1">(</span><span class="s2">#202, #200</span><span class="s1">)</span>
+<span class="s0">- </span><span class="s1">[</span><span class="s2">Tests</span><span class="s1">] </span><span class="s2">up to `node` `v7.7`, `v6.10`,` v4.8`; disable osx builds since they block linux builds</span>
+
+<span class="s0">## </span><span class="s1">**</span><span class="s2">6.2.2</span><span class="s1">**</span>
+<span class="s0">- </span><span class="s1">[</span><span class="s2">Fix</span><span class="s1">] </span><span class="s2">ensure that `allowPrototypes</span><span class="s1">: </span><span class="s2">false` does not ever shadow Object.prototype properties</span>
+
+<span class="s0">## </span><span class="s1">**</span><span class="s2">6.2.1</span><span class="s1">**</span>
+<span class="s0">- </span><span class="s1">[</span><span class="s2">Fix</span><span class="s1">] </span><span class="s2">ensure `key</span><span class="s1">[]</span><span class="s2">=x&amp;key</span><span class="s1">[]</span><span class="s2">&amp;key</span><span class="s1">[]</span><span class="s2">=y` results in 3, not 2, values</span>
+<span class="s0">- </span><span class="s1">[</span><span class="s2">Refactor</span><span class="s1">] </span><span class="s2">Be explicit and use `Object.prototype.hasOwnProperty.call`</span>
+<span class="s0">- </span><span class="s1">[</span><span class="s2">Tests</span><span class="s1">] </span><span class="s2">remove `parallelshell` since it does not reliably report failures</span>
+<span class="s0">- </span><span class="s1">[</span><span class="s2">Tests</span><span class="s1">] </span><span class="s2">up to `node` `v6.3`, `v5.12`</span>
+<span class="s0">- </span><span class="s1">[</span><span class="s2">Dev Deps</span><span class="s1">] </span><span class="s2">update `tape`, `eslint`, `@ljharb/eslint-config`, `qs-iconv`</span>
+
+<span class="s0">## </span><span class="s1">[**</span><span class="s2">6.2.0</span><span class="s1">**](</span><span class="s3">https://github.com/ljharb/qs/issues?milestone=36&amp;state=closed</span><span class="s1">)</span>
+<span class="s0">- </span><span class="s1">[</span><span class="s2">New</span><span class="s1">] </span><span class="s2">pass Buffers to the encoder/decoder directly </span><span class="s1">(</span><span class="s2">#161</span><span class="s1">)</span>
+<span class="s0">- </span><span class="s1">[</span><span class="s2">New</span><span class="s1">] </span><span class="s2">add </span><span class="s1">&quot;</span><span class="s2">encoder</span><span class="s1">&quot; </span><span class="s2">and </span><span class="s1">&quot;</span><span class="s2">decoder</span><span class="s1">&quot; </span><span class="s2">options, for custom param encoding/decoding </span><span class="s1">(</span><span class="s2">#160</span><span class="s1">)</span>
+<span class="s0">- </span><span class="s1">[</span><span class="s2">Fix</span><span class="s1">] </span><span class="s2">fix compacting of nested sparse arrays </span><span class="s1">(</span><span class="s2">#150</span><span class="s1">)</span>
+
+<span class="s0">## </span><span class="s1">**</span><span class="s2">6.1.2</span><span class="s1">**</span>
+<span class="s0">- </span><span class="s1">[</span><span class="s2">Fix</span><span class="s1">] </span><span class="s2">follow `allowPrototypes` option during merge </span><span class="s1">(</span><span class="s2">#201, #200</span><span class="s1">)</span>
+<span class="s0">- </span><span class="s1">[</span><span class="s2">Fix</span><span class="s1">] </span><span class="s2">chmod a-x</span>
+<span class="s0">- </span><span class="s1">[</span><span class="s2">Fix</span><span class="s1">] </span><span class="s2">support keys starting with brackets </span><span class="s1">(</span><span class="s2">#202, #200</span><span class="s1">)</span>
+<span class="s0">- </span><span class="s1">[</span><span class="s2">Tests</span><span class="s1">] </span><span class="s2">up to `node` `v7.7`, `v6.10`,` v4.8`; disable osx builds since they block linux builds</span>
+
+<span class="s0">## </span><span class="s1">**</span><span class="s2">6.1.1</span><span class="s1">**</span>
+<span class="s0">- </span><span class="s1">[</span><span class="s2">Fix</span><span class="s1">] </span><span class="s2">ensure that `allowPrototypes</span><span class="s1">: </span><span class="s2">false` does not ever shadow Object.prototype properties</span>
+
+<span class="s0">## </span><span class="s1">[**</span><span class="s2">6.1.0</span><span class="s1">**](</span><span class="s3">https://github.com/ljharb/qs/issues?milestone=35&amp;state=closed</span><span class="s1">)</span>
+<span class="s0">- </span><span class="s1">[</span><span class="s2">New</span><span class="s1">] </span><span class="s2">allowDots option for `stringify` </span><span class="s1">(</span><span class="s2">#151</span><span class="s1">)</span>
+<span class="s0">- </span><span class="s1">[</span><span class="s2">Fix</span><span class="s1">] &quot;</span><span class="s2">sort</span><span class="s1">&quot; </span><span class="s2">option should work at a depth of 3 or more </span><span class="s1">(</span><span class="s2">#151</span><span class="s1">)</span>
+<span class="s0">- </span><span class="s1">[</span><span class="s2">Fix</span><span class="s1">] </span><span class="s2">Restore `dist` directory; will be removed in v7 </span><span class="s1">(</span><span class="s2">#148</span><span class="s1">)</span>
+
+<span class="s0">## </span><span class="s1">**</span><span class="s2">6.0.4</span><span class="s1">**</span>
+<span class="s0">- </span><span class="s1">[</span><span class="s2">Fix</span><span class="s1">] </span><span class="s2">follow `allowPrototypes` option during merge </span><span class="s1">(</span><span class="s2">#201, #200</span><span class="s1">)</span>
+<span class="s0">- </span><span class="s1">[</span><span class="s2">Fix</span><span class="s1">] </span><span class="s2">chmod a-x</span>
+<span class="s0">- </span><span class="s1">[</span><span class="s2">Fix</span><span class="s1">] </span><span class="s2">support keys starting with brackets </span><span class="s1">(</span><span class="s2">#202, #200</span><span class="s1">)</span>
+<span class="s0">- </span><span class="s1">[</span><span class="s2">Tests</span><span class="s1">] </span><span class="s2">up to `node` `v7.7`, `v6.10`,` v4.8`; disable osx builds since they block linux builds</span>
+
+<span class="s0">## </span><span class="s1">**</span><span class="s2">6.0.3</span><span class="s1">**</span>
+<span class="s0">- </span><span class="s1">[</span><span class="s2">Fix</span><span class="s1">] </span><span class="s2">ensure that `allowPrototypes</span><span class="s1">: </span><span class="s2">false` does not ever shadow Object.prototype properties</span>
+<span class="s0">- </span><span class="s1">[</span><span class="s2">Fix</span><span class="s1">] </span><span class="s2">Restore `dist` directory; will be removed in v7 </span><span class="s1">(</span><span class="s2">#148</span><span class="s1">)</span>
+
+<span class="s0">## </span><span class="s1">[**</span><span class="s2">6.0.2</span><span class="s1">**](</span><span class="s3">https://github.com/ljharb/qs/issues?milestone=33&amp;state=closed</span><span class="s1">)</span>
+<span class="s0">- </span><span class="s2">Revert ES6 requirement and restore support for node down to v0.8.</span>
+
+<span class="s0">## </span><span class="s1">[**</span><span class="s2">6.0.1</span><span class="s1">**](</span><span class="s3">https://github.com/ljharb/qs/issues?milestone=32&amp;state=closed</span><span class="s1">)</span>
+<span class="s0">- </span><span class="s1">[**</span><span class="s2">#127</span><span class="s1">**](</span><span class="s3">https://github.com/ljharb/qs/pull/127</span><span class="s1">) </span><span class="s2">Fix engines definition in package.json</span>
+
+<span class="s0">## </span><span class="s1">[**</span><span class="s2">6.0.0</span><span class="s1">**](</span><span class="s3">https://github.com/ljharb/qs/issues?milestone=31&amp;state=closed</span><span class="s1">)</span>
+<span class="s0">- </span><span class="s1">[**</span><span class="s2">#124</span><span class="s1">**](</span><span class="s3">https://github.com/ljharb/qs/issues/124</span><span class="s1">) </span><span class="s2">Use ES6 and drop support for node </span><span class="s1">&lt; </span><span class="s2">v4</span>
+
+<span class="s0">## </span><span class="s1">**</span><span class="s2">5.2.1</span><span class="s1">**</span>
+<span class="s0">- </span><span class="s1">[</span><span class="s2">Fix</span><span class="s1">] </span><span class="s2">ensure `key</span><span class="s1">[]</span><span class="s2">=x&amp;key</span><span class="s1">[]</span><span class="s2">&amp;key</span><span class="s1">[]</span><span class="s2">=y` results in 3, not 2, values</span>
+
+<span class="s0">## </span><span class="s1">[**</span><span class="s2">5.2.0</span><span class="s1">**](</span><span class="s3">https://github.com/ljharb/qs/issues?milestone=30&amp;state=closed</span><span class="s1">)</span>
+<span class="s0">- </span><span class="s1">[**</span><span class="s2">#64</span><span class="s1">**](</span><span class="s3">https://github.com/ljharb/qs/issues/64</span><span class="s1">) </span><span class="s2">Add option to sort object keys in the query string</span>
+
+<span class="s0">## </span><span class="s1">[**</span><span class="s2">5.1.0</span><span class="s1">**](</span><span class="s3">https://github.com/ljharb/qs/issues?milestone=29&amp;state=closed</span><span class="s1">)</span>
+<span class="s0">- </span><span class="s1">[**</span><span class="s2">#117</span><span class="s1">**](</span><span class="s3">https://github.com/ljharb/qs/issues/117</span><span class="s1">) </span><span class="s2">make URI encoding stringified results optional</span>
+<span class="s0">- </span><span class="s1">[**</span><span class="s2">#106</span><span class="s1">**](</span><span class="s3">https://github.com/ljharb/qs/issues/106</span><span class="s1">) </span><span class="s2">Add flag `skipNulls` to optionally skip null values in stringify</span>
+
+<span class="s0">## </span><span class="s1">[**</span><span class="s2">5.0.0</span><span class="s1">**](</span><span class="s3">https://github.com/ljharb/qs/issues?milestone=28&amp;state=closed</span><span class="s1">)</span>
+<span class="s0">- </span><span class="s1">[**</span><span class="s2">#114</span><span class="s1">**](</span><span class="s3">https://github.com/ljharb/qs/issues/114</span><span class="s1">) </span><span class="s2">default allowDots to false</span>
+<span class="s0">- </span><span class="s1">[**</span><span class="s2">#100</span><span class="s1">**](</span><span class="s3">https://github.com/ljharb/qs/issues/100</span><span class="s1">) </span><span class="s2">include dist to npm</span>
+
+<span class="s0">## </span><span class="s1">[**</span><span class="s2">4.0.0</span><span class="s1">**](</span><span class="s3">https://github.com/ljharb/qs/issues?milestone=26&amp;state=closed</span><span class="s1">)</span>
+<span class="s0">- </span><span class="s1">[**</span><span class="s2">#98</span><span class="s1">**](</span><span class="s3">https://github.com/ljharb/qs/issues/98</span><span class="s1">) </span><span class="s2">make returning plain objects and allowing prototype overwriting properties optional</span>
+
+<span class="s0">## </span><span class="s1">[**</span><span class="s2">3.1.0</span><span class="s1">**](</span><span class="s3">https://github.com/ljharb/qs/issues?milestone=24&amp;state=closed</span><span class="s1">)</span>
+<span class="s0">- </span><span class="s1">[**</span><span class="s2">#89</span><span class="s1">**](</span><span class="s3">https://github.com/ljharb/qs/issues/89</span><span class="s1">) </span><span class="s2">Add option to disable </span><span class="s1">&quot;</span><span class="s2">Transform dot notation to bracket notation</span><span class="s1">&quot;</span>
+
+<span class="s0">## </span><span class="s1">[**</span><span class="s2">3.0.0</span><span class="s1">**](</span><span class="s3">https://github.com/ljharb/qs/issues?milestone=23&amp;state=closed</span><span class="s1">)</span>
+<span class="s0">- </span><span class="s1">[**</span><span class="s2">#80</span><span class="s1">**](</span><span class="s3">https://github.com/ljharb/qs/issues/80</span><span class="s1">) </span><span class="s2">qs.parse silently drops properties</span>
+<span class="s0">- </span><span class="s1">[**</span><span class="s2">#77</span><span class="s1">**](</span><span class="s3">https://github.com/ljharb/qs/issues/77</span><span class="s1">) </span><span class="s2">Perf boost</span>
+<span class="s0">- </span><span class="s1">[**</span><span class="s2">#60</span><span class="s1">**](</span><span class="s3">https://github.com/ljharb/qs/issues/60</span><span class="s1">) </span><span class="s2">Add explicit option to disable array parsing</span>
+<span class="s0">- </span><span class="s1">[**</span><span class="s2">#74</span><span class="s1">**](</span><span class="s3">https://github.com/ljharb/qs/issues/74</span><span class="s1">) </span><span class="s2">Bad parse when turning array into object</span>
+<span class="s0">- </span><span class="s1">[**</span><span class="s2">#81</span><span class="s1">**](</span><span class="s3">https://github.com/ljharb/qs/issues/81</span><span class="s1">) </span><span class="s2">Add a `filter` option</span>
+<span class="s0">- </span><span class="s1">[**</span><span class="s2">#68</span><span class="s1">**](</span><span class="s3">https://github.com/ljharb/qs/issues/68</span><span class="s1">) </span><span class="s2">Fixed issue with recursion and passing strings into objects.</span>
+<span class="s0">- </span><span class="s1">[**</span><span class="s2">#66</span><span class="s1">**](</span><span class="s3">https://github.com/ljharb/qs/issues/66</span><span class="s1">) </span><span class="s2">Add mixed array and object dot notation support Closes</span><span class="s1">: </span><span class="s2">#47</span>
+<span class="s0">- </span><span class="s1">[**</span><span class="s2">#76</span><span class="s1">**](</span><span class="s3">https://github.com/ljharb/qs/issues/76</span><span class="s1">) </span><span class="s2">RFC 3986</span>
+<span class="s0">- </span><span class="s1">[**</span><span class="s2">#85</span><span class="s1">**](</span><span class="s3">https://github.com/ljharb/qs/issues/85</span><span class="s1">) </span><span class="s2">No equal sign</span>
+<span class="s0">- </span><span class="s1">[**</span><span class="s2">#84</span><span class="s1">**](</span><span class="s3">https://github.com/ljharb/qs/issues/84</span><span class="s1">) </span><span class="s2">update license attribute</span>
+
+<span class="s0">## </span><span class="s1">[**</span><span class="s2">2.4.1</span><span class="s1">**](</span><span class="s3">https://github.com/ljharb/qs/issues?milestone=20&amp;state=closed</span><span class="s1">)</span>
+<span class="s0">- </span><span class="s1">[**</span><span class="s2">#73</span><span class="s1">**](</span><span class="s3">https://github.com/ljharb/qs/issues/73</span><span class="s1">) </span><span class="s2">Property </span><span class="s1">'</span><span class="s2">hasOwnProperty' of object #</span><span class="s1">&lt;Object&gt; </span><span class="s2">is not a function</span>
+
+<span class="s0">## </span><span class="s1">[**</span><span class="s2">2.4.0</span><span class="s1">**](</span><span class="s3">https://github.com/ljharb/qs/issues?milestone=19&amp;state=closed</span><span class="s1">)</span>
+<span class="s0">- </span><span class="s1">[**</span><span class="s2">#70</span><span class="s1">**](</span><span class="s3">https://github.com/ljharb/qs/issues/70</span><span class="s1">) </span><span class="s2">Add arrayFormat option</span>
+
+<span class="s0">## </span><span class="s1">[**</span><span class="s2">2.3.3</span><span class="s1">**](</span><span class="s3">https://github.com/ljharb/qs/issues?milestone=18&amp;state=closed</span><span class="s1">)</span>
+<span class="s0">- </span><span class="s1">[**</span><span class="s2">#59</span><span class="s1">**](</span><span class="s3">https://github.com/ljharb/qs/issues/59</span><span class="s1">) </span><span class="s2">make sure array indexes are </span><span class="s1">&gt;</span><span class="s2">= 0, closes #57</span>
+<span class="s0">- </span><span class="s1">[**</span><span class="s2">#58</span><span class="s1">**](</span><span class="s3">https://github.com/ljharb/qs/issues/58</span><span class="s1">) </span><span class="s2">make qs usable for browser loader</span>
+
+<span class="s0">## </span><span class="s1">[**</span><span class="s2">2.3.2</span><span class="s1">**](</span><span class="s3">https://github.com/ljharb/qs/issues?milestone=17&amp;state=closed</span><span class="s1">)</span>
+<span class="s0">- </span><span class="s1">[**</span><span class="s2">#55</span><span class="s1">**](</span><span class="s3">https://github.com/ljharb/qs/issues/55</span><span class="s1">) </span><span class="s2">allow merging a string into an object</span>
+
+<span class="s0">## </span><span class="s1">[**</span><span class="s2">2.3.1</span><span class="s1">**](</span><span class="s3">https://github.com/ljharb/qs/issues?milestone=16&amp;state=closed</span><span class="s1">)</span>
+<span class="s0">- </span><span class="s1">[**</span><span class="s2">#52</span><span class="s1">**](</span><span class="s3">https://github.com/ljharb/qs/issues/52</span><span class="s1">) </span><span class="s2">Return </span><span class="s1">&quot;</span><span class="s2">undefined</span><span class="s1">&quot; </span><span class="s2">and </span><span class="s1">&quot;</span><span class="s2">false</span><span class="s1">&quot; </span><span class="s2">instead of throwing </span><span class="s1">&quot;</span><span class="s2">TypeError</span><span class="s1">&quot;</span><span class="s2">.</span>
+
+<span class="s0">## </span><span class="s1">[**</span><span class="s2">2.3.0</span><span class="s1">**](</span><span class="s3">https://github.com/ljharb/qs/issues?milestone=15&amp;state=closed</span><span class="s1">)</span>
+<span class="s0">- </span><span class="s1">[**</span><span class="s2">#50</span><span class="s1">**](</span><span class="s3">https://github.com/ljharb/qs/issues/50</span><span class="s1">) </span><span class="s2">add option to omit array indices, closes #46</span>
+
+<span class="s0">## </span><span class="s1">[**</span><span class="s2">2.2.5</span><span class="s1">**](</span><span class="s3">https://github.com/ljharb/qs/issues?milestone=14&amp;state=closed</span><span class="s1">)</span>
+<span class="s0">- </span><span class="s1">[**</span><span class="s2">#39</span><span class="s1">**](</span><span class="s3">https://github.com/ljharb/qs/issues/39</span><span class="s1">) </span><span class="s2">Is there an alternative to Buffer.isBuffer?</span>
+<span class="s0">- </span><span class="s1">[**</span><span class="s2">#49</span><span class="s1">**](</span><span class="s3">https://github.com/ljharb/qs/issues/49</span><span class="s1">) </span><span class="s2">refactor utils.merge, fixes #45</span>
+<span class="s0">- </span><span class="s1">[**</span><span class="s2">#41</span><span class="s1">**](</span><span class="s3">https://github.com/ljharb/qs/issues/41</span><span class="s1">) </span><span class="s2">avoid browserifying Buffer, for #39</span>
+
+<span class="s0">## </span><span class="s1">[**</span><span class="s2">2.2.4</span><span class="s1">**](</span><span class="s3">https://github.com/ljharb/qs/issues?milestone=13&amp;state=closed</span><span class="s1">)</span>
+<span class="s0">- </span><span class="s1">[**</span><span class="s2">#38</span><span class="s1">**](</span><span class="s3">https://github.com/ljharb/qs/issues/38</span><span class="s1">) </span><span class="s2">how to handle object keys beginning with a number</span>
+
+<span class="s0">## </span><span class="s1">[**</span><span class="s2">2.2.3</span><span class="s1">**](</span><span class="s3">https://github.com/ljharb/qs/issues?milestone=12&amp;state=closed</span><span class="s1">)</span>
+<span class="s0">- </span><span class="s1">[**</span><span class="s2">#37</span><span class="s1">**](</span><span class="s3">https://github.com/ljharb/qs/issues/37</span><span class="s1">) </span><span class="s2">parser discards first empty value in array</span>
+<span class="s0">- </span><span class="s1">[**</span><span class="s2">#36</span><span class="s1">**](</span><span class="s3">https://github.com/ljharb/qs/issues/36</span><span class="s1">) </span><span class="s2">Update to lab 4.x</span>
+
+<span class="s0">## </span><span class="s1">[**</span><span class="s2">2.2.2</span><span class="s1">**](</span><span class="s3">https://github.com/ljharb/qs/issues?milestone=11&amp;state=closed</span><span class="s1">)</span>
+<span class="s0">- </span><span class="s1">[**</span><span class="s2">#33</span><span class="s1">**](</span><span class="s3">https://github.com/ljharb/qs/issues/33</span><span class="s1">) </span><span class="s2">Error when plain object in a value</span>
+<span class="s0">- </span><span class="s1">[**</span><span class="s2">#34</span><span class="s1">**](</span><span class="s3">https://github.com/ljharb/qs/issues/34</span><span class="s1">) </span><span class="s2">use Object.prototype.hasOwnProperty.call instead of obj.hasOwnProperty</span>
+<span class="s0">- </span><span class="s1">[**</span><span class="s2">#24</span><span class="s1">**](</span><span class="s3">https://github.com/ljharb/qs/issues/24</span><span class="s1">) </span><span class="s2">Changelog? Semver?</span>
+
+<span class="s0">## </span><span class="s1">[**</span><span class="s2">2.2.1</span><span class="s1">**](</span><span class="s3">https://github.com/ljharb/qs/issues?milestone=10&amp;state=closed</span><span class="s1">)</span>
+<span class="s0">- </span><span class="s1">[**</span><span class="s2">#32</span><span class="s1">**](</span><span class="s3">https://github.com/ljharb/qs/issues/32</span><span class="s1">) </span><span class="s2">account for circular references properly, closes #31</span>
+<span class="s0">- </span><span class="s1">[**</span><span class="s2">#31</span><span class="s1">**](</span><span class="s3">https://github.com/ljharb/qs/issues/31</span><span class="s1">) </span><span class="s2">qs.parse stackoverflow on circular objects</span>
+
+<span class="s0">## </span><span class="s1">[**</span><span class="s2">2.2.0</span><span class="s1">**](</span><span class="s3">https://github.com/ljharb/qs/issues?milestone=9&amp;state=closed</span><span class="s1">)</span>
+<span class="s0">- </span><span class="s1">[**</span><span class="s2">#26</span><span class="s1">**](</span><span class="s3">https://github.com/ljharb/qs/issues/26</span><span class="s1">) </span><span class="s2">Don't use Buffer global if it</span><span class="s1">'</span><span class="s2">s not present</span>
+<span class="s0">- </span><span class="s1">[**</span><span class="s2">#30</span><span class="s1">**](</span><span class="s3">https://github.com/ljharb/qs/issues/30</span><span class="s1">) </span><span class="s2">Bug when merging non-object values into arrays</span>
+<span class="s0">- </span><span class="s1">[**</span><span class="s2">#29</span><span class="s1">**](</span><span class="s3">https://github.com/ljharb/qs/issues/29</span><span class="s1">) </span><span class="s2">Don't call Utils.clone at the top of Utils.merge</span>
+<span class="s0">- </span><span class="s1">[**</span><span class="s2">#23</span><span class="s1">**](</span><span class="s3">https://github.com/ljharb/qs/issues/23</span><span class="s1">) </span><span class="s2">Ability to not limit parameters?</span>
+
+<span class="s0">## </span><span class="s1">[**</span><span class="s2">2.1.0</span><span class="s1">**](</span><span class="s3">https://github.com/ljharb/qs/issues?milestone=8&amp;state=closed</span><span class="s1">)</span>
+<span class="s0">- </span><span class="s1">[**</span><span class="s2">#22</span><span class="s1">**](</span><span class="s3">https://github.com/ljharb/qs/issues/22</span><span class="s1">) </span><span class="s2">Enable using a RegExp as delimiter</span>
+
+<span class="s0">## </span><span class="s1">[**</span><span class="s2">2.0.0</span><span class="s1">**](</span><span class="s3">https://github.com/ljharb/qs/issues?milestone=7&amp;state=closed</span><span class="s1">)</span>
+<span class="s0">- </span><span class="s1">[**</span><span class="s2">#18</span><span class="s1">**](</span><span class="s3">https://github.com/ljharb/qs/issues/18</span><span class="s1">) </span><span class="s2">Why is there arrayLimit?</span>
+<span class="s0">- </span><span class="s1">[**</span><span class="s2">#20</span><span class="s1">**](</span><span class="s3">https://github.com/ljharb/qs/issues/20</span><span class="s1">) </span><span class="s2">Configurable parametersLimit</span>
+<span class="s0">- </span><span class="s1">[**</span><span class="s2">#21</span><span class="s1">**](</span><span class="s3">https://github.com/ljharb/qs/issues/21</span><span class="s1">) </span><span class="s2">make all limits optional, for #18, for #20</span>
+
+<span class="s0">## </span><span class="s1">[**</span><span class="s2">1.2.2</span><span class="s1">**](</span><span class="s3">https://github.com/ljharb/qs/issues?milestone=6&amp;state=closed</span><span class="s1">)</span>
+<span class="s0">- </span><span class="s1">[**</span><span class="s2">#19</span><span class="s1">**](</span><span class="s3">https://github.com/ljharb/qs/issues/19</span><span class="s1">) </span><span class="s2">Don't overwrite null values</span>
+
+<span class="s0">## </span><span class="s1">[**</span><span class="s2">1.2.1</span><span class="s1">**](</span><span class="s3">https://github.com/ljharb/qs/issues?milestone=5&amp;state=closed</span><span class="s1">)</span>
+<span class="s0">- </span><span class="s1">[**</span><span class="s2">#16</span><span class="s1">**](</span><span class="s3">https://github.com/ljharb/qs/issues/16</span><span class="s1">) </span><span class="s2">ignore non-string delimiters</span>
+<span class="s0">- </span><span class="s1">[**</span><span class="s2">#15</span><span class="s1">**](</span><span class="s3">https://github.com/ljharb/qs/issues/15</span><span class="s1">) </span><span class="s2">Close code block</span>
+
+<span class="s0">## </span><span class="s1">[**</span><span class="s2">1.2.0</span><span class="s1">**](</span><span class="s3">https://github.com/ljharb/qs/issues?milestone=4&amp;state=closed</span><span class="s1">)</span>
+<span class="s0">- </span><span class="s1">[**</span><span class="s2">#12</span><span class="s1">**](</span><span class="s3">https://github.com/ljharb/qs/issues/12</span><span class="s1">) </span><span class="s2">Add optional delim argument</span>
+<span class="s0">- </span><span class="s1">[**</span><span class="s2">#13</span><span class="s1">**](</span><span class="s3">https://github.com/ljharb/qs/issues/13</span><span class="s1">) </span><span class="s2">fix #11</span><span class="s1">: </span><span class="s2">flattened keys in array are now correctly parsed</span>
+
+<span class="s0">## </span><span class="s1">[**</span><span class="s2">1.1.0</span><span class="s1">**](</span><span class="s3">https://github.com/ljharb/qs/issues?milestone=3&amp;state=closed</span><span class="s1">)</span>
+<span class="s0">- </span><span class="s1">[**</span><span class="s2">#7</span><span class="s1">**](</span><span class="s3">https://github.com/ljharb/qs/issues/7</span><span class="s1">) </span><span class="s2">Empty values of a POST array disappear after being submitted</span>
+<span class="s0">- </span><span class="s1">[**</span><span class="s2">#9</span><span class="s1">**](</span><span class="s3">https://github.com/ljharb/qs/issues/9</span><span class="s1">) </span><span class="s2">Should not omit equals signs </span><span class="s1">(</span><span class="s2">=</span><span class="s1">) </span><span class="s2">when value is null</span>
+<span class="s0">- </span><span class="s1">[**</span><span class="s2">#6</span><span class="s1">**](</span><span class="s3">https://github.com/ljharb/qs/issues/6</span><span class="s1">) </span><span class="s2">Minor grammar fix in README</span>
+
+<span class="s0">## </span><span class="s1">[**</span><span class="s2">1.0.2</span><span class="s1">**](</span><span class="s3">https://github.com/ljharb/qs/issues?milestone=2&amp;state=closed</span><span class="s1">)</span>
+<span class="s0">- </span><span class="s1">[**</span><span class="s2">#5</span><span class="s1">**](</span><span class="s3">https://github.com/ljharb/qs/issues/5</span><span class="s1">) </span><span class="s2">array holes incorrectly copied into object on large index</span>
+</pre>
+</body>
+</html>

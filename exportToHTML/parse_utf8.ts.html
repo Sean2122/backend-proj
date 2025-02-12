@@ -1,0 +1,58 @@
+<html>
+<head>
+<title>parse_utf8.ts</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+<style type="text/css">
+.s0 { color: #cf8e6d;}
+.s1 { color: #bcbec4;}
+.s2 { color: #bcbec4;}
+.s3 { color: #6aab73;}
+.s4 { color: #7a7e85;}
+.s5 { color: #5f826b; font-style: italic;}
+.s6 { color: #67a37c; font-style: italic;}
+</style>
+</head>
+<body bgcolor="#1e1f22">
+<table CELLSPACING=0 CELLPADDING=5 COLS=1 WIDTH="100%" BGCOLOR="#606060" >
+<tr><td><center>
+<font face="Arial, Helvetica" color="#000000">
+parse_utf8.ts</font>
+</center></td></tr></table>
+<pre><span class="s0">import </span><span class="s2">{ </span><span class="s1">BSONError </span><span class="s2">} </span><span class="s1">from </span><span class="s3">'./error'</span><span class="s2">;</span>
+
+<span class="s1">type TextDecoder </span><span class="s2">= {</span>
+  <span class="s1">readonly encoding</span><span class="s2">: </span><span class="s1">string</span><span class="s2">;</span>
+  <span class="s1">readonly fatal</span><span class="s2">: </span><span class="s1">boolean</span><span class="s2">;</span>
+  <span class="s1">readonly ignoreBOM</span><span class="s2">: </span><span class="s1">boolean</span><span class="s2">;</span>
+  <span class="s1">decode</span><span class="s2">(</span><span class="s1">input</span><span class="s2">?: </span><span class="s1">Uint8Array</span><span class="s2">): </span><span class="s1">string</span><span class="s2">;</span>
+<span class="s2">};</span>
+<span class="s1">type TextDecoderConstructor </span><span class="s2">= {</span>
+  <span class="s0">new </span><span class="s2">(</span><span class="s1">label</span><span class="s2">: </span><span class="s3">'utf8'</span><span class="s2">, </span><span class="s1">options</span><span class="s2">: { </span><span class="s1">fatal</span><span class="s2">: </span><span class="s1">boolean</span><span class="s2">; </span><span class="s1">ignoreBOM</span><span class="s2">?: </span><span class="s1">boolean </span><span class="s2">}): </span><span class="s1">TextDecoder</span><span class="s2">;</span>
+<span class="s2">};</span>
+
+<span class="s4">// parse utf8 globals</span>
+<span class="s1">declare </span><span class="s0">const </span><span class="s1">TextDecoder</span><span class="s2">: </span><span class="s1">TextDecoderConstructor</span><span class="s2">;</span>
+<span class="s0">let </span><span class="s1">TextDecoderFatal</span><span class="s2">: </span><span class="s1">TextDecoder</span><span class="s2">;</span>
+<span class="s0">let </span><span class="s1">TextDecoderNonFatal</span><span class="s2">: </span><span class="s1">TextDecoder</span><span class="s2">;</span>
+
+<span class="s5">/**</span>
+ <span class="s5">* Determines if the passed in bytes are valid utf8</span>
+ <span class="s5">* </span><span class="s6">@param </span><span class="s5">bytes - An array of 8-bit bytes. Must be indexable and have length property</span>
+ <span class="s5">* </span><span class="s6">@param </span><span class="s5">start - The index to start validating</span>
+ <span class="s5">* </span><span class="s6">@param </span><span class="s5">end - The index to end validating</span>
+ <span class="s5">*/</span>
+<span class="s0">export function </span><span class="s1">parseUtf8</span><span class="s2">(</span><span class="s1">buffer</span><span class="s2">: </span><span class="s1">Uint8Array</span><span class="s2">, </span><span class="s1">start</span><span class="s2">: </span><span class="s1">number</span><span class="s2">, </span><span class="s1">end</span><span class="s2">: </span><span class="s1">number</span><span class="s2">, </span><span class="s1">fatal</span><span class="s2">: </span><span class="s1">boolean</span><span class="s2">): </span><span class="s1">string </span><span class="s2">{</span>
+  <span class="s0">if </span><span class="s2">(</span><span class="s1">fatal</span><span class="s2">) {</span>
+    <span class="s1">TextDecoderFatal </span><span class="s2">??= </span><span class="s0">new </span><span class="s1">TextDecoder</span><span class="s2">(</span><span class="s3">'utf8'</span><span class="s2">, { </span><span class="s1">fatal</span><span class="s2">: </span><span class="s0">true </span><span class="s2">});</span>
+    <span class="s0">try </span><span class="s2">{</span>
+      <span class="s0">return </span><span class="s1">TextDecoderFatal</span><span class="s2">.</span><span class="s1">decode</span><span class="s2">(</span><span class="s1">buffer</span><span class="s2">.</span><span class="s1">subarray</span><span class="s2">(</span><span class="s1">start</span><span class="s2">, </span><span class="s1">end</span><span class="s2">));</span>
+    <span class="s2">} </span><span class="s0">catch </span><span class="s2">(</span><span class="s1">cause</span><span class="s2">) {</span>
+      <span class="s0">throw new </span><span class="s1">BSONError</span><span class="s2">(</span><span class="s3">'Invalid UTF-8 string in BSON document'</span><span class="s2">, { </span><span class="s1">cause </span><span class="s2">});</span>
+    <span class="s2">}</span>
+  <span class="s2">}</span>
+  <span class="s1">TextDecoderNonFatal </span><span class="s2">??= </span><span class="s0">new </span><span class="s1">TextDecoder</span><span class="s2">(</span><span class="s3">'utf8'</span><span class="s2">, { </span><span class="s1">fatal</span><span class="s2">: </span><span class="s0">false </span><span class="s2">});</span>
+  <span class="s0">return </span><span class="s1">TextDecoderNonFatal</span><span class="s2">.</span><span class="s1">decode</span><span class="s2">(</span><span class="s1">buffer</span><span class="s2">.</span><span class="s1">subarray</span><span class="s2">(</span><span class="s1">start</span><span class="s2">, </span><span class="s1">end</span><span class="s2">));</span>
+<span class="s2">}</span>
+</pre>
+</body>
+</html>

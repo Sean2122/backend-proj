@@ -1,0 +1,302 @@
+<html>
+<head>
+<title>README.md</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+<style type="text/css">
+.s0 { color: #cf8e6d;}
+.s1 { color: #bcbec4;}
+.s2 { color: #bcbec4;}
+.s3 { color: #56a8f5;}
+.s4 { color: #c77dbb; font-style: italic;}
+.s5 { color: #6aab73;}
+</style>
+</head>
+<body bgcolor="#1e1f22">
+<table CELLSPACING=0 CELLPADDING=5 COLS=1 WIDTH="100%" BGCOLOR="#606060" >
+<tr><td><center>
+<font face="Arial, Helvetica" color="#000000">
+README.md</font>
+</center></td></tr></table>
+<pre><span class="s0"># </span><span class="s2">BSON parser</span>
+
+<span class="s2">BSON is short for </span><span class="s1">&quot;</span><span class="s2">Binary JSON,</span><span class="s1">&quot; </span><span class="s2">and is the binary-encoded serialization of JSON-like documents.</span>
+<span class="s2">You can learn more about it in </span><span class="s1">[</span><span class="s2">the specification</span><span class="s1">](</span><span class="s3">http://bsonspec.org</span><span class="s1">)</span><span class="s2">.</span>
+
+<span class="s0">### </span><span class="s2">Table of Contents</span>
+
+<span class="s0">- </span><span class="s1">[</span><span class="s2">Usage</span><span class="s1">](</span><span class="s2">#usage</span><span class="s1">)</span>
+<span class="s0">- </span><span class="s1">[</span><span class="s2">Bugs/Feature Requests</span><span class="s1">](</span><span class="s2">#bugs--feature-requests</span><span class="s1">)</span>
+<span class="s0">- </span><span class="s1">[</span><span class="s2">Installation</span><span class="s1">](</span><span class="s2">#installation</span><span class="s1">)</span>
+<span class="s0">- </span><span class="s1">[</span><span class="s2">Documentation</span><span class="s1">](</span><span class="s2">#documentation</span><span class="s1">)</span>
+<span class="s0">- </span><span class="s1">[</span><span class="s2">FAQ</span><span class="s1">](</span><span class="s2">#faq</span><span class="s1">)</span>
+
+
+<span class="s0">### </span><span class="s2">Release Integrity</span>
+
+<span class="s2">Releases are created automatically and signed using the </span><span class="s1">[</span><span class="s2">Node team's GPG key</span><span class="s1">](</span><span class="s3">https://pgp.mongodb.com/node-driver.asc</span><span class="s1">)</span><span class="s2">. This applies to the git tag as well as all release packages provided as part of a GitHub release. To verify the provided packages, download the key and import it using gpg</span><span class="s1">:</span>
+
+<span class="s0">```</span><span class="s4">shell</span>
+<span class="s5">gpg --import node-driver.asc</span>
+<span class="s0">```</span>
+
+<span class="s2">The GitHub release contains a detached signature file for the NPM package </span><span class="s1">(</span><span class="s2">named</span>
+<span class="s2">`bson-X.Y.Z.tgz.sig`</span><span class="s1">)</span><span class="s2">.</span>
+
+<span class="s2">The following command returns the link npm package. </span>
+<span class="s0">```</span><span class="s4">shell</span>
+<span class="s5">npm view bson@vX.Y.Z dist.tarball </span>
+<span class="s0">```</span>
+
+<span class="s2">Using the result of the above command, a `curl` command can return the official npm package for the release.</span>
+
+<span class="s2">To verify the integrity of the downloaded package, run the following command</span><span class="s1">:</span>
+<span class="s0">```</span><span class="s4">shell</span>
+<span class="s5">gpg --verify bson-X.Y.Z.tgz.sig bson-X.Y.Z.tgz</span>
+<span class="s0">```</span>
+
+<span class="s0">&gt;</span><span class="s1">[!</span><span class="s2">Note</span><span class="s1">]</span>
+<span class="s2">No verification is done when using npm to install the package. The contents of the Github tarball and npm's tarball are identical.</span>
+
+<span class="s0">## </span><span class="s2">Bugs / Feature Requests</span>
+
+<span class="s2">Think you've found a bug? Want to see a new feature in `bson`? Please open a case in our issue management tool, JIRA</span><span class="s1">:</span>
+
+<span class="s0">1. </span><span class="s2">Create an account and login</span><span class="s1">: [</span><span class="s2">jira.mongodb.org</span><span class="s1">](</span><span class="s3">https://jira.mongodb.org</span><span class="s1">)</span>
+<span class="s0">2. </span><span class="s2">Navigate to the NODE project</span><span class="s1">: [</span><span class="s2">jira.mongodb.org/browse/NODE</span><span class="s1">](</span><span class="s3">https://jira.mongodb.org/browse/NODE</span><span class="s1">)</span>
+<span class="s0">3. </span><span class="s2">Click </span><span class="s1">**</span><span class="s2">Create Issue</span><span class="s1">** </span><span class="s2">- Please provide as much information as possible about the issue and how to reproduce it.</span>
+
+<span class="s2">Bug reports in JIRA for the NODE driver project are </span><span class="s1">**</span><span class="s2">public</span><span class="s1">**</span><span class="s2">.</span>
+
+<span class="s0">## </span><span class="s2">Usage</span>
+
+<span class="s2">To build a new version perform the following operations</span><span class="s1">:</span>
+
+<span class="s0">```</span>
+<span class="s5">npm install</span>
+<span class="s5">npm run build</span>
+<span class="s0">```</span>
+
+<span class="s0">### </span><span class="s2">Node.js or Bundling Usage</span>
+
+<span class="s2">When using a bundler or Node.js you can import bson using the package name</span><span class="s1">:</span>
+
+<span class="s0">```</span><span class="s4">js</span>
+<span class="s5">import { BSON, EJSON, ObjectId } from 'bson';</span>
+<span class="s5">// or:</span>
+<span class="s5">// const { BSON, EJSON, ObjectId } = require('bson');</span>
+
+<span class="s5">const bytes = BSON.serialize({ _id: new ObjectId() });</span>
+<span class="s5">console.log(bytes);</span>
+<span class="s5">const doc = BSON.deserialize(bytes);</span>
+<span class="s5">console.log(EJSON.stringify(doc));</span>
+<span class="s5">// {&quot;_id&quot;:{&quot;$oid&quot;:&quot;...&quot;}}</span>
+<span class="s0">```</span>
+
+<span class="s0">### </span><span class="s2">Browser Usage</span>
+
+<span class="s2">If you are working directly in the browser without a bundler please use the `.mjs` bundle like so</span><span class="s1">:</span>
+
+<span class="s0">```</span><span class="s4">html</span>
+<span class="s5">&lt;script type=&quot;module&quot;&gt;</span>
+  <span class="s5">import { BSON, EJSON, ObjectId } from './lib/bson.mjs';</span>
+
+  <span class="s5">const bytes = BSON.serialize({ _id: new ObjectId() });</span>
+  <span class="s5">console.log(bytes);</span>
+  <span class="s5">const doc = BSON.deserialize(bytes);</span>
+  <span class="s5">console.log(EJSON.stringify(doc));</span>
+  <span class="s5">// {&quot;_id&quot;:{&quot;$oid&quot;:&quot;...&quot;}}</span>
+<span class="s5">&lt;/script&gt;</span>
+<span class="s0">```</span>
+
+<span class="s0">## </span><span class="s2">Installation</span>
+
+<span class="s0">```</span><span class="s4">sh</span>
+<span class="s5">npm install bson</span>
+<span class="s0">```</span>
+
+<span class="s0">### </span><span class="s2">MongoDB Node.js Driver Version Compatibility</span>
+
+<span class="s2">Only the following version combinations with the </span><span class="s1">[</span><span class="s2">MongoDB Node.js Driver</span><span class="s1">](</span><span class="s3">https://github.com/mongodb/node-mongodb-native</span><span class="s1">) </span><span class="s2">are considered stable.</span>
+
+<span class="s0">|               | </span><span class="s1">`bson@1.x` </span><span class="s0">| </span><span class="s1">`bson@4.x` </span><span class="s0">| </span><span class="s1">`bson@5.x` </span><span class="s0">| </span><span class="s1">`bson@6.x` </span><span class="s0">|</span>
+<span class="s0">| ------------- | ---------- | ---------- | ---------- | ---------- |</span>
+<span class="s0">| </span><span class="s1">`mongodb@6.x` </span><span class="s0">| </span><span class="s1">N/A        </span><span class="s0">| </span><span class="s1">N/A        </span><span class="s0">| </span><span class="s1">N/A        </span><span class="s0">| </span><span class="s1">✓          </span><span class="s0">|</span>
+<span class="s0">| </span><span class="s1">`mongodb@5.x` </span><span class="s0">| </span><span class="s1">N/A        </span><span class="s0">| </span><span class="s1">N/A        </span><span class="s0">| </span><span class="s1">✓          </span><span class="s0">| </span><span class="s1">N/A        </span><span class="s0">|</span>
+<span class="s0">| </span><span class="s1">`mongodb@4.x` </span><span class="s0">| </span><span class="s1">N/A        </span><span class="s0">| </span><span class="s1">✓          </span><span class="s0">| </span><span class="s1">N/A        </span><span class="s0">| </span><span class="s1">N/A        </span><span class="s0">|</span>
+<span class="s0">| </span><span class="s1">`mongodb@3.x` </span><span class="s0">| </span><span class="s1">✓          </span><span class="s0">| </span><span class="s1">N/A        </span><span class="s0">| </span><span class="s1">N/A        </span><span class="s0">| </span><span class="s1">N/A        </span><span class="s0">|</span>
+
+<span class="s0">## </span><span class="s2">Documentation</span>
+
+<span class="s0">### </span><span class="s2">BSON</span>
+
+<span class="s1">[</span><span class="s2">API documentation</span><span class="s1">](</span><span class="s3">https://mongodb.github.io/node-mongodb-native/Next/modules/BSON.html</span><span class="s1">)</span>
+
+<span class="s1">&lt;a name=&quot;EJSON&quot;&gt;&lt;/a&gt;</span>
+
+<span class="s0">### </span><span class="s2">EJSON</span>
+
+<span class="s0">- </span><span class="s1">[</span><span class="s2">EJSON</span><span class="s1">](</span><span class="s2">#EJSON</span><span class="s1">)</span>
+
+  <span class="s0">- </span><span class="s1">[</span><span class="s2">.parse</span><span class="s1">(</span><span class="s2">text, </span><span class="s1">[</span><span class="s2">options</span><span class="s1">])](</span><span class="s2">#EJSON.parse</span><span class="s1">)</span>
+
+  <span class="s0">- </span><span class="s1">[</span><span class="s2">.stringify</span><span class="s1">(</span><span class="s2">value, </span><span class="s1">[</span><span class="s2">replacer</span><span class="s1">]</span><span class="s2">, </span><span class="s1">[</span><span class="s2">space</span><span class="s1">]</span><span class="s2">, </span><span class="s1">[</span><span class="s2">options</span><span class="s1">])](</span><span class="s2">#EJSON.stringify</span><span class="s1">)</span>
+
+  <span class="s0">- </span><span class="s1">[</span><span class="s2">.serialize</span><span class="s1">(</span><span class="s2">bson, </span><span class="s1">[</span><span class="s2">options</span><span class="s1">])](</span><span class="s2">#EJSON.serialize</span><span class="s1">)</span>
+
+  <span class="s0">- </span><span class="s1">[</span><span class="s2">.deserialize</span><span class="s1">(</span><span class="s2">ejson, </span><span class="s1">[</span><span class="s2">options</span><span class="s1">])](</span><span class="s2">#EJSON.deserialize</span><span class="s1">)</span>
+
+<span class="s1">&lt;a name=&quot;EJSON.parse&quot;&gt;&lt;/a&gt;</span>
+
+<span class="s0">#### </span><span class="s1">_</span><span class="s2">EJSON</span><span class="s1">_</span><span class="s2">.parse</span><span class="s1">(</span><span class="s2">text, </span><span class="s1">[</span><span class="s2">options</span><span class="s1">])</span>
+
+<span class="s0">| </span><span class="s1">Param             </span><span class="s0">| </span><span class="s1">Type                 </span><span class="s0">| </span><span class="s1">Default           </span><span class="s0">| </span><span class="s1">Description                                                                        </span><span class="s0">|</span>
+<span class="s0">| ----------------- | -------------------- | ----------------- | ---------------------------------------------------------------------------------- |</span>
+<span class="s0">| </span><span class="s1">text              </span><span class="s0">| </span><span class="s1">&lt;code&gt;string&lt;/code&gt;  </span><span class="s0">|                   |                                                                                    |</span>
+<span class="s0">| </span><span class="s1">[options]         </span><span class="s0">| </span><span class="s1">&lt;code&gt;object&lt;/code&gt;  </span><span class="s0">|                   | </span><span class="s1">Optional settings                                                                  </span><span class="s0">|</span>
+<span class="s0">| </span><span class="s1">[options.relaxed] </span><span class="s0">| </span><span class="s1">&lt;code&gt;boolean&lt;/code&gt; </span><span class="s0">| </span><span class="s1">&lt;code&gt;true&lt;/code&gt; </span><span class="s0">| </span><span class="s1">Attempt to return native JS types where possible, rather than BSON types (if true) </span><span class="s0">|</span>
+
+<span class="s2">Parse an Extended JSON string, constructing the JavaScript value or object described by that</span>
+<span class="s2">string.</span>
+
+<span class="s1">**</span><span class="s2">Example</span><span class="s1">**</span>
+
+<span class="s0">```</span><span class="s4">js</span>
+<span class="s5">const { EJSON } = require('bson');</span>
+<span class="s5">const text = '{ &quot;int32&quot;: { &quot;$numberInt&quot;: &quot;10&quot; } }';</span>
+
+<span class="s5">// prints { int32: { [String: '10'] _bsontype: 'Int32', value: '10' } }</span>
+<span class="s5">console.log(EJSON.parse(text, { relaxed: false }));</span>
+
+<span class="s5">// prints { int32: 10 }</span>
+<span class="s5">console.log(EJSON.parse(text));</span>
+<span class="s0">```</span>
+
+<span class="s1">&lt;a name=&quot;EJSON.stringify&quot;&gt;&lt;/a&gt;</span>
+
+<span class="s0">#### </span><span class="s1">_</span><span class="s2">EJSON</span><span class="s1">_</span><span class="s2">.stringify</span><span class="s1">(</span><span class="s2">value, </span><span class="s1">[</span><span class="s2">replacer</span><span class="s1">]</span><span class="s2">, </span><span class="s1">[</span><span class="s2">space</span><span class="s1">]</span><span class="s2">, </span><span class="s1">[</span><span class="s2">options</span><span class="s1">])</span>
+
+<span class="s0">| </span><span class="s1">Param             </span><span class="s0">| </span><span class="s1">Type                                        </span><span class="s0">| </span><span class="s1">Default           </span><span class="s0">| </span><span class="s1">Description                                                                                                                                                                                                                                                                                                                                        </span><span class="s0">|</span>
+<span class="s0">| ----------------- | ------------------------------------------- | ----------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |</span>
+<span class="s0">| </span><span class="s1">value             </span><span class="s0">| </span><span class="s1">&lt;code&gt;object&lt;/code&gt;                         </span><span class="s0">|                   | </span><span class="s1">The value to convert to extended JSON                                                                                                                                                                                                                                                                                                              </span><span class="s0">|</span>
+<span class="s0">| </span><span class="s1">[replacer]        </span><span class="s0">| </span><span class="s1">&lt;code&gt;function&lt;/code&gt; \| &lt;code&gt;array&lt;/code&gt; </span><span class="s0">|                   | </span><span class="s1">A function that alters the behavior of the stringification process, or an array of String and Number objects that serve as a whitelist for selecting/filtering the properties of the value object to be included in the JSON string. If this value is null or not provided, all properties of the object are included in the resulting JSON string </span><span class="s0">|</span>
+<span class="s0">| </span><span class="s1">[space]           </span><span class="s0">| </span><span class="s1">&lt;code&gt;string&lt;/code&gt; \| &lt;code&gt;number&lt;/code&gt;  </span><span class="s0">|                   | </span><span class="s1">A String or Number object that's used to insert white space into the output JSON string for readability purposes.                                                                                                                                                                                                                                  </span><span class="s0">|</span>
+<span class="s0">| </span><span class="s1">[options]         </span><span class="s0">| </span><span class="s1">&lt;code&gt;object&lt;/code&gt;                         </span><span class="s0">|                   | </span><span class="s1">Optional settings                                                                                                                                                                                                                                                                                                                                  </span><span class="s0">|</span>
+<span class="s0">| </span><span class="s1">[options.relaxed] </span><span class="s0">| </span><span class="s1">&lt;code&gt;boolean&lt;/code&gt;                        </span><span class="s0">| </span><span class="s1">&lt;code&gt;true&lt;/code&gt; </span><span class="s0">| </span><span class="s1">Enabled Extended JSON's `relaxed` mode                                                                                                                                                                                                                                                                                                             </span><span class="s0">|</span>
+<span class="s0">| </span><span class="s1">[options.legacy]  </span><span class="s0">| </span><span class="s1">&lt;code&gt;boolean&lt;/code&gt;                        </span><span class="s0">| </span><span class="s1">&lt;code&gt;true&lt;/code&gt; </span><span class="s0">| </span><span class="s1">Output in Extended JSON v1                                                                                                                                                                                                                                                                                                                         </span><span class="s0">|</span>
+
+<span class="s2">Converts a BSON document to an Extended JSON string, optionally replacing values if a replacer</span>
+<span class="s2">function is specified or optionally including only the specified properties if a replacer array</span>
+<span class="s2">is specified.</span>
+
+<span class="s1">**</span><span class="s2">Example</span><span class="s1">**</span>
+
+<span class="s0">```</span><span class="s4">js</span>
+<span class="s5">const { EJSON } = require('bson');</span>
+<span class="s5">const Int32 = require('mongodb').Int32;</span>
+<span class="s5">const doc = { int32: new Int32(10) };</span>
+
+<span class="s5">// prints '{&quot;int32&quot;:{&quot;$numberInt&quot;:&quot;10&quot;}}'</span>
+<span class="s5">console.log(EJSON.stringify(doc, { relaxed: false }));</span>
+
+<span class="s5">// prints '{&quot;int32&quot;:10}'</span>
+<span class="s5">console.log(EJSON.stringify(doc));</span>
+<span class="s0">```</span>
+
+<span class="s1">&lt;a name=&quot;EJSON.serialize&quot;&gt;&lt;/a&gt;</span>
+
+<span class="s0">#### </span><span class="s1">_</span><span class="s2">EJSON</span><span class="s1">_</span><span class="s2">.serialize</span><span class="s1">(</span><span class="s2">bson, </span><span class="s1">[</span><span class="s2">options</span><span class="s1">])</span>
+
+<span class="s0">| </span><span class="s1">Param     </span><span class="s0">| </span><span class="s1">Type                </span><span class="s0">| </span><span class="s1">Description                                          </span><span class="s0">|</span>
+<span class="s0">| --------- | ------------------- | ---------------------------------------------------- |</span>
+<span class="s0">| </span><span class="s1">bson      </span><span class="s0">| </span><span class="s1">&lt;code&gt;object&lt;/code&gt; </span><span class="s0">| </span><span class="s1">The object to serialize                              </span><span class="s0">|</span>
+<span class="s0">| </span><span class="s1">[options] </span><span class="s0">| </span><span class="s1">&lt;code&gt;object&lt;/code&gt; </span><span class="s0">| </span><span class="s1">Optional settings passed to the `stringify` function </span><span class="s0">|</span>
+
+<span class="s2">Serializes an object to an Extended JSON string, and reparse it as a JavaScript object.</span>
+
+<span class="s1">&lt;a name=&quot;EJSON.deserialize&quot;&gt;&lt;/a&gt;</span>
+
+<span class="s0">#### </span><span class="s1">_</span><span class="s2">EJSON</span><span class="s1">_</span><span class="s2">.deserialize</span><span class="s1">(</span><span class="s2">ejson, </span><span class="s1">[</span><span class="s2">options</span><span class="s1">])</span>
+
+<span class="s0">| </span><span class="s1">Param     </span><span class="s0">| </span><span class="s1">Type                </span><span class="s0">| </span><span class="s1">Description                                  </span><span class="s0">|</span>
+<span class="s0">| --------- | ------------------- | -------------------------------------------- |</span>
+<span class="s0">| </span><span class="s1">ejson     </span><span class="s0">| </span><span class="s1">&lt;code&gt;object&lt;/code&gt; </span><span class="s0">| </span><span class="s1">The Extended JSON object to deserialize      </span><span class="s0">|</span>
+<span class="s0">| </span><span class="s1">[options] </span><span class="s0">| </span><span class="s1">&lt;code&gt;object&lt;/code&gt; </span><span class="s0">| </span><span class="s1">Optional settings passed to the parse method </span><span class="s0">|</span>
+
+<span class="s2">Deserializes an Extended JSON object into a plain JavaScript object with native/BSON types</span>
+
+<span class="s0">## </span><span class="s2">Error Handling</span>
+
+<span class="s2">It is our recommendation to use `BSONError.isBSONError</span><span class="s1">()</span><span class="s2">` checks on errors and to avoid relying on parsing `error.message` and `error.name` strings in your code. We guarantee `BSONError.isBSONError</span><span class="s1">()</span><span class="s2">` checks will pass according to semver guidelines, but errors may be sub-classed or their messages may change at any time, even patch releases, as we see fit to increase the helpfulness of the errors.</span>
+
+<span class="s2">Any new errors we add to the driver will directly extend an existing error class and no existing error will be moved to a different parent class outside of a major release.</span>
+<span class="s2">This means `BSONError.isBSONError</span><span class="s1">()</span><span class="s2">` will always be able to accurately capture the errors that our BSON library throws.</span>
+
+<span class="s2">Hypothetical example</span><span class="s1">: </span><span class="s2">A collection in our Db has an issue with UTF-8 data</span><span class="s1">:</span>
+
+<span class="s0">```</span><span class="s4">ts</span>
+<span class="s5">let documentCount = 0;</span>
+<span class="s5">const cursor = collection.find({}, { utf8Validation: true });</span>
+<span class="s5">try {</span>
+  <span class="s5">for await (const doc of cursor) documentCount += 1;</span>
+<span class="s5">} catch (error) {</span>
+  <span class="s5">if (BSONError.isBSONError(error)) {</span>
+    <span class="s5">console.log(`Found the troublemaker UTF-8!: ${documentCount} ${error.message}`);</span>
+    <span class="s5">return documentCount;</span>
+  <span class="s5">}</span>
+  <span class="s5">throw error;</span>
+<span class="s5">}</span>
+<span class="s0">```</span>
+
+<span class="s0">## </span><span class="s2">React Native</span>
+
+<span class="s2">BSON vendors the required polyfills for `TextEncoder`, `TextDecoder`, `atob`, `btoa` imported from React Native and therefore doesn't expect users to polyfill these. One additional polyfill, `crypto.getRandomValues` is recommended and can be installed with the following command</span><span class="s1">:</span>
+
+<span class="s0">```</span><span class="s4">sh</span>
+<span class="s5">npm install --save react-native-get-random-values</span>
+<span class="s0">```</span>
+
+<span class="s2">The following snippet should be placed at the top of the entrypoint </span><span class="s1">(</span><span class="s2">by default this is the root `index.js` file</span><span class="s1">) </span><span class="s2">for React Native projects using the BSON library. These lines must be placed for any code that imports `BSON`.</span>
+
+<span class="s0">```</span><span class="s4">typescript</span>
+<span class="s5">// Required Polyfills For ReactNative</span>
+<span class="s5">import 'react-native-get-random-values';</span>
+<span class="s0">```</span>
+
+<span class="s2">Finally, import the `BSON` library like so</span><span class="s1">:</span>
+
+<span class="s0">```</span><span class="s4">typescript</span>
+<span class="s5">import { BSON, EJSON } from 'bson';</span>
+<span class="s0">```</span>
+
+<span class="s2">This will cause React Native to import the `node_modules/bson/lib/bson.rn.cjs` bundle </span><span class="s1">(</span><span class="s2">see the `</span><span class="s1">&quot;</span><span class="s2">react-native</span><span class="s1">&quot;</span><span class="s2">` setting we have in the `</span><span class="s1">&quot;</span><span class="s2">exports</span><span class="s1">&quot;</span><span class="s2">` section of our </span><span class="s1">[</span><span class="s2">package.json</span><span class="s1">](</span><span class="s2">./package.json</span><span class="s1">)</span><span class="s2">.</span><span class="s1">)</span>
+
+<span class="s0">### </span><span class="s2">Technical Note about React Native module import</span>
+
+<span class="s2">The `</span><span class="s1">&quot;</span><span class="s2">exports</span><span class="s1">&quot;</span><span class="s2">` definition in our `package.json` will result in BSON's CommonJS bundle being imported in a React Native project instead of the ES module bundle. Importing the CommonJS bundle is necessary because BSON's ES module bundle of BSON uses top-level await, which is not supported syntax in </span><span class="s1">[</span><span class="s2">React Native's runtime hermes</span><span class="s1">](</span><span class="s3">https://hermesengine.dev/</span><span class="s1">)</span><span class="s2">.</span>
+
+<span class="s0">## </span><span class="s2">FAQ</span>
+
+<span class="s0">#### </span><span class="s2">Why does `undefined` get converted to `null`?</span>
+
+<span class="s2">The `undefined` BSON type has been </span><span class="s1">[</span><span class="s2">deprecated for many years</span><span class="s1">](</span><span class="s3">http://bsonspec.org/spec.html</span><span class="s1">)</span><span class="s2">, so this library has dropped support for it. Use the `ignoreUndefined` option </span><span class="s1">(</span><span class="s2">for example, from the </span><span class="s1">[</span><span class="s2">driver</span><span class="s1">](</span><span class="s3">http://mongodb.github.io/node-mongodb-native/2.2/api/MongoClient.html#connect</span><span class="s1">) ) </span><span class="s2">to instead remove `undefined` keys.</span>
+
+<span class="s0">#### </span><span class="s2">How do I add custom serialization logic?</span>
+
+<span class="s2">This library looks for `toBSON</span><span class="s1">()</span><span class="s2">` functions on every path, and calls the `toBSON</span><span class="s1">()</span><span class="s2">` function to get the value to serialize.</span>
+
+<span class="s0">```</span><span class="s4">javascript</span>
+<span class="s5">const BSON = require('bson');</span>
+
+<span class="s5">class CustomSerialize {</span>
+  <span class="s5">toBSON() {</span>
+    <span class="s5">return 42;</span>
+  <span class="s5">}</span>
+<span class="s5">}</span>
+
+<span class="s5">const obj = { answer: new CustomSerialize() };</span>
+<span class="s5">// &quot;{ answer: 42 }&quot;</span>
+<span class="s5">console.log(BSON.deserialize(BSON.serialize(obj)));</span>
+<span class="s0">```</span>
+</pre>
+</body>
+</html>

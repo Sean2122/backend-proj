@@ -1,0 +1,128 @@
+<html>
+<head>
+<title>error.ts</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+<style type="text/css">
+.s0 { color: #cf8e6d;}
+.s1 { color: #bcbec4;}
+.s2 { color: #bcbec4;}
+.s3 { color: #6aab73;}
+.s4 { color: #5f826b; font-style: italic;}
+.s5 { color: #67a37c; font-style: italic;}
+.s6 { color: #7a7e85;}
+</style>
+</head>
+<body bgcolor="#1e1f22">
+<table CELLSPACING=0 CELLPADDING=5 COLS=1 WIDTH="100%" BGCOLOR="#606060" >
+<tr><td><center>
+<font face="Arial, Helvetica" color="#000000">
+error.ts</font>
+</center></td></tr></table>
+<pre><span class="s0">import </span><span class="s2">{ </span><span class="s1">BSON_MAJOR_VERSION </span><span class="s2">} </span><span class="s1">from </span><span class="s3">'./constants'</span><span class="s2">;</span>
+
+<span class="s4">/**</span>
+ <span class="s4">* </span><span class="s5">@public</span>
+ <span class="s4">* </span><span class="s5">@category </span><span class="s4">Error</span>
+ <span class="s4">*</span>
+ <span class="s4">* `BSONError` objects are thrown when BSON encounters an error.</span>
+ <span class="s4">*</span>
+ <span class="s4">* This is the parent class for all the other errors thrown by this library.</span>
+ <span class="s4">*/</span>
+<span class="s0">export class </span><span class="s1">BSONError </span><span class="s0">extends </span><span class="s1">Error </span><span class="s2">{</span>
+  <span class="s4">/**</span>
+   <span class="s4">* </span><span class="s5">@internal</span>
+   <span class="s4">* The underlying algorithm for isBSONError may change to improve how strict it is</span>
+   <span class="s4">* about determining if an input is a BSONError. But it must remain backwards compatible</span>
+   <span class="s4">* with previous minors &amp; patches of the current major version.</span>
+   <span class="s4">*/</span>
+  <span class="s0">protected </span><span class="s1">get bsonError</span><span class="s2">(): </span><span class="s0">true </span><span class="s2">{</span>
+    <span class="s0">return true</span><span class="s2">;</span>
+  <span class="s2">}</span>
+
+  <span class="s1">override get name</span><span class="s2">(): </span><span class="s1">string </span><span class="s2">{</span>
+    <span class="s0">return </span><span class="s3">'BSONError'</span><span class="s2">;</span>
+  <span class="s2">}</span>
+
+  <span class="s1">constructor</span><span class="s2">(</span><span class="s1">message</span><span class="s2">: </span><span class="s1">string</span><span class="s2">, </span><span class="s1">options</span><span class="s2">?: { </span><span class="s1">cause</span><span class="s2">?: </span><span class="s1">unknown </span><span class="s2">}) {</span>
+    <span class="s0">super</span><span class="s2">(</span><span class="s1">message</span><span class="s2">, </span><span class="s1">options</span><span class="s2">);</span>
+  <span class="s2">}</span>
+
+  <span class="s4">/**</span>
+   <span class="s4">* </span><span class="s5">@public</span>
+   <span class="s4">*</span>
+   <span class="s4">* All errors thrown from the BSON library inherit from `BSONError`.</span>
+   <span class="s4">* This method can assist with determining if an error originates from the BSON library</span>
+   <span class="s4">* even if it does not pass an `instanceof` check against this class' constructor.</span>
+   <span class="s4">*</span>
+   <span class="s4">* </span><span class="s5">@param </span><span class="s4">value - any javascript value that needs type checking</span>
+   <span class="s4">*/</span>
+  <span class="s0">public static </span><span class="s1">isBSONError</span><span class="s2">(</span><span class="s1">value</span><span class="s2">: </span><span class="s1">unknown</span><span class="s2">): </span><span class="s1">value </span><span class="s2">is </span><span class="s1">BSONError </span><span class="s2">{</span>
+    <span class="s0">return </span><span class="s2">(</span>
+      <span class="s1">value </span><span class="s2">!= </span><span class="s0">null </span><span class="s2">&amp;&amp;</span>
+      <span class="s0">typeof </span><span class="s1">value </span><span class="s2">=== </span><span class="s3">'object' </span><span class="s2">&amp;&amp;</span>
+      <span class="s3">'bsonError' </span><span class="s0">in </span><span class="s1">value </span><span class="s2">&amp;&amp;</span>
+      <span class="s1">value</span><span class="s2">.</span><span class="s1">bsonError </span><span class="s2">=== </span><span class="s0">true </span><span class="s2">&amp;&amp;</span>
+      <span class="s6">// Do not access the following properties, just check existence</span>
+      <span class="s3">'name' </span><span class="s0">in </span><span class="s1">value </span><span class="s2">&amp;&amp;</span>
+      <span class="s3">'message' </span><span class="s0">in </span><span class="s1">value </span><span class="s2">&amp;&amp;</span>
+      <span class="s3">'stack' </span><span class="s0">in </span><span class="s1">value</span>
+    <span class="s2">);</span>
+  <span class="s2">}</span>
+<span class="s2">}</span>
+
+<span class="s4">/**</span>
+ <span class="s4">* </span><span class="s5">@public</span>
+ <span class="s4">* </span><span class="s5">@category </span><span class="s4">Error</span>
+ <span class="s4">*/</span>
+<span class="s0">export class </span><span class="s1">BSONVersionError </span><span class="s0">extends </span><span class="s1">BSONError </span><span class="s2">{</span>
+  <span class="s1">get name</span><span class="s2">(): </span><span class="s3">'BSONVersionError' </span><span class="s2">{</span>
+    <span class="s0">return </span><span class="s3">'BSONVersionError'</span><span class="s2">;</span>
+  <span class="s2">}</span>
+
+  <span class="s1">constructor</span><span class="s2">() {</span>
+    <span class="s0">super</span><span class="s2">(</span><span class="s3">`Unsupported BSON version, bson types must be from bson </span><span class="s1">$</span><span class="s2">{</span><span class="s1">BSON_MAJOR_VERSION</span><span class="s2">}</span><span class="s3">.x.x`</span><span class="s2">);</span>
+  <span class="s2">}</span>
+<span class="s2">}</span>
+
+<span class="s4">/**</span>
+ <span class="s4">* </span><span class="s5">@public</span>
+ <span class="s4">* </span><span class="s5">@category </span><span class="s4">Error</span>
+ <span class="s4">*</span>
+ <span class="s4">* An error generated when BSON functions encounter an unexpected input</span>
+ <span class="s4">* or reaches an unexpected/invalid internal state</span>
+ <span class="s4">*</span>
+ <span class="s4">*/</span>
+<span class="s0">export class </span><span class="s1">BSONRuntimeError </span><span class="s0">extends </span><span class="s1">BSONError </span><span class="s2">{</span>
+  <span class="s1">get name</span><span class="s2">(): </span><span class="s3">'BSONRuntimeError' </span><span class="s2">{</span>
+    <span class="s0">return </span><span class="s3">'BSONRuntimeError'</span><span class="s2">;</span>
+  <span class="s2">}</span>
+
+  <span class="s1">constructor</span><span class="s2">(</span><span class="s1">message</span><span class="s2">: </span><span class="s1">string</span><span class="s2">) {</span>
+    <span class="s0">super</span><span class="s2">(</span><span class="s1">message</span><span class="s2">);</span>
+  <span class="s2">}</span>
+<span class="s2">}</span>
+
+<span class="s4">/**</span>
+ <span class="s4">* </span><span class="s5">@public</span>
+ <span class="s4">* </span><span class="s5">@category </span><span class="s4">Error</span>
+ <span class="s4">*</span>
+ <span class="s4">* </span><span class="s5">@experimental</span>
+ <span class="s4">*</span>
+ <span class="s4">* An error generated when BSON bytes are invalid.</span>
+ <span class="s4">* Reports the offset the parser was able to reach before encountering the error.</span>
+ <span class="s4">*/</span>
+<span class="s0">export class </span><span class="s1">BSONOffsetError </span><span class="s0">extends </span><span class="s1">BSONError </span><span class="s2">{</span>
+  <span class="s0">public </span><span class="s1">get name</span><span class="s2">(): </span><span class="s3">'BSONOffsetError' </span><span class="s2">{</span>
+    <span class="s0">return </span><span class="s3">'BSONOffsetError'</span><span class="s2">;</span>
+  <span class="s2">}</span>
+
+  <span class="s0">public </span><span class="s1">offset</span><span class="s2">: </span><span class="s1">number</span><span class="s2">;</span>
+
+  <span class="s1">constructor</span><span class="s2">(</span><span class="s1">message</span><span class="s2">: </span><span class="s1">string</span><span class="s2">, </span><span class="s1">offset</span><span class="s2">: </span><span class="s1">number</span><span class="s2">, </span><span class="s1">options</span><span class="s2">?: { </span><span class="s1">cause</span><span class="s2">?: </span><span class="s1">unknown </span><span class="s2">}) {</span>
+    <span class="s0">super</span><span class="s2">(</span><span class="s3">`</span><span class="s1">$</span><span class="s2">{</span><span class="s1">message</span><span class="s2">}</span><span class="s3">. offset: </span><span class="s1">$</span><span class="s2">{</span><span class="s1">offset</span><span class="s2">}</span><span class="s3">`</span><span class="s2">, </span><span class="s1">options</span><span class="s2">);</span>
+    <span class="s0">this</span><span class="s2">.</span><span class="s1">offset </span><span class="s2">= </span><span class="s1">offset</span><span class="s2">;</span>
+  <span class="s2">}</span>
+<span class="s2">}</span>
+</pre>
+</body>
+</html>

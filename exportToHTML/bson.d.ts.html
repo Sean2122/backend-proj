@@ -1,0 +1,1747 @@
+<html>
+<head>
+<title>bson.d.ts</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+<style type="text/css">
+.s0 { color: #5f826b; font-style: italic;}
+.s1 { color: #67a37c; font-style: italic;}
+.s2 { color: #bcbec4;}
+.s3 { color: #cf8e6d;}
+.s4 { color: #bcbec4;}
+.s5 { color: #6aab73;}
+.s6 { color: #7a7e85;}
+.s7 { color: #2aacb8;}
+</style>
+</head>
+<body bgcolor="#1e1f22">
+<table CELLSPACING=0 CELLPADDING=5 COLS=1 WIDTH="100%" BGCOLOR="#606060" >
+<tr><td><center>
+<font face="Arial, Helvetica" color="#000000">
+bson.d.ts</font>
+</center></td></tr></table>
+<pre><span class="s0">/**</span>
+ <span class="s0">* A class representation of the BSON Binary type.</span>
+ <span class="s0">* </span><span class="s1">@public</span>
+ <span class="s0">* </span><span class="s1">@category </span><span class="s0">BSONType</span>
+ <span class="s0">*/</span>
+<span class="s3">export </span><span class="s2">declare </span><span class="s3">class </span><span class="s2">Binary </span><span class="s3">extends </span><span class="s2">BSONValue </span><span class="s4">{</span>
+    <span class="s2">get _bsontype</span><span class="s4">(): </span><span class="s5">'Binary'</span><span class="s4">;</span>
+    <span class="s6">/* Excluded from this release type: BSON_BINARY_SUBTYPE_DEFAULT */</span>
+    <span class="s0">/** Initial buffer default size */</span>
+    <span class="s3">static </span><span class="s2">readonly BUFFER_SIZE </span><span class="s4">= </span><span class="s7">256</span><span class="s4">;</span>
+    <span class="s0">/** Default BSON type */</span>
+    <span class="s3">static </span><span class="s2">readonly SUBTYPE_DEFAULT </span><span class="s4">= </span><span class="s7">0</span><span class="s4">;</span>
+    <span class="s0">/** Function BSON type */</span>
+    <span class="s3">static </span><span class="s2">readonly SUBTYPE_FUNCTION </span><span class="s4">= </span><span class="s7">1</span><span class="s4">;</span>
+    <span class="s0">/** Byte Array BSON type */</span>
+    <span class="s3">static </span><span class="s2">readonly SUBTYPE_BYTE_ARRAY </span><span class="s4">= </span><span class="s7">2</span><span class="s4">;</span>
+    <span class="s0">/** Deprecated UUID BSON type @deprecated Please use SUBTYPE_UUID */</span>
+    <span class="s3">static </span><span class="s2">readonly SUBTYPE_UUID_OLD </span><span class="s4">= </span><span class="s7">3</span><span class="s4">;</span>
+    <span class="s0">/** UUID BSON type */</span>
+    <span class="s3">static </span><span class="s2">readonly SUBTYPE_UUID </span><span class="s4">= </span><span class="s7">4</span><span class="s4">;</span>
+    <span class="s0">/** MD5 BSON type */</span>
+    <span class="s3">static </span><span class="s2">readonly SUBTYPE_MD5 </span><span class="s4">= </span><span class="s7">5</span><span class="s4">;</span>
+    <span class="s0">/** Encrypted BSON type */</span>
+    <span class="s3">static </span><span class="s2">readonly SUBTYPE_ENCRYPTED </span><span class="s4">= </span><span class="s7">6</span><span class="s4">;</span>
+    <span class="s0">/** Column BSON type */</span>
+    <span class="s3">static </span><span class="s2">readonly SUBTYPE_COLUMN </span><span class="s4">= </span><span class="s7">7</span><span class="s4">;</span>
+    <span class="s0">/** Sensitive BSON type */</span>
+    <span class="s3">static </span><span class="s2">readonly SUBTYPE_SENSITIVE </span><span class="s4">= </span><span class="s7">8</span><span class="s4">;</span>
+    <span class="s0">/** Vector BSON type */</span>
+    <span class="s3">static </span><span class="s2">readonly SUBTYPE_VECTOR </span><span class="s4">= </span><span class="s7">9</span><span class="s4">;</span>
+    <span class="s0">/** User BSON type */</span>
+    <span class="s3">static </span><span class="s2">readonly SUBTYPE_USER_DEFINED </span><span class="s4">= </span><span class="s7">128</span><span class="s4">;</span>
+    <span class="s0">/** datatype of a Binary Vector (subtype: 9) */</span>
+    <span class="s3">static </span><span class="s2">readonly VECTOR_TYPE</span><span class="s4">: </span><span class="s2">Readonly</span><span class="s4">&lt;{</span>
+        <span class="s2">readonly Int8</span><span class="s4">: </span><span class="s7">3</span><span class="s4">;</span>
+        <span class="s2">readonly Float32</span><span class="s4">: </span><span class="s7">39</span><span class="s4">;</span>
+        <span class="s2">readonly PackedBit</span><span class="s4">: </span><span class="s7">16</span><span class="s4">;</span>
+    <span class="s4">}&gt;;</span>
+    <span class="s0">/**</span>
+     <span class="s0">* The bytes of the Binary value.</span>
+     <span class="s0">*</span>
+     <span class="s0">* The format of a Binary value in BSON is defined as:</span>
+     <span class="s0">* ```txt</span>
+     <span class="s0">* binary ::= int32 subtype (byte*)</span>
+     <span class="s0">* ```</span>
+     <span class="s0">*</span>
+     <span class="s0">* This `buffer` is the &quot;(byte*)&quot; segment.</span>
+     <span class="s0">*</span>
+     <span class="s0">* Unless the value is subtype 2, then deserialize will read the first 4 bytes as an int32 and set this to the remaining bytes.</span>
+     <span class="s0">*</span>
+     <span class="s0">* ```txt</span>
+     <span class="s0">* binary ::= int32 unsigned_byte(2) int32 (byte*)</span>
+     <span class="s0">* ```</span>
+     <span class="s0">*</span>
+     <span class="s0">* </span><span class="s1">@see </span><span class="s0">https://bsonspec.org/spec.html</span>
+     <span class="s0">*/</span>
+    <span class="s2">buffer</span><span class="s4">: </span><span class="s2">Uint8Array</span><span class="s4">;</span>
+    <span class="s0">/**</span>
+     <span class="s0">* The binary subtype.</span>
+     <span class="s0">*</span>
+     <span class="s0">* Current defined values are:</span>
+     <span class="s0">*</span>
+     <span class="s0">* - `unsigned_byte(0)` Generic binary subtype</span>
+     <span class="s0">* - `unsigned_byte(1)` Function</span>
+     <span class="s0">* - `unsigned_byte(2)` Binary (Deprecated)</span>
+     <span class="s0">* - `unsigned_byte(3)` UUID (Deprecated)</span>
+     <span class="s0">* - `unsigned_byte(4)` UUID</span>
+     <span class="s0">* - `unsigned_byte(5)` MD5</span>
+     <span class="s0">* - `unsigned_byte(6)` Encrypted BSON value</span>
+     <span class="s0">* - `unsigned_byte(7)` Compressed BSON column</span>
+     <span class="s0">* - `unsigned_byte(8)` Sensitive</span>
+     <span class="s0">* - `unsigned_byte(9)` Vector</span>
+     <span class="s0">* - `unsigned_byte(128)` - `unsigned_byte(255)` User defined</span>
+     <span class="s0">*/</span>
+    <span class="s2">sub_type</span><span class="s4">: </span><span class="s2">number</span><span class="s4">;</span>
+    <span class="s0">/**</span>
+     <span class="s0">* The Binary's `buffer` can be larger than the Binary's content.</span>
+     <span class="s0">* This property is used to determine where the content ends in the buffer.</span>
+     <span class="s0">*/</span>
+    <span class="s2">position</span><span class="s4">: </span><span class="s2">number</span><span class="s4">;</span>
+    <span class="s0">/**</span>
+     <span class="s0">* Create a new Binary instance.</span>
+     <span class="s0">* </span><span class="s1">@param </span><span class="s0">buffer - a buffer object containing the binary data.</span>
+     <span class="s0">* </span><span class="s1">@param </span><span class="s0">subType - the option binary type.</span>
+     <span class="s0">*/</span>
+    <span class="s2">constructor</span><span class="s4">(</span><span class="s2">buffer</span><span class="s4">?: </span><span class="s2">BinarySequence</span><span class="s4">, </span><span class="s2">subType</span><span class="s4">?: </span><span class="s2">number</span><span class="s4">);</span>
+    <span class="s0">/**</span>
+     <span class="s0">* Updates this binary with byte_value.</span>
+     <span class="s0">*</span>
+     <span class="s0">* </span><span class="s1">@param </span><span class="s0">byteValue - a single byte we wish to write.</span>
+     <span class="s0">*/</span>
+    <span class="s2">put</span><span class="s4">(</span><span class="s2">byteValue</span><span class="s4">: </span><span class="s2">string </span><span class="s4">| </span><span class="s2">number </span><span class="s4">| </span><span class="s2">Uint8Array </span><span class="s4">| </span><span class="s2">number</span><span class="s4">[]): </span><span class="s3">void</span><span class="s4">;</span>
+    <span class="s0">/**</span>
+     <span class="s0">* Writes a buffer to the binary.</span>
+     <span class="s0">*</span>
+     <span class="s0">* </span><span class="s1">@param </span><span class="s0">sequence - a string or buffer to be written to the Binary BSON object.</span>
+     <span class="s0">* </span><span class="s1">@param </span><span class="s0">offset - specify the binary of where to write the content.</span>
+     <span class="s0">*/</span>
+    <span class="s2">write</span><span class="s4">(</span><span class="s2">sequence</span><span class="s4">: </span><span class="s2">BinarySequence</span><span class="s4">, </span><span class="s2">offset</span><span class="s4">: </span><span class="s2">number</span><span class="s4">): </span><span class="s3">void</span><span class="s4">;</span>
+    <span class="s0">/**</span>
+     <span class="s0">* Returns a view of **length** bytes starting at **position**.</span>
+     <span class="s0">*</span>
+     <span class="s0">* </span><span class="s1">@param </span><span class="s0">position - read from the given position in the Binary.</span>
+     <span class="s0">* </span><span class="s1">@param </span><span class="s0">length - the number of bytes to read.</span>
+     <span class="s0">*/</span>
+    <span class="s2">read</span><span class="s4">(</span><span class="s2">position</span><span class="s4">: </span><span class="s2">number</span><span class="s4">, </span><span class="s2">length</span><span class="s4">: </span><span class="s2">number</span><span class="s4">): </span><span class="s2">Uint8Array</span><span class="s4">;</span>
+    <span class="s0">/** returns a view of the binary value as a Uint8Array */</span>
+    <span class="s2">value</span><span class="s4">(): </span><span class="s2">Uint8Array</span><span class="s4">;</span>
+    <span class="s0">/** the length of the binary sequence */</span>
+    <span class="s2">length</span><span class="s4">(): </span><span class="s2">number</span><span class="s4">;</span>
+    <span class="s2">toJSON</span><span class="s4">(): </span><span class="s2">string</span><span class="s4">;</span>
+    <span class="s2">toString</span><span class="s4">(</span><span class="s2">encoding</span><span class="s4">?: </span><span class="s5">'hex' </span><span class="s4">| </span><span class="s5">'base64' </span><span class="s4">| </span><span class="s5">'utf8' </span><span class="s4">| </span><span class="s5">'utf-8'</span><span class="s4">): </span><span class="s2">string</span><span class="s4">;</span>
+    <span class="s6">/* Excluded from this release type: toExtendedJSON */</span>
+    <span class="s2">toUUID</span><span class="s4">(): </span><span class="s2">UUID</span><span class="s4">;</span>
+    <span class="s0">/** Creates an Binary instance from a hex digit string */</span>
+    <span class="s3">static </span><span class="s2">createFromHexString</span><span class="s4">(</span><span class="s2">hex</span><span class="s4">: </span><span class="s2">string</span><span class="s4">, </span><span class="s2">subType</span><span class="s4">?: </span><span class="s2">number</span><span class="s4">): </span><span class="s2">Binary</span><span class="s4">;</span>
+    <span class="s0">/** Creates an Binary instance from a base64 string */</span>
+    <span class="s3">static </span><span class="s2">createFromBase64</span><span class="s4">(</span><span class="s2">base64</span><span class="s4">: </span><span class="s2">string</span><span class="s4">, </span><span class="s2">subType</span><span class="s4">?: </span><span class="s2">number</span><span class="s4">): </span><span class="s2">Binary</span><span class="s4">;</span>
+    <span class="s6">/* Excluded from this release type: fromExtendedJSON */</span>
+    <span class="s2">inspect</span><span class="s4">(</span><span class="s2">depth</span><span class="s4">?: </span><span class="s2">number</span><span class="s4">, </span><span class="s2">options</span><span class="s4">?: </span><span class="s2">unknown</span><span class="s4">, </span><span class="s2">inspect</span><span class="s4">?: </span><span class="s2">InspectFn</span><span class="s4">): </span><span class="s2">string</span><span class="s4">;</span>
+    <span class="s0">/**</span>
+     <span class="s0">* If this Binary represents a Int8 Vector (`binary.buffer[0] === Binary.VECTOR_TYPE.Int8`),</span>
+     <span class="s0">* returns a copy of the bytes in a new Int8Array.</span>
+     <span class="s0">*</span>
+     <span class="s0">* If the Binary is not a Vector, or the datatype is not Int8, an error is thrown.</span>
+     <span class="s0">*/</span>
+    <span class="s2">toInt8Array</span><span class="s4">(): </span><span class="s2">Int8Array</span><span class="s4">;</span>
+    <span class="s0">/**</span>
+     <span class="s0">* If this Binary represents a Float32 Vector (`binary.buffer[0] === Binary.VECTOR_TYPE.Float32`),</span>
+     <span class="s0">* returns a copy of the bytes in a new Float32Array.</span>
+     <span class="s0">*</span>
+     <span class="s0">* If the Binary is not a Vector, or the datatype is not Float32, an error is thrown.</span>
+     <span class="s0">*/</span>
+    <span class="s2">toFloat32Array</span><span class="s4">(): </span><span class="s2">Float32Array</span><span class="s4">;</span>
+    <span class="s0">/**</span>
+     <span class="s0">* If this Binary represents packed bit Vector (`binary.buffer[0] === Binary.VECTOR_TYPE.PackedBit`),</span>
+     <span class="s0">* returns a copy of the bytes that are packed bits.</span>
+     <span class="s0">*</span>
+     <span class="s0">* Use `toBits` to get the unpacked bits.</span>
+     <span class="s0">*</span>
+     <span class="s0">* If the Binary is not a Vector, or the datatype is not PackedBit, an error is thrown.</span>
+     <span class="s0">*/</span>
+    <span class="s2">toPackedBits</span><span class="s4">(): </span><span class="s2">Uint8Array</span><span class="s4">;</span>
+    <span class="s0">/**</span>
+     <span class="s0">* If this Binary represents a Packed bit Vector (`binary.buffer[0] === Binary.VECTOR_TYPE.PackedBit`),</span>
+     <span class="s0">* returns a copy of the bit unpacked into a new Int8Array.</span>
+     <span class="s0">*</span>
+     <span class="s0">* Use `toPackedBits` to get the bits still in packed form.</span>
+     <span class="s0">*</span>
+     <span class="s0">* If the Binary is not a Vector, or the datatype is not PackedBit, an error is thrown.</span>
+     <span class="s0">*/</span>
+    <span class="s2">toBits</span><span class="s4">(): </span><span class="s2">Int8Array</span><span class="s4">;</span>
+    <span class="s0">/**</span>
+     <span class="s0">* Constructs a Binary representing an Int8 Vector.</span>
+     <span class="s0">* </span><span class="s1">@param </span><span class="s0">array - The array to store as a view on the Binary class</span>
+     <span class="s0">*/</span>
+    <span class="s3">static </span><span class="s2">fromInt8Array</span><span class="s4">(</span><span class="s2">array</span><span class="s4">: </span><span class="s2">Int8Array</span><span class="s4">): </span><span class="s2">Binary</span><span class="s4">;</span>
+    <span class="s0">/** Constructs a Binary representing an Float32 Vector. */</span>
+    <span class="s3">static </span><span class="s2">fromFloat32Array</span><span class="s4">(</span><span class="s2">array</span><span class="s4">: </span><span class="s2">Float32Array</span><span class="s4">): </span><span class="s2">Binary</span><span class="s4">;</span>
+    <span class="s0">/**</span>
+     <span class="s0">* Constructs a Binary representing a packed bit Vector.</span>
+     <span class="s0">*</span>
+     <span class="s0">* Use `fromBits` to pack an array of 1s and 0s.</span>
+     <span class="s0">*/</span>
+    <span class="s3">static </span><span class="s2">fromPackedBits</span><span class="s4">(</span><span class="s2">array</span><span class="s4">: </span><span class="s2">Uint8Array</span><span class="s4">, </span><span class="s2">padding</span><span class="s4">?: </span><span class="s2">number</span><span class="s4">): </span><span class="s2">Binary</span><span class="s4">;</span>
+    <span class="s0">/**</span>
+     <span class="s0">* Constructs a Binary representing an Packed Bit Vector.</span>
+     <span class="s0">* </span><span class="s1">@param </span><span class="s0">array - The array of 1s and 0s to pack into the Binary instance</span>
+     <span class="s0">*/</span>
+    <span class="s3">static </span><span class="s2">fromBits</span><span class="s4">(</span><span class="s2">bits</span><span class="s4">: </span><span class="s2">ArrayLike</span><span class="s4">&lt;</span><span class="s2">number</span><span class="s4">&gt;): </span><span class="s2">Binary</span><span class="s4">;</span>
+<span class="s4">}</span>
+
+<span class="s0">/** </span><span class="s1">@public </span><span class="s0">*/</span>
+<span class="s3">export </span><span class="s2">declare </span><span class="s3">interface </span><span class="s2">BinaryExtended </span><span class="s4">{</span>
+    <span class="s2">$binary</span><span class="s4">: {</span>
+        <span class="s2">subType</span><span class="s4">: </span><span class="s2">string</span><span class="s4">;</span>
+        <span class="s2">base64</span><span class="s4">: </span><span class="s2">string</span><span class="s4">;</span>
+    <span class="s4">};</span>
+<span class="s4">}</span>
+
+<span class="s0">/** </span><span class="s1">@public </span><span class="s0">*/</span>
+<span class="s3">export </span><span class="s2">declare </span><span class="s3">interface </span><span class="s2">BinaryExtendedLegacy </span><span class="s4">{</span>
+    <span class="s2">$type</span><span class="s4">: </span><span class="s2">string</span><span class="s4">;</span>
+    <span class="s2">$binary</span><span class="s4">: </span><span class="s2">string</span><span class="s4">;</span>
+<span class="s4">}</span>
+
+<span class="s0">/** </span><span class="s1">@public </span><span class="s0">*/</span>
+<span class="s3">export </span><span class="s2">declare type BinarySequence </span><span class="s4">= </span><span class="s2">Uint8Array </span><span class="s4">| </span><span class="s2">number</span><span class="s4">[];</span>
+
+<span class="s2">declare namespace BSON </span><span class="s4">{</span>
+    <span class="s3">export </span><span class="s4">{</span>
+        <span class="s2">setInternalBufferSize</span><span class="s4">,</span>
+        <span class="s2">serialize</span><span class="s4">,</span>
+        <span class="s2">serializeWithBufferAndIndex</span><span class="s4">,</span>
+        <span class="s2">deserialize</span><span class="s4">,</span>
+        <span class="s2">calculateObjectSize</span><span class="s4">,</span>
+        <span class="s2">deserializeStream</span><span class="s4">,</span>
+        <span class="s2">UUIDExtended</span><span class="s4">,</span>
+        <span class="s2">BinaryExtended</span><span class="s4">,</span>
+        <span class="s2">BinaryExtendedLegacy</span><span class="s4">,</span>
+        <span class="s2">BinarySequence</span><span class="s4">,</span>
+        <span class="s2">CodeExtended</span><span class="s4">,</span>
+        <span class="s2">DBRefLike</span><span class="s4">,</span>
+        <span class="s2">Decimal128Extended</span><span class="s4">,</span>
+        <span class="s2">DoubleExtended</span><span class="s4">,</span>
+        <span class="s2">EJSONOptions</span><span class="s4">,</span>
+        <span class="s2">Int32Extended</span><span class="s4">,</span>
+        <span class="s2">LongExtended</span><span class="s4">,</span>
+        <span class="s2">MaxKeyExtended</span><span class="s4">,</span>
+        <span class="s2">MinKeyExtended</span><span class="s4">,</span>
+        <span class="s2">ObjectIdExtended</span><span class="s4">,</span>
+        <span class="s2">ObjectIdLike</span><span class="s4">,</span>
+        <span class="s2">BSONRegExpExtended</span><span class="s4">,</span>
+        <span class="s2">BSONRegExpExtendedLegacy</span><span class="s4">,</span>
+        <span class="s2">BSONSymbolExtended</span><span class="s4">,</span>
+        <span class="s2">LongWithoutOverrides</span><span class="s4">,</span>
+        <span class="s2">TimestampExtended</span><span class="s4">,</span>
+        <span class="s2">TimestampOverrides</span><span class="s4">,</span>
+        <span class="s2">LongWithoutOverridesClass</span><span class="s4">,</span>
+        <span class="s2">SerializeOptions</span><span class="s4">,</span>
+        <span class="s2">DeserializeOptions</span><span class="s4">,</span>
+        <span class="s2">Code</span><span class="s4">,</span>
+        <span class="s2">BSONSymbol</span><span class="s4">,</span>
+        <span class="s2">DBRef</span><span class="s4">,</span>
+        <span class="s2">Binary</span><span class="s4">,</span>
+        <span class="s2">ObjectId</span><span class="s4">,</span>
+        <span class="s2">UUID</span><span class="s4">,</span>
+        <span class="s2">Long</span><span class="s4">,</span>
+        <span class="s2">Timestamp</span><span class="s4">,</span>
+        <span class="s2">Double</span><span class="s4">,</span>
+        <span class="s2">Int32</span><span class="s4">,</span>
+        <span class="s2">MinKey</span><span class="s4">,</span>
+        <span class="s2">MaxKey</span><span class="s4">,</span>
+        <span class="s2">BSONRegExp</span><span class="s4">,</span>
+        <span class="s2">Decimal128</span><span class="s4">,</span>
+        <span class="s2">BSONValue</span><span class="s4">,</span>
+        <span class="s2">BSONError</span><span class="s4">,</span>
+        <span class="s2">BSONVersionError</span><span class="s4">,</span>
+        <span class="s2">BSONRuntimeError</span><span class="s4">,</span>
+        <span class="s2">BSONOffsetError</span><span class="s4">,</span>
+        <span class="s2">BSONType</span><span class="s4">,</span>
+        <span class="s2">EJSON</span><span class="s4">,</span>
+        <span class="s2">onDemand</span><span class="s4">,</span>
+        <span class="s2">OnDemand</span><span class="s4">,</span>
+        <span class="s2">Document</span><span class="s4">,</span>
+        <span class="s2">CalculateObjectSizeOptions</span>
+    <span class="s4">}</span>
+<span class="s4">}</span>
+<span class="s3">export </span><span class="s4">{ </span><span class="s2">BSON </span><span class="s4">}</span>
+
+<span class="s6">/* Excluded from this release type: BSON_MAJOR_VERSION */</span>
+
+<span class="s6">/* Excluded from this release type: BSON_VERSION_SYMBOL */</span>
+
+<span class="s0">/**</span>
+ <span class="s0">* </span><span class="s1">@public</span>
+ <span class="s0">* </span><span class="s1">@experimental</span>
+ <span class="s0">*/</span>
+<span class="s2">declare type BSONElement </span><span class="s4">= [</span>
+<span class="s2">type</span><span class="s4">: </span><span class="s2">number</span><span class="s4">,</span>
+<span class="s2">nameOffset</span><span class="s4">: </span><span class="s2">number</span><span class="s4">,</span>
+<span class="s2">nameLength</span><span class="s4">: </span><span class="s2">number</span><span class="s4">,</span>
+<span class="s2">offset</span><span class="s4">: </span><span class="s2">number</span><span class="s4">,</span>
+<span class="s2">length</span><span class="s4">: </span><span class="s2">number</span>
+<span class="s4">];</span>
+
+<span class="s0">/**</span>
+ <span class="s0">* </span><span class="s1">@public</span>
+ <span class="s0">* </span><span class="s1">@category </span><span class="s0">Error</span>
+ <span class="s0">*</span>
+ <span class="s0">* `BSONError` objects are thrown when BSON encounters an error.</span>
+ <span class="s0">*</span>
+ <span class="s0">* This is the parent class for all the other errors thrown by this library.</span>
+ <span class="s0">*/</span>
+<span class="s3">export </span><span class="s2">declare </span><span class="s3">class </span><span class="s2">BSONError </span><span class="s3">extends </span><span class="s2">Error </span><span class="s4">{</span>
+    <span class="s6">/* Excluded from this release type: bsonError */</span>
+    <span class="s2">get name</span><span class="s4">(): </span><span class="s2">string</span><span class="s4">;</span>
+    <span class="s2">constructor</span><span class="s4">(</span><span class="s2">message</span><span class="s4">: </span><span class="s2">string</span><span class="s4">, </span><span class="s2">options</span><span class="s4">?: {</span>
+        <span class="s2">cause</span><span class="s4">?: </span><span class="s2">unknown</span><span class="s4">;</span>
+    <span class="s4">});</span>
+    <span class="s0">/**</span>
+     <span class="s0">* </span><span class="s1">@public</span>
+     <span class="s0">*</span>
+     <span class="s0">* All errors thrown from the BSON library inherit from `BSONError`.</span>
+     <span class="s0">* This method can assist with determining if an error originates from the BSON library</span>
+     <span class="s0">* even if it does not pass an `instanceof` check against this class' constructor.</span>
+     <span class="s0">*</span>
+     <span class="s0">* </span><span class="s1">@param </span><span class="s0">value - any javascript value that needs type checking</span>
+     <span class="s0">*/</span>
+    <span class="s3">static </span><span class="s2">isBSONError</span><span class="s4">(</span><span class="s2">value</span><span class="s4">: </span><span class="s2">unknown</span><span class="s4">): </span><span class="s2">value </span><span class="s4">is </span><span class="s2">BSONError</span><span class="s4">;</span>
+<span class="s4">}</span>
+
+<span class="s0">/**</span>
+ <span class="s0">* </span><span class="s1">@public</span>
+ <span class="s0">* </span><span class="s1">@category </span><span class="s0">Error</span>
+ <span class="s0">*</span>
+ <span class="s0">* </span><span class="s1">@experimental</span>
+ <span class="s0">*</span>
+ <span class="s0">* An error generated when BSON bytes are invalid.</span>
+ <span class="s0">* Reports the offset the parser was able to reach before encountering the error.</span>
+ <span class="s0">*/</span>
+<span class="s3">export </span><span class="s2">declare </span><span class="s3">class </span><span class="s2">BSONOffsetError </span><span class="s3">extends </span><span class="s2">BSONError </span><span class="s4">{</span>
+    <span class="s2">get name</span><span class="s4">(): </span><span class="s5">'BSONOffsetError'</span><span class="s4">;</span>
+    <span class="s2">offset</span><span class="s4">: </span><span class="s2">number</span><span class="s4">;</span>
+    <span class="s2">constructor</span><span class="s4">(</span><span class="s2">message</span><span class="s4">: </span><span class="s2">string</span><span class="s4">, </span><span class="s2">offset</span><span class="s4">: </span><span class="s2">number</span><span class="s4">, </span><span class="s2">options</span><span class="s4">?: {</span>
+        <span class="s2">cause</span><span class="s4">?: </span><span class="s2">unknown</span><span class="s4">;</span>
+    <span class="s4">});</span>
+<span class="s4">}</span>
+
+<span class="s0">/**</span>
+ <span class="s0">* A class representation of the BSON RegExp type.</span>
+ <span class="s0">* </span><span class="s1">@public</span>
+ <span class="s0">* </span><span class="s1">@category </span><span class="s0">BSONType</span>
+ <span class="s0">*/</span>
+<span class="s3">export </span><span class="s2">declare </span><span class="s3">class </span><span class="s2">BSONRegExp </span><span class="s3">extends </span><span class="s2">BSONValue </span><span class="s4">{</span>
+    <span class="s2">get _bsontype</span><span class="s4">(): </span><span class="s5">'BSONRegExp'</span><span class="s4">;</span>
+    <span class="s2">pattern</span><span class="s4">: </span><span class="s2">string</span><span class="s4">;</span>
+    <span class="s2">options</span><span class="s4">: </span><span class="s2">string</span><span class="s4">;</span>
+    <span class="s0">/**</span>
+     <span class="s0">* </span><span class="s1">@param </span><span class="s0">pattern - The regular expression pattern to match</span>
+     <span class="s0">* </span><span class="s1">@param </span><span class="s0">options - The regular expression options</span>
+     <span class="s0">*/</span>
+    <span class="s2">constructor</span><span class="s4">(</span><span class="s2">pattern</span><span class="s4">: </span><span class="s2">string</span><span class="s4">, </span><span class="s2">options</span><span class="s4">?: </span><span class="s2">string</span><span class="s4">);</span>
+    <span class="s3">static </span><span class="s2">parseOptions</span><span class="s4">(</span><span class="s2">options</span><span class="s4">?: </span><span class="s2">string</span><span class="s4">): </span><span class="s2">string</span><span class="s4">;</span>
+    <span class="s6">/* Excluded from this release type: toExtendedJSON */</span>
+    <span class="s6">/* Excluded from this release type: fromExtendedJSON */</span>
+    <span class="s2">inspect</span><span class="s4">(</span><span class="s2">depth</span><span class="s4">?: </span><span class="s2">number</span><span class="s4">, </span><span class="s2">options</span><span class="s4">?: </span><span class="s2">unknown</span><span class="s4">, </span><span class="s2">inspect</span><span class="s4">?: </span><span class="s2">InspectFn</span><span class="s4">): </span><span class="s2">string</span><span class="s4">;</span>
+<span class="s4">}</span>
+
+<span class="s0">/** </span><span class="s1">@public </span><span class="s0">*/</span>
+<span class="s3">export </span><span class="s2">declare </span><span class="s3">interface </span><span class="s2">BSONRegExpExtended </span><span class="s4">{</span>
+    <span class="s2">$regularExpression</span><span class="s4">: {</span>
+        <span class="s2">pattern</span><span class="s4">: </span><span class="s2">string</span><span class="s4">;</span>
+        <span class="s2">options</span><span class="s4">: </span><span class="s2">string</span><span class="s4">;</span>
+    <span class="s4">};</span>
+<span class="s4">}</span>
+
+<span class="s0">/** </span><span class="s1">@public </span><span class="s0">*/</span>
+<span class="s3">export </span><span class="s2">declare </span><span class="s3">interface </span><span class="s2">BSONRegExpExtendedLegacy </span><span class="s4">{</span>
+    <span class="s2">$regex</span><span class="s4">: </span><span class="s2">string </span><span class="s4">| </span><span class="s2">BSONRegExp</span><span class="s4">;</span>
+    <span class="s2">$options</span><span class="s4">: </span><span class="s2">string</span><span class="s4">;</span>
+<span class="s4">}</span>
+
+<span class="s0">/**</span>
+ <span class="s0">* </span><span class="s1">@public</span>
+ <span class="s0">* </span><span class="s1">@category </span><span class="s0">Error</span>
+ <span class="s0">*</span>
+ <span class="s0">* An error generated when BSON functions encounter an unexpected input</span>
+ <span class="s0">* or reaches an unexpected/invalid internal state</span>
+ <span class="s0">*</span>
+ <span class="s0">*/</span>
+<span class="s3">export </span><span class="s2">declare </span><span class="s3">class </span><span class="s2">BSONRuntimeError </span><span class="s3">extends </span><span class="s2">BSONError </span><span class="s4">{</span>
+    <span class="s2">get name</span><span class="s4">(): </span><span class="s5">'BSONRuntimeError'</span><span class="s4">;</span>
+    <span class="s2">constructor</span><span class="s4">(</span><span class="s2">message</span><span class="s4">: </span><span class="s2">string</span><span class="s4">);</span>
+<span class="s4">}</span>
+
+<span class="s0">/**</span>
+ <span class="s0">* A class representation of the BSON Symbol type.</span>
+ <span class="s0">* </span><span class="s1">@public</span>
+ <span class="s0">* </span><span class="s1">@category </span><span class="s0">BSONType</span>
+ <span class="s0">*/</span>
+<span class="s3">export </span><span class="s2">declare </span><span class="s3">class </span><span class="s2">BSONSymbol </span><span class="s3">extends </span><span class="s2">BSONValue </span><span class="s4">{</span>
+    <span class="s2">get _bsontype</span><span class="s4">(): </span><span class="s5">'BSONSymbol'</span><span class="s4">;</span>
+    <span class="s2">value</span><span class="s4">: </span><span class="s2">string</span><span class="s4">;</span>
+    <span class="s0">/**</span>
+     <span class="s0">* </span><span class="s1">@param </span><span class="s0">value - the string representing the symbol.</span>
+     <span class="s0">*/</span>
+    <span class="s2">constructor</span><span class="s4">(</span><span class="s2">value</span><span class="s4">: </span><span class="s2">string</span><span class="s4">);</span>
+    <span class="s0">/** Access the wrapped string value. */</span>
+    <span class="s2">valueOf</span><span class="s4">(): </span><span class="s2">string</span><span class="s4">;</span>
+    <span class="s2">toString</span><span class="s4">(): </span><span class="s2">string</span><span class="s4">;</span>
+    <span class="s2">toJSON</span><span class="s4">(): </span><span class="s2">string</span><span class="s4">;</span>
+    <span class="s6">/* Excluded from this release type: toExtendedJSON */</span>
+    <span class="s6">/* Excluded from this release type: fromExtendedJSON */</span>
+    <span class="s2">inspect</span><span class="s4">(</span><span class="s2">depth</span><span class="s4">?: </span><span class="s2">number</span><span class="s4">, </span><span class="s2">options</span><span class="s4">?: </span><span class="s2">unknown</span><span class="s4">, </span><span class="s2">inspect</span><span class="s4">?: </span><span class="s2">InspectFn</span><span class="s4">): </span><span class="s2">string</span><span class="s4">;</span>
+<span class="s4">}</span>
+
+<span class="s0">/** </span><span class="s1">@public </span><span class="s0">*/</span>
+<span class="s3">export </span><span class="s2">declare </span><span class="s3">interface </span><span class="s2">BSONSymbolExtended </span><span class="s4">{</span>
+    <span class="s2">$symbol</span><span class="s4">: </span><span class="s2">string</span><span class="s4">;</span>
+<span class="s4">}</span>
+
+<span class="s0">/** </span><span class="s1">@public </span><span class="s0">*/</span>
+<span class="s3">export </span><span class="s2">declare </span><span class="s3">const </span><span class="s2">BSONType</span><span class="s4">: </span><span class="s2">Readonly</span><span class="s4">&lt;{</span>
+    <span class="s2">readonly double</span><span class="s4">: </span><span class="s7">1</span><span class="s4">;</span>
+    <span class="s2">readonly string</span><span class="s4">: </span><span class="s7">2</span><span class="s4">;</span>
+    <span class="s2">readonly object</span><span class="s4">: </span><span class="s7">3</span><span class="s4">;</span>
+    <span class="s2">readonly array</span><span class="s4">: </span><span class="s7">4</span><span class="s4">;</span>
+    <span class="s2">readonly binData</span><span class="s4">: </span><span class="s7">5</span><span class="s4">;</span>
+    <span class="s2">readonly undefined</span><span class="s4">: </span><span class="s7">6</span><span class="s4">;</span>
+    <span class="s2">readonly objectId</span><span class="s4">: </span><span class="s7">7</span><span class="s4">;</span>
+    <span class="s2">readonly bool</span><span class="s4">: </span><span class="s7">8</span><span class="s4">;</span>
+    <span class="s2">readonly date</span><span class="s4">: </span><span class="s7">9</span><span class="s4">;</span>
+    <span class="s2">readonly </span><span class="s3">null</span><span class="s4">: </span><span class="s7">10</span><span class="s4">;</span>
+    <span class="s2">readonly regex</span><span class="s4">: </span><span class="s7">11</span><span class="s4">;</span>
+    <span class="s2">readonly dbPointer</span><span class="s4">: </span><span class="s7">12</span><span class="s4">;</span>
+    <span class="s2">readonly javascript</span><span class="s4">: </span><span class="s7">13</span><span class="s4">;</span>
+    <span class="s2">readonly symbol</span><span class="s4">: </span><span class="s7">14</span><span class="s4">;</span>
+    <span class="s2">readonly javascriptWithScope</span><span class="s4">: </span><span class="s7">15</span><span class="s4">;</span>
+    <span class="s2">readonly int</span><span class="s4">: </span><span class="s7">16</span><span class="s4">;</span>
+    <span class="s2">readonly timestamp</span><span class="s4">: </span><span class="s7">17</span><span class="s4">;</span>
+    <span class="s2">readonly long</span><span class="s4">: </span><span class="s7">18</span><span class="s4">;</span>
+    <span class="s2">readonly decimal</span><span class="s4">: </span><span class="s7">19</span><span class="s4">;</span>
+    <span class="s2">readonly minKey</span><span class="s4">: -</span><span class="s7">1</span><span class="s4">;</span>
+    <span class="s2">readonly maxKey</span><span class="s4">: </span><span class="s7">127</span><span class="s4">;</span>
+<span class="s4">}&gt;;</span>
+
+<span class="s0">/** </span><span class="s1">@public </span><span class="s0">*/</span>
+<span class="s3">export </span><span class="s2">declare type BSONType </span><span class="s4">= (</span><span class="s3">typeof </span><span class="s2">BSONType</span><span class="s4">)[</span><span class="s2">keyof </span><span class="s3">typeof </span><span class="s2">BSONType</span><span class="s4">];</span>
+
+<span class="s0">/** </span><span class="s1">@public </span><span class="s0">*/</span>
+<span class="s3">export </span><span class="s2">declare abstract </span><span class="s3">class </span><span class="s2">BSONValue </span><span class="s4">{</span>
+    <span class="s0">/** </span><span class="s1">@public </span><span class="s0">*/</span>
+    <span class="s2">abstract get _bsontype</span><span class="s4">(): </span><span class="s2">string</span><span class="s4">;</span>
+    <span class="s6">/* Excluded from this release type: [BSON_VERSION_SYMBOL] */</span>
+    <span class="s0">/**</span>
+     <span class="s0">* </span><span class="s1">@public</span>
+     <span class="s0">* Prints a human-readable string of BSON value information</span>
+     <span class="s0">* If invoked manually without node.js.inspect function, this will default to a modified JSON.stringify</span>
+     <span class="s0">*/</span>
+    <span class="s2">abstract inspect</span><span class="s4">(</span><span class="s2">depth</span><span class="s4">?: </span><span class="s2">number</span><span class="s4">, </span><span class="s2">options</span><span class="s4">?: </span><span class="s2">unknown</span><span class="s4">, </span><span class="s2">inspect</span><span class="s4">?: </span><span class="s2">InspectFn</span><span class="s4">): </span><span class="s2">string</span><span class="s4">;</span>
+    <span class="s6">/* Excluded from this release type: toExtendedJSON */</span>
+<span class="s4">}</span>
+
+<span class="s0">/**</span>
+ <span class="s0">* </span><span class="s1">@public</span>
+ <span class="s0">* </span><span class="s1">@category </span><span class="s0">Error</span>
+ <span class="s0">*/</span>
+<span class="s3">export </span><span class="s2">declare </span><span class="s3">class </span><span class="s2">BSONVersionError </span><span class="s3">extends </span><span class="s2">BSONError </span><span class="s4">{</span>
+    <span class="s2">get name</span><span class="s4">(): </span><span class="s5">'BSONVersionError'</span><span class="s4">;</span>
+    <span class="s2">constructor</span><span class="s4">();</span>
+<span class="s4">}</span>
+
+<span class="s0">/**</span>
+ <span class="s0">* </span><span class="s1">@public</span>
+ <span class="s0">* </span><span class="s1">@experimental</span>
+ <span class="s0">*</span>
+ <span class="s0">* A collection of functions that help work with data in a Uint8Array.</span>
+ <span class="s0">* ByteUtils is configured at load time to use Node.js or Web based APIs for the internal implementations.</span>
+ <span class="s0">*/</span>
+<span class="s2">declare type ByteUtils </span><span class="s4">= {</span>
+    <span class="s0">/** Transforms the input to an instance of Buffer if running on node, otherwise Uint8Array */</span>
+    <span class="s2">toLocalBufferType</span><span class="s4">: (</span><span class="s2">buffer</span><span class="s4">: </span><span class="s2">Uint8Array </span><span class="s4">| </span><span class="s2">ArrayBufferView </span><span class="s4">| </span><span class="s2">ArrayBuffer</span><span class="s4">) =&gt; </span><span class="s2">Uint8Array</span><span class="s4">;</span>
+    <span class="s0">/** Create empty space of size */</span>
+    <span class="s2">allocate</span><span class="s4">: (</span><span class="s2">size</span><span class="s4">: </span><span class="s2">number</span><span class="s4">) =&gt; </span><span class="s2">Uint8Array</span><span class="s4">;</span>
+    <span class="s0">/** Create empty space of size, use pooled memory when available */</span>
+    <span class="s2">allocateUnsafe</span><span class="s4">: (</span><span class="s2">size</span><span class="s4">: </span><span class="s2">number</span><span class="s4">) =&gt; </span><span class="s2">Uint8Array</span><span class="s4">;</span>
+    <span class="s0">/** Check if two Uint8Arrays are deep equal */</span>
+    <span class="s2">equals</span><span class="s4">: (</span><span class="s2">a</span><span class="s4">: </span><span class="s2">Uint8Array</span><span class="s4">, </span><span class="s2">b</span><span class="s4">: </span><span class="s2">Uint8Array</span><span class="s4">) =&gt; </span><span class="s2">boolean</span><span class="s4">;</span>
+    <span class="s0">/** Check if two Uint8Arrays are deep equal */</span>
+    <span class="s2">fromNumberArray</span><span class="s4">: (</span><span class="s2">array</span><span class="s4">: </span><span class="s2">number</span><span class="s4">[]) =&gt; </span><span class="s2">Uint8Array</span><span class="s4">;</span>
+    <span class="s0">/** Create a Uint8Array from a base64 string */</span>
+    <span class="s2">fromBase64</span><span class="s4">: (</span><span class="s2">base64</span><span class="s4">: </span><span class="s2">string</span><span class="s4">) =&gt; </span><span class="s2">Uint8Array</span><span class="s4">;</span>
+    <span class="s0">/** Create a base64 string from bytes */</span>
+    <span class="s2">toBase64</span><span class="s4">: (</span><span class="s2">buffer</span><span class="s4">: </span><span class="s2">Uint8Array</span><span class="s4">) =&gt; </span><span class="s2">string</span><span class="s4">;</span>
+    <span class="s0">/** **Legacy** binary strings are an outdated method of data transfer. Do not add public API support for interpreting this format */</span>
+    <span class="s2">fromISO88591</span><span class="s4">: (</span><span class="s2">codePoints</span><span class="s4">: </span><span class="s2">string</span><span class="s4">) =&gt; </span><span class="s2">Uint8Array</span><span class="s4">;</span>
+    <span class="s0">/** **Legacy** binary strings are an outdated method of data transfer. Do not add public API support for interpreting this format */</span>
+    <span class="s2">toISO88591</span><span class="s4">: (</span><span class="s2">buffer</span><span class="s4">: </span><span class="s2">Uint8Array</span><span class="s4">) =&gt; </span><span class="s2">string</span><span class="s4">;</span>
+    <span class="s0">/** Create a Uint8Array from a hex string */</span>
+    <span class="s2">fromHex</span><span class="s4">: (</span><span class="s2">hex</span><span class="s4">: </span><span class="s2">string</span><span class="s4">) =&gt; </span><span class="s2">Uint8Array</span><span class="s4">;</span>
+    <span class="s0">/** Create a lowercase hex string from bytes */</span>
+    <span class="s2">toHex</span><span class="s4">: (</span><span class="s2">buffer</span><span class="s4">: </span><span class="s2">Uint8Array</span><span class="s4">) =&gt; </span><span class="s2">string</span><span class="s4">;</span>
+    <span class="s0">/** Create a string from utf8 code units, fatal=true will throw an error if UTF-8 bytes are invalid, fatal=false will insert replacement characters */</span>
+    <span class="s2">toUTF8</span><span class="s4">: (</span><span class="s2">buffer</span><span class="s4">: </span><span class="s2">Uint8Array</span><span class="s4">, </span><span class="s2">start</span><span class="s4">: </span><span class="s2">number</span><span class="s4">, </span><span class="s2">end</span><span class="s4">: </span><span class="s2">number</span><span class="s4">, </span><span class="s2">fatal</span><span class="s4">: </span><span class="s2">boolean</span><span class="s4">) =&gt; </span><span class="s2">string</span><span class="s4">;</span>
+    <span class="s0">/** Get the utf8 code unit count from a string if it were to be transformed to utf8 */</span>
+    <span class="s2">utf8ByteLength</span><span class="s4">: (</span><span class="s2">input</span><span class="s4">: </span><span class="s2">string</span><span class="s4">) =&gt; </span><span class="s2">number</span><span class="s4">;</span>
+    <span class="s0">/** Encode UTF8 bytes generated from `source` string into `destination` at byteOffset. Returns the number of bytes encoded. */</span>
+    <span class="s2">encodeUTF8Into</span><span class="s4">: (</span><span class="s2">destination</span><span class="s4">: </span><span class="s2">Uint8Array</span><span class="s4">, </span><span class="s2">source</span><span class="s4">: </span><span class="s2">string</span><span class="s4">, </span><span class="s2">byteOffset</span><span class="s4">: </span><span class="s2">number</span><span class="s4">) =&gt; </span><span class="s2">number</span><span class="s4">;</span>
+    <span class="s0">/** Generate a Uint8Array filled with random bytes with byteLength */</span>
+    <span class="s2">randomBytes</span><span class="s4">: (</span><span class="s2">byteLength</span><span class="s4">: </span><span class="s2">number</span><span class="s4">) =&gt; </span><span class="s2">Uint8Array</span><span class="s4">;</span>
+    <span class="s0">/** Interprets `buffer` as an array of 32-bit values and swaps the byte order in-place. */</span>
+    <span class="s2">swap32</span><span class="s4">: (</span><span class="s2">buffer</span><span class="s4">: </span><span class="s2">Uint8Array</span><span class="s4">) =&gt; </span><span class="s2">Uint8Array</span><span class="s4">;</span>
+<span class="s4">};</span>
+
+<span class="s6">/* Excluded declaration from this release type: ByteUtils */</span>
+
+<span class="s0">/**</span>
+ <span class="s0">* Calculate the bson size for a passed in Javascript object.</span>
+ <span class="s0">*</span>
+ <span class="s0">* </span><span class="s1">@param </span><span class="s0">object - the Javascript object to calculate the BSON byte size for</span>
+ <span class="s0">* </span><span class="s1">@returns </span><span class="s0">size of BSON object in bytes</span>
+ <span class="s0">* </span><span class="s1">@public</span>
+ <span class="s0">*/</span>
+<span class="s3">export </span><span class="s2">declare </span><span class="s3">function </span><span class="s2">calculateObjectSize</span><span class="s4">(</span><span class="s2">object</span><span class="s4">: </span><span class="s2">Document</span><span class="s4">, </span><span class="s2">options</span><span class="s4">?: </span><span class="s2">CalculateObjectSizeOptions</span><span class="s4">): </span><span class="s2">number</span><span class="s4">;</span>
+
+<span class="s0">/** </span><span class="s1">@public </span><span class="s0">*/</span>
+<span class="s3">export </span><span class="s2">declare type CalculateObjectSizeOptions </span><span class="s4">= </span><span class="s2">Pick</span><span class="s4">&lt;</span><span class="s2">SerializeOptions</span><span class="s4">, </span><span class="s5">'serializeFunctions' </span><span class="s4">| </span><span class="s5">'ignoreUndefined'</span><span class="s4">&gt;;</span>
+
+<span class="s0">/**</span>
+ <span class="s0">* A class representation of the BSON Code type.</span>
+ <span class="s0">* </span><span class="s1">@public</span>
+ <span class="s0">* </span><span class="s1">@category </span><span class="s0">BSONType</span>
+ <span class="s0">*/</span>
+<span class="s3">export </span><span class="s2">declare </span><span class="s3">class </span><span class="s2">Code </span><span class="s3">extends </span><span class="s2">BSONValue </span><span class="s4">{</span>
+    <span class="s2">get _bsontype</span><span class="s4">(): </span><span class="s5">'Code'</span><span class="s4">;</span>
+    <span class="s2">code</span><span class="s4">: </span><span class="s2">string</span><span class="s4">;</span>
+    <span class="s2">scope</span><span class="s4">: </span><span class="s2">Document </span><span class="s4">| </span><span class="s3">null</span><span class="s4">;</span>
+    <span class="s0">/**</span>
+     <span class="s0">* </span><span class="s1">@param </span><span class="s0">code - a string or function.</span>
+     <span class="s0">* </span><span class="s1">@param </span><span class="s0">scope - an optional scope for the function.</span>
+     <span class="s0">*/</span>
+    <span class="s2">constructor</span><span class="s4">(</span><span class="s2">code</span><span class="s4">: </span><span class="s2">string </span><span class="s4">| </span><span class="s2">Function</span><span class="s4">, </span><span class="s2">scope</span><span class="s4">?: </span><span class="s2">Document </span><span class="s4">| </span><span class="s3">null</span><span class="s4">);</span>
+    <span class="s2">toJSON</span><span class="s4">(): {</span>
+        <span class="s2">code</span><span class="s4">: </span><span class="s2">string</span><span class="s4">;</span>
+        <span class="s2">scope</span><span class="s4">?: </span><span class="s2">Document</span><span class="s4">;</span>
+    <span class="s4">};</span>
+    <span class="s6">/* Excluded from this release type: toExtendedJSON */</span>
+    <span class="s6">/* Excluded from this release type: fromExtendedJSON */</span>
+    <span class="s2">inspect</span><span class="s4">(</span><span class="s2">depth</span><span class="s4">?: </span><span class="s2">number</span><span class="s4">, </span><span class="s2">options</span><span class="s4">?: </span><span class="s2">unknown</span><span class="s4">, </span><span class="s2">inspect</span><span class="s4">?: </span><span class="s2">InspectFn</span><span class="s4">): </span><span class="s2">string</span><span class="s4">;</span>
+<span class="s4">}</span>
+
+<span class="s0">/** </span><span class="s1">@public </span><span class="s0">*/</span>
+<span class="s3">export </span><span class="s2">declare </span><span class="s3">interface </span><span class="s2">CodeExtended </span><span class="s4">{</span>
+    <span class="s2">$code</span><span class="s4">: </span><span class="s2">string</span><span class="s4">;</span>
+    <span class="s2">$scope</span><span class="s4">?: </span><span class="s2">Document</span><span class="s4">;</span>
+<span class="s4">}</span>
+
+<span class="s0">/**</span>
+ <span class="s0">* A class representation of the BSON DBRef type.</span>
+ <span class="s0">* </span><span class="s1">@public</span>
+ <span class="s0">* </span><span class="s1">@category </span><span class="s0">BSONType</span>
+ <span class="s0">*/</span>
+<span class="s3">export </span><span class="s2">declare </span><span class="s3">class </span><span class="s2">DBRef </span><span class="s3">extends </span><span class="s2">BSONValue </span><span class="s4">{</span>
+    <span class="s2">get _bsontype</span><span class="s4">(): </span><span class="s5">'DBRef'</span><span class="s4">;</span>
+    <span class="s2">collection</span><span class="s4">: </span><span class="s2">string</span><span class="s4">;</span>
+    <span class="s2">oid</span><span class="s4">: </span><span class="s2">ObjectId</span><span class="s4">;</span>
+    <span class="s2">db</span><span class="s4">?: </span><span class="s2">string</span><span class="s4">;</span>
+    <span class="s2">fields</span><span class="s4">: </span><span class="s2">Document</span><span class="s4">;</span>
+    <span class="s0">/**</span>
+     <span class="s0">* </span><span class="s1">@param </span><span class="s0">collection - the collection name.</span>
+     <span class="s0">* </span><span class="s1">@param </span><span class="s0">oid - the reference ObjectId.</span>
+     <span class="s0">* </span><span class="s1">@param </span><span class="s0">db - optional db name, if omitted the reference is local to the current db.</span>
+     <span class="s0">*/</span>
+    <span class="s2">constructor</span><span class="s4">(</span><span class="s2">collection</span><span class="s4">: </span><span class="s2">string</span><span class="s4">, </span><span class="s2">oid</span><span class="s4">: </span><span class="s2">ObjectId</span><span class="s4">, </span><span class="s2">db</span><span class="s4">?: </span><span class="s2">string</span><span class="s4">, </span><span class="s2">fields</span><span class="s4">?: </span><span class="s2">Document</span><span class="s4">);</span>
+    <span class="s6">/* Excluded from this release type: namespace */</span>
+    <span class="s6">/* Excluded from this release type: namespace */</span>
+    <span class="s2">toJSON</span><span class="s4">(): </span><span class="s2">DBRefLike </span><span class="s4">&amp; </span><span class="s2">Document</span><span class="s4">;</span>
+    <span class="s6">/* Excluded from this release type: toExtendedJSON */</span>
+    <span class="s6">/* Excluded from this release type: fromExtendedJSON */</span>
+    <span class="s2">inspect</span><span class="s4">(</span><span class="s2">depth</span><span class="s4">?: </span><span class="s2">number</span><span class="s4">, </span><span class="s2">options</span><span class="s4">?: </span><span class="s2">unknown</span><span class="s4">, </span><span class="s2">inspect</span><span class="s4">?: </span><span class="s2">InspectFn</span><span class="s4">): </span><span class="s2">string</span><span class="s4">;</span>
+<span class="s4">}</span>
+
+<span class="s0">/** </span><span class="s1">@public </span><span class="s0">*/</span>
+<span class="s3">export </span><span class="s2">declare </span><span class="s3">interface </span><span class="s2">DBRefLike </span><span class="s4">{</span>
+    <span class="s2">$ref</span><span class="s4">: </span><span class="s2">string</span><span class="s4">;</span>
+    <span class="s2">$id</span><span class="s4">: </span><span class="s2">ObjectId</span><span class="s4">;</span>
+    <span class="s2">$db</span><span class="s4">?: </span><span class="s2">string</span><span class="s4">;</span>
+<span class="s4">}</span>
+
+<span class="s0">/**</span>
+ <span class="s0">* A class representation of the BSON Decimal128 type.</span>
+ <span class="s0">* </span><span class="s1">@public</span>
+ <span class="s0">* </span><span class="s1">@category </span><span class="s0">BSONType</span>
+ <span class="s0">*/</span>
+<span class="s3">export </span><span class="s2">declare </span><span class="s3">class </span><span class="s2">Decimal128 </span><span class="s3">extends </span><span class="s2">BSONValue </span><span class="s4">{</span>
+    <span class="s2">get _bsontype</span><span class="s4">(): </span><span class="s5">'Decimal128'</span><span class="s4">;</span>
+    <span class="s2">readonly bytes</span><span class="s4">: </span><span class="s2">Uint8Array</span><span class="s4">;</span>
+    <span class="s0">/**</span>
+     <span class="s0">* </span><span class="s1">@param </span><span class="s0">bytes - a buffer containing the raw Decimal128 bytes in little endian order,</span>
+     <span class="s0">*                or a string representation as returned by .toString()</span>
+     <span class="s0">*/</span>
+    <span class="s2">constructor</span><span class="s4">(</span><span class="s2">bytes</span><span class="s4">: </span><span class="s2">Uint8Array </span><span class="s4">| </span><span class="s2">string</span><span class="s4">);</span>
+    <span class="s0">/**</span>
+     <span class="s0">* Create a Decimal128 instance from a string representation</span>
+     <span class="s0">*</span>
+     <span class="s0">* </span><span class="s1">@param </span><span class="s0">representation - a numeric string representation.</span>
+     <span class="s0">*/</span>
+    <span class="s3">static </span><span class="s2">fromString</span><span class="s4">(</span><span class="s2">representation</span><span class="s4">: </span><span class="s2">string</span><span class="s4">): </span><span class="s2">Decimal128</span><span class="s4">;</span>
+    <span class="s0">/**</span>
+     <span class="s0">* Create a Decimal128 instance from a string representation, allowing for rounding to 34</span>
+     <span class="s0">* significant digits</span>
+     <span class="s0">*</span>
+     <span class="s0">* </span><span class="s1">@example </span><span class="s0">Example of a number that will be rounded</span>
+     <span class="s0">* ```ts</span>
+     <span class="s0">* &gt; let d = Decimal128.fromString('37.499999999999999196428571428571375')</span>
+     <span class="s0">* Uncaught:</span>
+     <span class="s0">* BSONError: &quot;37.499999999999999196428571428571375&quot; is not a valid Decimal128 string - inexact rounding</span>
+     <span class="s0">* at invalidErr (/home/wajames/js-bson/lib/bson.cjs:1402:11)</span>
+     <span class="s0">* at Decimal128.fromStringInternal (/home/wajames/js-bson/lib/bson.cjs:1633:25)</span>
+     <span class="s0">* at Decimal128.fromString (/home/wajames/js-bson/lib/bson.cjs:1424:27)</span>
+     <span class="s0">*</span>
+     <span class="s0">* &gt; d = Decimal128.fromStringWithRounding('37.499999999999999196428571428571375')</span>
+     <span class="s0">* new Decimal128(&quot;37.49999999999999919642857142857138&quot;)</span>
+     <span class="s0">* ```</span>
+     <span class="s0">* </span><span class="s1">@param </span><span class="s0">representation - a numeric string representation.</span>
+     <span class="s0">*/</span>
+    <span class="s3">static </span><span class="s2">fromStringWithRounding</span><span class="s4">(</span><span class="s2">representation</span><span class="s4">: </span><span class="s2">string</span><span class="s4">): </span><span class="s2">Decimal128</span><span class="s4">;</span>
+    <span class="s3">private static </span><span class="s2">_fromString</span><span class="s4">;</span>
+    <span class="s0">/** Create a string representation of the raw Decimal128 value */</span>
+    <span class="s2">toString</span><span class="s4">(): </span><span class="s2">string</span><span class="s4">;</span>
+    <span class="s2">toJSON</span><span class="s4">(): </span><span class="s2">Decimal128Extended</span><span class="s4">;</span>
+    <span class="s6">/* Excluded from this release type: toExtendedJSON */</span>
+    <span class="s6">/* Excluded from this release type: fromExtendedJSON */</span>
+    <span class="s2">inspect</span><span class="s4">(</span><span class="s2">depth</span><span class="s4">?: </span><span class="s2">number</span><span class="s4">, </span><span class="s2">options</span><span class="s4">?: </span><span class="s2">unknown</span><span class="s4">, </span><span class="s2">inspect</span><span class="s4">?: </span><span class="s2">InspectFn</span><span class="s4">): </span><span class="s2">string</span><span class="s4">;</span>
+<span class="s4">}</span>
+
+<span class="s0">/** </span><span class="s1">@public </span><span class="s0">*/</span>
+<span class="s3">export </span><span class="s2">declare </span><span class="s3">interface </span><span class="s2">Decimal128Extended </span><span class="s4">{</span>
+    <span class="s2">$numberDecimal</span><span class="s4">: </span><span class="s2">string</span><span class="s4">;</span>
+<span class="s4">}</span>
+
+<span class="s0">/**</span>
+ <span class="s0">* Deserialize data as BSON.</span>
+ <span class="s0">*</span>
+ <span class="s0">* </span><span class="s1">@param </span><span class="s0">buffer - the buffer containing the serialized set of BSON documents.</span>
+ <span class="s0">* </span><span class="s1">@returns </span><span class="s0">returns the deserialized Javascript Object.</span>
+ <span class="s0">* </span><span class="s1">@public</span>
+ <span class="s0">*/</span>
+<span class="s3">export </span><span class="s2">declare </span><span class="s3">function </span><span class="s2">deserialize</span><span class="s4">(</span><span class="s2">buffer</span><span class="s4">: </span><span class="s2">Uint8Array</span><span class="s4">, </span><span class="s2">options</span><span class="s4">?: </span><span class="s2">DeserializeOptions</span><span class="s4">): </span><span class="s2">Document</span><span class="s4">;</span>
+
+<span class="s0">/** </span><span class="s1">@public </span><span class="s0">*/</span>
+<span class="s3">export </span><span class="s2">declare </span><span class="s3">interface </span><span class="s2">DeserializeOptions </span><span class="s4">{</span>
+    <span class="s0">/**</span>
+     <span class="s0">* when deserializing a Long return as a BigInt.</span>
+     <span class="s0">* </span><span class="s1">@defaultValue </span><span class="s0">`false`</span>
+     <span class="s0">*/</span>
+    <span class="s2">useBigInt64</span><span class="s4">?: </span><span class="s2">boolean</span><span class="s4">;</span>
+    <span class="s0">/**</span>
+     <span class="s0">* when deserializing a Long will fit it into a Number if it's smaller than 53 bits.</span>
+     <span class="s0">* </span><span class="s1">@defaultValue </span><span class="s0">`true`</span>
+     <span class="s0">*/</span>
+    <span class="s2">promoteLongs</span><span class="s4">?: </span><span class="s2">boolean</span><span class="s4">;</span>
+    <span class="s0">/**</span>
+     <span class="s0">* when deserializing a Binary will return it as a node.js Buffer instance.</span>
+     <span class="s0">* </span><span class="s1">@defaultValue </span><span class="s0">`false`</span>
+     <span class="s0">*/</span>
+    <span class="s2">promoteBuffers</span><span class="s4">?: </span><span class="s2">boolean</span><span class="s4">;</span>
+    <span class="s0">/**</span>
+     <span class="s0">* when deserializing will promote BSON values to their Node.js closest equivalent types.</span>
+     <span class="s0">* </span><span class="s1">@defaultValue </span><span class="s0">`true`</span>
+     <span class="s0">*/</span>
+    <span class="s2">promoteValues</span><span class="s4">?: </span><span class="s2">boolean</span><span class="s4">;</span>
+    <span class="s0">/**</span>
+     <span class="s0">* allow to specify if there what fields we wish to return as unserialized raw buffer.</span>
+     <span class="s0">* </span><span class="s1">@defaultValue </span><span class="s0">`null`</span>
+     <span class="s0">*/</span>
+    <span class="s2">fieldsAsRaw</span><span class="s4">?: </span><span class="s2">Document</span><span class="s4">;</span>
+    <span class="s0">/**</span>
+     <span class="s0">* return BSON regular expressions as BSONRegExp instances.</span>
+     <span class="s0">* </span><span class="s1">@defaultValue </span><span class="s0">`false`</span>
+     <span class="s0">*/</span>
+    <span class="s2">bsonRegExp</span><span class="s4">?: </span><span class="s2">boolean</span><span class="s4">;</span>
+    <span class="s0">/**</span>
+     <span class="s0">* allows the buffer to be larger than the parsed BSON object.</span>
+     <span class="s0">* </span><span class="s1">@defaultValue </span><span class="s0">`false`</span>
+     <span class="s0">*/</span>
+    <span class="s2">allowObjectSmallerThanBufferSize</span><span class="s4">?: </span><span class="s2">boolean</span><span class="s4">;</span>
+    <span class="s0">/**</span>
+     <span class="s0">* Offset into buffer to begin reading document from</span>
+     <span class="s0">* </span><span class="s1">@defaultValue </span><span class="s0">`0`</span>
+     <span class="s0">*/</span>
+    <span class="s2">index</span><span class="s4">?: </span><span class="s2">number</span><span class="s4">;</span>
+    <span class="s2">raw</span><span class="s4">?: </span><span class="s2">boolean</span><span class="s4">;</span>
+    <span class="s0">/** Allows for opt-out utf-8 validation for all keys or</span>
+     <span class="s0">* specified keys. Must be all true or all false.</span>
+     <span class="s0">*</span>
+     <span class="s0">* </span><span class="s1">@example</span>
+     <span class="s0">* ```js</span>
+     <span class="s0">* // disables validation on all keys</span>
+     <span class="s0">*  validation: { utf8: false }</span>
+     <span class="s0">*</span>
+     <span class="s0">* // enables validation only on specified keys a, b, and c</span>
+     <span class="s0">*  validation: { utf8: { a: true, b: true, c: true } }</span>
+     <span class="s0">*</span>
+     <span class="s0">*  // disables validation only on specified keys a, b</span>
+     <span class="s0">*  validation: { utf8: { a: false, b: false } }</span>
+     <span class="s0">* ```</span>
+     <span class="s0">*/</span>
+    <span class="s2">validation</span><span class="s4">?: {</span>
+        <span class="s2">utf8</span><span class="s4">: </span><span class="s2">boolean </span><span class="s4">| </span><span class="s2">Record</span><span class="s4">&lt;</span><span class="s2">string</span><span class="s4">, </span><span class="s3">true</span><span class="s4">&gt; | </span><span class="s2">Record</span><span class="s4">&lt;</span><span class="s2">string</span><span class="s4">, </span><span class="s3">false</span><span class="s4">&gt;;</span>
+    <span class="s4">};</span>
+<span class="s4">}</span>
+
+<span class="s0">/**</span>
+ <span class="s0">* Deserialize stream data as BSON documents.</span>
+ <span class="s0">*</span>
+ <span class="s0">* </span><span class="s1">@param </span><span class="s0">data - the buffer containing the serialized set of BSON documents.</span>
+ <span class="s0">* </span><span class="s1">@param </span><span class="s0">startIndex - the start index in the data Buffer where the deserialization is to start.</span>
+ <span class="s0">* </span><span class="s1">@param </span><span class="s0">numberOfDocuments - number of documents to deserialize.</span>
+ <span class="s0">* </span><span class="s1">@param </span><span class="s0">documents - an array where to store the deserialized documents.</span>
+ <span class="s0">* </span><span class="s1">@param </span><span class="s0">docStartIndex - the index in the documents array from where to start inserting documents.</span>
+ <span class="s0">* </span><span class="s1">@param </span><span class="s0">options - additional options used for the deserialization.</span>
+ <span class="s0">* </span><span class="s1">@returns </span><span class="s0">next index in the buffer after deserialization **x** numbers of documents.</span>
+ <span class="s0">* </span><span class="s1">@public</span>
+ <span class="s0">*/</span>
+<span class="s3">export </span><span class="s2">declare </span><span class="s3">function </span><span class="s2">deserializeStream</span><span class="s4">(</span><span class="s2">data</span><span class="s4">: </span><span class="s2">Uint8Array </span><span class="s4">| </span><span class="s2">ArrayBuffer</span><span class="s4">, </span><span class="s2">startIndex</span><span class="s4">: </span><span class="s2">number</span><span class="s4">, </span><span class="s2">numberOfDocuments</span><span class="s4">: </span><span class="s2">number</span><span class="s4">, </span><span class="s2">documents</span><span class="s4">: </span><span class="s2">Document</span><span class="s4">[], </span><span class="s2">docStartIndex</span><span class="s4">: </span><span class="s2">number</span><span class="s4">, </span><span class="s2">options</span><span class="s4">: </span><span class="s2">DeserializeOptions</span><span class="s4">): </span><span class="s2">number</span><span class="s4">;</span>
+
+<span class="s0">/** </span><span class="s1">@public </span><span class="s0">*/</span>
+<span class="s3">export </span><span class="s2">declare </span><span class="s3">interface </span><span class="s2">Document </span><span class="s4">{</span>
+    <span class="s4">[</span><span class="s2">key</span><span class="s4">: </span><span class="s2">string</span><span class="s4">]: </span><span class="s2">any</span><span class="s4">;</span>
+<span class="s4">}</span>
+
+<span class="s0">/**</span>
+ <span class="s0">* A class representation of the BSON Double type.</span>
+ <span class="s0">* </span><span class="s1">@public</span>
+ <span class="s0">* </span><span class="s1">@category </span><span class="s0">BSONType</span>
+ <span class="s0">*/</span>
+<span class="s3">export </span><span class="s2">declare </span><span class="s3">class </span><span class="s2">Double </span><span class="s3">extends </span><span class="s2">BSONValue </span><span class="s4">{</span>
+    <span class="s2">get _bsontype</span><span class="s4">(): </span><span class="s5">'Double'</span><span class="s4">;</span>
+    <span class="s2">value</span><span class="s4">: </span><span class="s2">number</span><span class="s4">;</span>
+    <span class="s0">/**</span>
+     <span class="s0">* Create a Double type</span>
+     <span class="s0">*</span>
+     <span class="s0">* </span><span class="s1">@param </span><span class="s0">value - the number we want to represent as a double.</span>
+     <span class="s0">*/</span>
+    <span class="s2">constructor</span><span class="s4">(</span><span class="s2">value</span><span class="s4">: </span><span class="s2">number</span><span class="s4">);</span>
+    <span class="s0">/**</span>
+     <span class="s0">* Attempt to create an double type from string.</span>
+     <span class="s0">*</span>
+     <span class="s0">* This method will throw a BSONError on any string input that is not representable as a IEEE-754 64-bit double.</span>
+     <span class="s0">* Notably, this method will also throw on the following string formats:</span>
+     <span class="s0">* - Strings in non-decimal and non-exponential formats (binary, hex, or octal digits)</span>
+     <span class="s0">* - Strings with characters other than numeric, floating point, or leading sign characters (Note: 'Infinity', '-Infinity', and 'NaN' input strings are still allowed)</span>
+     <span class="s0">* - Strings with leading and/or trailing whitespace</span>
+     <span class="s0">*</span>
+     <span class="s0">* Strings with leading zeros, however, are also allowed</span>
+     <span class="s0">*</span>
+     <span class="s0">* </span><span class="s1">@param </span><span class="s0">value - the string we want to represent as a double.</span>
+     <span class="s0">*/</span>
+    <span class="s3">static </span><span class="s2">fromString</span><span class="s4">(</span><span class="s2">value</span><span class="s4">: </span><span class="s2">string</span><span class="s4">): </span><span class="s2">Double</span><span class="s4">;</span>
+    <span class="s0">/**</span>
+     <span class="s0">* Access the number value.</span>
+     <span class="s0">*</span>
+     <span class="s0">* </span><span class="s1">@returns </span><span class="s0">returns the wrapped double number.</span>
+     <span class="s0">*/</span>
+    <span class="s2">valueOf</span><span class="s4">(): </span><span class="s2">number</span><span class="s4">;</span>
+    <span class="s2">toJSON</span><span class="s4">(): </span><span class="s2">number</span><span class="s4">;</span>
+    <span class="s2">toString</span><span class="s4">(</span><span class="s2">radix</span><span class="s4">?: </span><span class="s2">number</span><span class="s4">): </span><span class="s2">string</span><span class="s4">;</span>
+    <span class="s6">/* Excluded from this release type: toExtendedJSON */</span>
+    <span class="s6">/* Excluded from this release type: fromExtendedJSON */</span>
+    <span class="s2">inspect</span><span class="s4">(</span><span class="s2">depth</span><span class="s4">?: </span><span class="s2">number</span><span class="s4">, </span><span class="s2">options</span><span class="s4">?: </span><span class="s2">unknown</span><span class="s4">, </span><span class="s2">inspect</span><span class="s4">?: </span><span class="s2">InspectFn</span><span class="s4">): </span><span class="s2">string</span><span class="s4">;</span>
+<span class="s4">}</span>
+
+<span class="s0">/** </span><span class="s1">@public </span><span class="s0">*/</span>
+<span class="s3">export </span><span class="s2">declare </span><span class="s3">interface </span><span class="s2">DoubleExtended </span><span class="s4">{</span>
+    <span class="s2">$numberDouble</span><span class="s4">: </span><span class="s2">string</span><span class="s4">;</span>
+<span class="s4">}</span>
+
+<span class="s0">/** </span><span class="s1">@public </span><span class="s0">*/</span>
+<span class="s3">export </span><span class="s2">declare </span><span class="s3">const </span><span class="s2">EJSON</span><span class="s4">: {</span>
+    <span class="s2">parse</span><span class="s4">: </span><span class="s3">typeof </span><span class="s2">parse</span><span class="s4">;</span>
+    <span class="s2">stringify</span><span class="s4">: </span><span class="s3">typeof </span><span class="s2">stringify</span><span class="s4">;</span>
+    <span class="s2">serialize</span><span class="s4">: </span><span class="s3">typeof </span><span class="s2">EJSONserialize</span><span class="s4">;</span>
+    <span class="s2">deserialize</span><span class="s4">: </span><span class="s3">typeof </span><span class="s2">EJSONdeserialize</span><span class="s4">;</span>
+<span class="s4">};</span>
+
+<span class="s0">/**</span>
+ <span class="s0">* Deserializes an Extended JSON object into a plain JavaScript object with native/BSON types</span>
+ <span class="s0">*</span>
+ <span class="s0">* </span><span class="s1">@param </span><span class="s0">ejson - The Extended JSON object to deserialize</span>
+ <span class="s0">* </span><span class="s1">@param </span><span class="s0">options - Optional settings passed to the parse method</span>
+ <span class="s0">*/</span>
+<span class="s2">declare </span><span class="s3">function </span><span class="s2">EJSONdeserialize</span><span class="s4">(</span><span class="s2">ejson</span><span class="s4">: </span><span class="s2">Document</span><span class="s4">, </span><span class="s2">options</span><span class="s4">?: </span><span class="s2">EJSONOptions</span><span class="s4">): </span><span class="s2">any</span><span class="s4">;</span>
+
+<span class="s0">/** </span><span class="s1">@public </span><span class="s0">*/</span>
+<span class="s3">export </span><span class="s2">declare type EJSONOptions </span><span class="s4">= {</span>
+    <span class="s0">/**</span>
+     <span class="s0">* Output using the Extended JSON v1 spec</span>
+     <span class="s0">* </span><span class="s1">@defaultValue </span><span class="s0">`false`</span>
+     <span class="s0">*/</span>
+    <span class="s2">legacy</span><span class="s4">?: </span><span class="s2">boolean</span><span class="s4">;</span>
+    <span class="s0">/**</span>
+     <span class="s0">* Enable Extended JSON's `relaxed` mode, which attempts to return native JS types where possible, rather than BSON types</span>
+     <span class="s0">* </span><span class="s1">@defaultValue </span><span class="s0">`false` */</span>
+    <span class="s2">relaxed</span><span class="s4">?: </span><span class="s2">boolean</span><span class="s4">;</span>
+    <span class="s0">/**</span>
+     <span class="s0">* Enable native bigint support</span>
+     <span class="s0">* </span><span class="s1">@defaultValue </span><span class="s0">`false`</span>
+     <span class="s0">*/</span>
+    <span class="s2">useBigInt64</span><span class="s4">?: </span><span class="s2">boolean</span><span class="s4">;</span>
+<span class="s4">};</span>
+
+<span class="s0">/**</span>
+ <span class="s0">* Serializes an object to an Extended JSON string, and reparse it as a JavaScript object.</span>
+ <span class="s0">*</span>
+ <span class="s0">* </span><span class="s1">@param </span><span class="s0">value - The object to serialize</span>
+ <span class="s0">* </span><span class="s1">@param </span><span class="s0">options - Optional settings passed to the `stringify` function</span>
+ <span class="s0">*/</span>
+<span class="s2">declare </span><span class="s3">function </span><span class="s2">EJSONserialize</span><span class="s4">(</span><span class="s2">value</span><span class="s4">: </span><span class="s2">any</span><span class="s4">, </span><span class="s2">options</span><span class="s4">?: </span><span class="s2">EJSONOptions</span><span class="s4">): </span><span class="s2">Document</span><span class="s4">;</span>
+
+<span class="s2">declare type InspectFn </span><span class="s4">= (</span><span class="s2">x</span><span class="s4">: </span><span class="s2">unknown</span><span class="s4">, </span><span class="s2">options</span><span class="s4">?: </span><span class="s2">unknown</span><span class="s4">) =&gt; </span><span class="s2">string</span><span class="s4">;</span>
+
+<span class="s0">/**</span>
+ <span class="s0">* A class representation of a BSON Int32 type.</span>
+ <span class="s0">* </span><span class="s1">@public</span>
+ <span class="s0">* </span><span class="s1">@category </span><span class="s0">BSONType</span>
+ <span class="s0">*/</span>
+<span class="s3">export </span><span class="s2">declare </span><span class="s3">class </span><span class="s2">Int32 </span><span class="s3">extends </span><span class="s2">BSONValue </span><span class="s4">{</span>
+    <span class="s2">get _bsontype</span><span class="s4">(): </span><span class="s5">'Int32'</span><span class="s4">;</span>
+    <span class="s2">value</span><span class="s4">: </span><span class="s2">number</span><span class="s4">;</span>
+    <span class="s0">/**</span>
+     <span class="s0">* Create an Int32 type</span>
+     <span class="s0">*</span>
+     <span class="s0">* </span><span class="s1">@param </span><span class="s0">value - the number we want to represent as an int32.</span>
+     <span class="s0">*/</span>
+    <span class="s2">constructor</span><span class="s4">(</span><span class="s2">value</span><span class="s4">: </span><span class="s2">number </span><span class="s4">| </span><span class="s2">string</span><span class="s4">);</span>
+    <span class="s0">/**</span>
+     <span class="s0">* Attempt to create an Int32 type from string.</span>
+     <span class="s0">*</span>
+     <span class="s0">* This method will throw a BSONError on any string input that is not representable as an Int32.</span>
+     <span class="s0">* Notably, this method will also throw on the following string formats:</span>
+     <span class="s0">* - Strings in non-decimal formats (exponent notation, binary, hex, or octal digits)</span>
+     <span class="s0">* - Strings non-numeric and non-leading sign characters (ex: '2.0', '24,000')</span>
+     <span class="s0">* - Strings with leading and/or trailing whitespace</span>
+     <span class="s0">*</span>
+     <span class="s0">* Strings with leading zeros, however, are allowed.</span>
+     <span class="s0">*</span>
+     <span class="s0">* </span><span class="s1">@param </span><span class="s0">value - the string we want to represent as an int32.</span>
+     <span class="s0">*/</span>
+    <span class="s3">static </span><span class="s2">fromString</span><span class="s4">(</span><span class="s2">value</span><span class="s4">: </span><span class="s2">string</span><span class="s4">): </span><span class="s2">Int32</span><span class="s4">;</span>
+    <span class="s0">/**</span>
+     <span class="s0">* Access the number value.</span>
+     <span class="s0">*</span>
+     <span class="s0">* </span><span class="s1">@returns </span><span class="s0">returns the wrapped int32 number.</span>
+     <span class="s0">*/</span>
+    <span class="s2">valueOf</span><span class="s4">(): </span><span class="s2">number</span><span class="s4">;</span>
+    <span class="s2">toString</span><span class="s4">(</span><span class="s2">radix</span><span class="s4">?: </span><span class="s2">number</span><span class="s4">): </span><span class="s2">string</span><span class="s4">;</span>
+    <span class="s2">toJSON</span><span class="s4">(): </span><span class="s2">number</span><span class="s4">;</span>
+    <span class="s6">/* Excluded from this release type: toExtendedJSON */</span>
+    <span class="s6">/* Excluded from this release type: fromExtendedJSON */</span>
+    <span class="s2">inspect</span><span class="s4">(</span><span class="s2">depth</span><span class="s4">?: </span><span class="s2">number</span><span class="s4">, </span><span class="s2">options</span><span class="s4">?: </span><span class="s2">unknown</span><span class="s4">, </span><span class="s2">inspect</span><span class="s4">?: </span><span class="s2">InspectFn</span><span class="s4">): </span><span class="s2">string</span><span class="s4">;</span>
+<span class="s4">}</span>
+
+<span class="s0">/** </span><span class="s1">@public </span><span class="s0">*/</span>
+<span class="s3">export </span><span class="s2">declare </span><span class="s3">interface </span><span class="s2">Int32Extended </span><span class="s4">{</span>
+    <span class="s2">$numberInt</span><span class="s4">: </span><span class="s2">string</span><span class="s4">;</span>
+<span class="s4">}</span>
+
+<span class="s0">/**</span>
+ <span class="s0">* A class representing a 64-bit integer</span>
+ <span class="s0">* </span><span class="s1">@public</span>
+ <span class="s0">* </span><span class="s1">@category </span><span class="s0">BSONType</span>
+ <span class="s0">* </span><span class="s1">@remarks</span>
+ <span class="s0">* The internal representation of a long is the two given signed, 32-bit values.</span>
+ <span class="s0">* We use 32-bit pieces because these are the size of integers on which</span>
+ <span class="s0">* Javascript performs bit-operations.  For operations like addition and</span>
+ <span class="s0">* multiplication, we split each number into 16 bit pieces, which can easily be</span>
+ <span class="s0">* multiplied within Javascript's floating-point representation without overflow</span>
+ <span class="s0">* or change in sign.</span>
+ <span class="s0">* In the algorithms below, we frequently reduce the negative case to the</span>
+ <span class="s0">* positive case by negating the input(s) and then post-processing the result.</span>
+ <span class="s0">* Note that we must ALWAYS check specially whether those values are MIN_VALUE</span>
+ <span class="s0">* (-2^63) because -MIN_VALUE == MIN_VALUE (since 2^63 cannot be represented as</span>
+ <span class="s0">* a positive number, it overflows back into a negative).  Not handling this</span>
+ <span class="s0">* case would often result in infinite recursion.</span>
+ <span class="s0">* Common constant values ZERO, ONE, NEG_ONE, etc. are found as static properties on this class.</span>
+ <span class="s0">*/</span>
+<span class="s3">export </span><span class="s2">declare </span><span class="s3">class </span><span class="s2">Long </span><span class="s3">extends </span><span class="s2">BSONValue </span><span class="s4">{</span>
+    <span class="s2">get _bsontype</span><span class="s4">(): </span><span class="s5">'Long'</span><span class="s4">;</span>
+    <span class="s0">/** An indicator used to reliably determine if an object is a Long or not. */</span>
+    <span class="s2">get __isLong__</span><span class="s4">(): </span><span class="s2">boolean</span><span class="s4">;</span>
+    <span class="s0">/**</span>
+     <span class="s0">* The high 32 bits as a signed value.</span>
+     <span class="s0">*/</span>
+    <span class="s2">high</span><span class="s4">: </span><span class="s2">number</span><span class="s4">;</span>
+    <span class="s0">/**</span>
+     <span class="s0">* The low 32 bits as a signed value.</span>
+     <span class="s0">*/</span>
+    <span class="s2">low</span><span class="s4">: </span><span class="s2">number</span><span class="s4">;</span>
+    <span class="s0">/**</span>
+     <span class="s0">* Whether unsigned or not.</span>
+     <span class="s0">*/</span>
+    <span class="s2">unsigned</span><span class="s4">: </span><span class="s2">boolean</span><span class="s4">;</span>
+    <span class="s0">/**</span>
+     <span class="s0">* Constructs a 64 bit two's-complement integer, given its low and high 32 bit values as *signed* integers.</span>
+     <span class="s0">*</span>
+     <span class="s0">* </span><span class="s1">@param </span><span class="s0">low - The low (signed) 32 bits of the long</span>
+     <span class="s0">* </span><span class="s1">@param </span><span class="s0">high - The high (signed) 32 bits of the long</span>
+     <span class="s0">* </span><span class="s1">@param </span><span class="s0">unsigned - Whether unsigned or not, defaults to signed</span>
+     <span class="s0">*/</span>
+    <span class="s2">constructor</span><span class="s4">(</span><span class="s2">low</span><span class="s4">: </span><span class="s2">number</span><span class="s4">, </span><span class="s2">high</span><span class="s4">?: </span><span class="s2">number</span><span class="s4">, </span><span class="s2">unsigned</span><span class="s4">?: </span><span class="s2">boolean</span><span class="s4">);</span>
+    <span class="s0">/**</span>
+     <span class="s0">* Constructs a 64 bit two's-complement integer, given a bigint representation.</span>
+     <span class="s0">*</span>
+     <span class="s0">* </span><span class="s1">@param </span><span class="s0">value - BigInt representation of the long value</span>
+     <span class="s0">* </span><span class="s1">@param </span><span class="s0">unsigned - Whether unsigned or not, defaults to signed</span>
+     <span class="s0">*/</span>
+    <span class="s2">constructor</span><span class="s4">(</span><span class="s2">value</span><span class="s4">: </span><span class="s2">bigint</span><span class="s4">, </span><span class="s2">unsigned</span><span class="s4">?: </span><span class="s2">boolean</span><span class="s4">);</span>
+    <span class="s0">/**</span>
+     <span class="s0">* Constructs a 64 bit two's-complement integer, given a string representation.</span>
+     <span class="s0">*</span>
+     <span class="s0">* </span><span class="s1">@param </span><span class="s0">value - String representation of the long value</span>
+     <span class="s0">* </span><span class="s1">@param </span><span class="s0">unsigned - Whether unsigned or not, defaults to signed</span>
+     <span class="s0">*/</span>
+    <span class="s2">constructor</span><span class="s4">(</span><span class="s2">value</span><span class="s4">: </span><span class="s2">string</span><span class="s4">, </span><span class="s2">unsigned</span><span class="s4">?: </span><span class="s2">boolean</span><span class="s4">);</span>
+    <span class="s3">static </span><span class="s2">TWO_PWR_24</span><span class="s4">: </span><span class="s2">Long</span><span class="s4">;</span>
+    <span class="s0">/** Maximum unsigned value. */</span>
+    <span class="s3">static </span><span class="s2">MAX_UNSIGNED_VALUE</span><span class="s4">: </span><span class="s2">Long</span><span class="s4">;</span>
+    <span class="s0">/** Signed zero */</span>
+    <span class="s3">static </span><span class="s2">ZERO</span><span class="s4">: </span><span class="s2">Long</span><span class="s4">;</span>
+    <span class="s0">/** Unsigned zero. */</span>
+    <span class="s3">static </span><span class="s2">UZERO</span><span class="s4">: </span><span class="s2">Long</span><span class="s4">;</span>
+    <span class="s0">/** Signed one. */</span>
+    <span class="s3">static </span><span class="s2">ONE</span><span class="s4">: </span><span class="s2">Long</span><span class="s4">;</span>
+    <span class="s0">/** Unsigned one. */</span>
+    <span class="s3">static </span><span class="s2">UONE</span><span class="s4">: </span><span class="s2">Long</span><span class="s4">;</span>
+    <span class="s0">/** Signed negative one. */</span>
+    <span class="s3">static </span><span class="s2">NEG_ONE</span><span class="s4">: </span><span class="s2">Long</span><span class="s4">;</span>
+    <span class="s0">/** Maximum signed value. */</span>
+    <span class="s3">static </span><span class="s2">MAX_VALUE</span><span class="s4">: </span><span class="s2">Long</span><span class="s4">;</span>
+    <span class="s0">/** Minimum signed value. */</span>
+    <span class="s3">static </span><span class="s2">MIN_VALUE</span><span class="s4">: </span><span class="s2">Long</span><span class="s4">;</span>
+    <span class="s0">/**</span>
+     <span class="s0">* Returns a Long representing the 64 bit integer that comes by concatenating the given low and high bits.</span>
+     <span class="s0">* Each is assumed to use 32 bits.</span>
+     <span class="s0">* </span><span class="s1">@param </span><span class="s0">lowBits - The low 32 bits</span>
+     <span class="s0">* </span><span class="s1">@param </span><span class="s0">highBits - The high 32 bits</span>
+     <span class="s0">* </span><span class="s1">@param </span><span class="s0">unsigned - Whether unsigned or not, defaults to signed</span>
+     <span class="s0">* </span><span class="s1">@returns </span><span class="s0">The corresponding Long value</span>
+     <span class="s0">*/</span>
+    <span class="s3">static </span><span class="s2">fromBits</span><span class="s4">(</span><span class="s2">lowBits</span><span class="s4">: </span><span class="s2">number</span><span class="s4">, </span><span class="s2">highBits</span><span class="s4">: </span><span class="s2">number</span><span class="s4">, </span><span class="s2">unsigned</span><span class="s4">?: </span><span class="s2">boolean</span><span class="s4">): </span><span class="s2">Long</span><span class="s4">;</span>
+    <span class="s0">/**</span>
+     <span class="s0">* Returns a Long representing the given 32 bit integer value.</span>
+     <span class="s0">* </span><span class="s1">@param </span><span class="s0">value - The 32 bit integer in question</span>
+     <span class="s0">* </span><span class="s1">@param </span><span class="s0">unsigned - Whether unsigned or not, defaults to signed</span>
+     <span class="s0">* </span><span class="s1">@returns </span><span class="s0">The corresponding Long value</span>
+     <span class="s0">*/</span>
+    <span class="s3">static </span><span class="s2">fromInt</span><span class="s4">(</span><span class="s2">value</span><span class="s4">: </span><span class="s2">number</span><span class="s4">, </span><span class="s2">unsigned</span><span class="s4">?: </span><span class="s2">boolean</span><span class="s4">): </span><span class="s2">Long</span><span class="s4">;</span>
+    <span class="s0">/**</span>
+     <span class="s0">* Returns a Long representing the given value, provided that it is a finite number. Otherwise, zero is returned.</span>
+     <span class="s0">* </span><span class="s1">@param </span><span class="s0">value - The number in question</span>
+     <span class="s0">* </span><span class="s1">@param </span><span class="s0">unsigned - Whether unsigned or not, defaults to signed</span>
+     <span class="s0">* </span><span class="s1">@returns </span><span class="s0">The corresponding Long value</span>
+     <span class="s0">*/</span>
+    <span class="s3">static </span><span class="s2">fromNumber</span><span class="s4">(</span><span class="s2">value</span><span class="s4">: </span><span class="s2">number</span><span class="s4">, </span><span class="s2">unsigned</span><span class="s4">?: </span><span class="s2">boolean</span><span class="s4">): </span><span class="s2">Long</span><span class="s4">;</span>
+    <span class="s0">/**</span>
+     <span class="s0">* Returns a Long representing the given value, provided that it is a finite number. Otherwise, zero is returned.</span>
+     <span class="s0">* </span><span class="s1">@param </span><span class="s0">value - The number in question</span>
+     <span class="s0">* </span><span class="s1">@param </span><span class="s0">unsigned - Whether unsigned or not, defaults to signed</span>
+     <span class="s0">* </span><span class="s1">@returns </span><span class="s0">The corresponding Long value</span>
+     <span class="s0">*/</span>
+    <span class="s3">static </span><span class="s2">fromBigInt</span><span class="s4">(</span><span class="s2">value</span><span class="s4">: </span><span class="s2">bigint</span><span class="s4">, </span><span class="s2">unsigned</span><span class="s4">?: </span><span class="s2">boolean</span><span class="s4">): </span><span class="s2">Long</span><span class="s4">;</span>
+    <span class="s6">/* Excluded from this release type: _fromString */</span>
+    <span class="s0">/**</span>
+     <span class="s0">* Returns a signed Long representation of the given string, written using radix 10.</span>
+     <span class="s0">* Will throw an error if the given text is not exactly representable as a Long.</span>
+     <span class="s0">* Throws an error if any of the following conditions are true:</span>
+     <span class="s0">* - the string contains invalid characters for the radix 10</span>
+     <span class="s0">* - the string contains whitespace</span>
+     <span class="s0">* - the value the string represents is too large or too small to be a Long</span>
+     <span class="s0">* Unlike Long.fromString, this method does not coerce '+/-Infinity' and 'NaN' to Long.Zero</span>
+     <span class="s0">* </span><span class="s1">@param </span><span class="s0">str - The textual representation of the Long</span>
+     <span class="s0">* </span><span class="s1">@returns </span><span class="s0">The corresponding Long value</span>
+     <span class="s0">*/</span>
+    <span class="s3">static </span><span class="s2">fromStringStrict</span><span class="s4">(</span><span class="s2">str</span><span class="s4">: </span><span class="s2">string</span><span class="s4">): </span><span class="s2">Long</span><span class="s4">;</span>
+    <span class="s0">/**</span>
+     <span class="s0">* Returns a Long representation of the given string, written using the radix 10.</span>
+     <span class="s0">* Will throw an error if the given parameters are not exactly representable as a Long.</span>
+     <span class="s0">* Throws an error if any of the following conditions are true:</span>
+     <span class="s0">* - the string contains invalid characters for the given radix</span>
+     <span class="s0">* - the string contains whitespace</span>
+     <span class="s0">* - the value the string represents is too large or too small to be a Long</span>
+     <span class="s0">* Unlike Long.fromString, this method does not coerce '+/-Infinity' and 'NaN' to Long.Zero</span>
+     <span class="s0">* </span><span class="s1">@param </span><span class="s0">str - The textual representation of the Long</span>
+     <span class="s0">* </span><span class="s1">@param </span><span class="s0">unsigned - Whether unsigned or not, defaults to signed</span>
+     <span class="s0">* </span><span class="s1">@returns </span><span class="s0">The corresponding Long value</span>
+     <span class="s0">*/</span>
+    <span class="s3">static </span><span class="s2">fromStringStrict</span><span class="s4">(</span><span class="s2">str</span><span class="s4">: </span><span class="s2">string</span><span class="s4">, </span><span class="s2">unsigned</span><span class="s4">?: </span><span class="s2">boolean</span><span class="s4">): </span><span class="s2">Long</span><span class="s4">;</span>
+    <span class="s0">/**</span>
+     <span class="s0">* Returns a signed Long representation of the given string, written using the specified radix.</span>
+     <span class="s0">* Will throw an error if the given parameters are not exactly representable as a Long.</span>
+     <span class="s0">* Throws an error if any of the following conditions are true:</span>
+     <span class="s0">* - the string contains invalid characters for the given radix</span>
+     <span class="s0">* - the string contains whitespace</span>
+     <span class="s0">* - the value the string represents is too large or too small to be a Long</span>
+     <span class="s0">* Unlike Long.fromString, this method does not coerce '+/-Infinity' and 'NaN' to Long.Zero</span>
+     <span class="s0">* </span><span class="s1">@param </span><span class="s0">str - The textual representation of the Long</span>
+     <span class="s0">* </span><span class="s1">@param </span><span class="s0">radix - The radix in which the text is written (2-36), defaults to 10</span>
+     <span class="s0">* </span><span class="s1">@returns </span><span class="s0">The corresponding Long value</span>
+     <span class="s0">*/</span>
+    <span class="s3">static </span><span class="s2">fromStringStrict</span><span class="s4">(</span><span class="s2">str</span><span class="s4">: </span><span class="s2">string</span><span class="s4">, </span><span class="s2">radix</span><span class="s4">?: </span><span class="s2">boolean</span><span class="s4">): </span><span class="s2">Long</span><span class="s4">;</span>
+    <span class="s0">/**</span>
+     <span class="s0">* Returns a Long representation of the given string, written using the specified radix.</span>
+     <span class="s0">* Will throw an error if the given parameters are not exactly representable as a Long.</span>
+     <span class="s0">* Throws an error if any of the following conditions are true:</span>
+     <span class="s0">* - the string contains invalid characters for the given radix</span>
+     <span class="s0">* - the string contains whitespace</span>
+     <span class="s0">* - the value the string represents is too large or too small to be a Long</span>
+     <span class="s0">* Unlike Long.fromString, this method does not coerce '+/-Infinity' and 'NaN' to Long.Zero</span>
+     <span class="s0">* </span><span class="s1">@param </span><span class="s0">str - The textual representation of the Long</span>
+     <span class="s0">* </span><span class="s1">@param </span><span class="s0">unsigned - Whether unsigned or not, defaults to signed</span>
+     <span class="s0">* </span><span class="s1">@param </span><span class="s0">radix - The radix in which the text is written (2-36), defaults to 10</span>
+     <span class="s0">* </span><span class="s1">@returns </span><span class="s0">The corresponding Long value</span>
+     <span class="s0">*/</span>
+    <span class="s3">static </span><span class="s2">fromStringStrict</span><span class="s4">(</span><span class="s2">str</span><span class="s4">: </span><span class="s2">string</span><span class="s4">, </span><span class="s2">unsigned</span><span class="s4">?: </span><span class="s2">boolean</span><span class="s4">, </span><span class="s2">radix</span><span class="s4">?: </span><span class="s2">number</span><span class="s4">): </span><span class="s2">Long</span><span class="s4">;</span>
+    <span class="s0">/**</span>
+     <span class="s0">* Returns a signed Long representation of the given string, written using radix 10.</span>
+     <span class="s0">*</span>
+     <span class="s0">* If the input string is empty, this function will throw a BSONError.</span>
+     <span class="s0">*</span>
+     <span class="s0">* If input string does not have valid signed 64-bit Long representation, this method will return a coerced value:</span>
+     <span class="s0">* - inputs that overflow 64-bit signed long will be coerced to Long.MAX_VALUE and Long.MIN_VALUE respectively</span>
+     <span class="s0">* - 'NaN' or '+/-Infinity' are coerced to Long.ZERO</span>
+     <span class="s0">* - other invalid characters sequences have variable behavior</span>
+     <span class="s0">*</span>
+     <span class="s0">* </span><span class="s1">@param </span><span class="s0">str - The textual representation of the Long</span>
+     <span class="s0">* </span><span class="s1">@returns </span><span class="s0">The corresponding Long value</span>
+     <span class="s0">*/</span>
+    <span class="s3">static </span><span class="s2">fromString</span><span class="s4">(</span><span class="s2">str</span><span class="s4">: </span><span class="s2">string</span><span class="s4">): </span><span class="s2">Long</span><span class="s4">;</span>
+    <span class="s0">/**</span>
+     <span class="s0">* Returns a signed Long representation of the given string, written using the provided radix.</span>
+     <span class="s0">*</span>
+     <span class="s0">* If the input string is empty or a provided radix is not within (2-36), this function will throw a BSONError.</span>
+     <span class="s0">*</span>
+     <span class="s0">* If input parameters do not have valid signed 64-bit Long representation, this method will return a coerced value:</span>
+     <span class="s0">* - inputs that overflow 64-bit signed long will be coerced to Long.MAX_VALUE and Long.MIN_VALUE respectively</span>
+     <span class="s0">* - if the radix is less than 24, 'NaN' is coerced to Long.ZERO</span>
+     <span class="s0">* - if the radix is less than 35, '+/-Infinity' inputs are coerced to Long.ZERO</span>
+     <span class="s0">* - other invalid characters sequences have variable behavior</span>
+     <span class="s0">* </span><span class="s1">@param </span><span class="s0">str - The textual representation of the Long</span>
+     <span class="s0">* </span><span class="s1">@param </span><span class="s0">radix - The radix in which the text is written (2-36), defaults to 10</span>
+     <span class="s0">* </span><span class="s1">@returns </span><span class="s0">The corresponding Long value</span>
+     <span class="s0">*/</span>
+    <span class="s3">static </span><span class="s2">fromString</span><span class="s4">(</span><span class="s2">str</span><span class="s4">: </span><span class="s2">string</span><span class="s4">, </span><span class="s2">radix</span><span class="s4">?: </span><span class="s2">number</span><span class="s4">): </span><span class="s2">Long</span><span class="s4">;</span>
+    <span class="s0">/**</span>
+     <span class="s0">* Returns a Long representation of the given string, written using radix 10.</span>
+     <span class="s0">*</span>
+     <span class="s0">* If the input string is empty, this function will throw a BSONError.</span>
+     <span class="s0">*</span>
+     <span class="s0">* If input parameters do not have a valid 64-bit Long representation, this method will return a coerced value:</span>
+     <span class="s0">* - inputs that overflow 64-bit long will be coerced to max or min (if signed) values</span>
+     <span class="s0">* - if the radix is less than 24, 'NaN' is coerced to Long.ZERO</span>
+     <span class="s0">* - if the radix is less than 35, '+/-Infinity' inputs are coerced to Long.ZERO</span>
+     <span class="s0">* - other invalid characters sequences have variable behavior</span>
+     <span class="s0">* </span><span class="s1">@param </span><span class="s0">str - The textual representation of the Long</span>
+     <span class="s0">* </span><span class="s1">@param </span><span class="s0">unsigned - Whether unsigned or not, defaults to signed</span>
+     <span class="s0">* </span><span class="s1">@returns </span><span class="s0">The corresponding Long value</span>
+     <span class="s0">*/</span>
+    <span class="s3">static </span><span class="s2">fromString</span><span class="s4">(</span><span class="s2">str</span><span class="s4">: </span><span class="s2">string</span><span class="s4">, </span><span class="s2">unsigned</span><span class="s4">?: </span><span class="s2">boolean</span><span class="s4">): </span><span class="s2">Long</span><span class="s4">;</span>
+    <span class="s0">/**</span>
+     <span class="s0">* Returns a Long representation of the given string, written using the specified radix.</span>
+     <span class="s0">*</span>
+     <span class="s0">* If the input string is empty or a provided radix is not within (2-36), this function will throw a BSONError.</span>
+     <span class="s0">*</span>
+     <span class="s0">* If input parameters do not have a valid 64-bit Long representation, this method will return a coerced value:</span>
+     <span class="s0">* - inputs that overflow 64-bit long will be coerced to max or min (if signed) values</span>
+     <span class="s0">* - if the radix is less than 24, 'NaN' is coerced to Long.ZERO</span>
+     <span class="s0">* - if the radix is less than 35, '+/-Infinity' inputs are coerced to Long.ZERO</span>
+     <span class="s0">* - other invalid characters sequences have variable behavior</span>
+     <span class="s0">* </span><span class="s1">@param </span><span class="s0">str - The textual representation of the Long</span>
+     <span class="s0">* </span><span class="s1">@param </span><span class="s0">unsigned - Whether unsigned or not, defaults to signed</span>
+     <span class="s0">* </span><span class="s1">@param </span><span class="s0">radix - The radix in which the text is written (2-36), defaults to 10</span>
+     <span class="s0">* </span><span class="s1">@returns </span><span class="s0">The corresponding Long value</span>
+     <span class="s0">*/</span>
+    <span class="s3">static </span><span class="s2">fromString</span><span class="s4">(</span><span class="s2">str</span><span class="s4">: </span><span class="s2">string</span><span class="s4">, </span><span class="s2">unsigned</span><span class="s4">?: </span><span class="s2">boolean</span><span class="s4">, </span><span class="s2">radix</span><span class="s4">?: </span><span class="s2">number</span><span class="s4">): </span><span class="s2">Long</span><span class="s4">;</span>
+    <span class="s0">/**</span>
+     <span class="s0">* Creates a Long from its byte representation.</span>
+     <span class="s0">* </span><span class="s1">@param </span><span class="s0">bytes - Byte representation</span>
+     <span class="s0">* </span><span class="s1">@param </span><span class="s0">unsigned - Whether unsigned or not, defaults to signed</span>
+     <span class="s0">* </span><span class="s1">@param </span><span class="s0">le - Whether little or big endian, defaults to big endian</span>
+     <span class="s0">* </span><span class="s1">@returns </span><span class="s0">The corresponding Long value</span>
+     <span class="s0">*/</span>
+    <span class="s3">static </span><span class="s2">fromBytes</span><span class="s4">(</span><span class="s2">bytes</span><span class="s4">: </span><span class="s2">number</span><span class="s4">[], </span><span class="s2">unsigned</span><span class="s4">?: </span><span class="s2">boolean</span><span class="s4">, </span><span class="s2">le</span><span class="s4">?: </span><span class="s2">boolean</span><span class="s4">): </span><span class="s2">Long</span><span class="s4">;</span>
+    <span class="s0">/**</span>
+     <span class="s0">* Creates a Long from its little endian byte representation.</span>
+     <span class="s0">* </span><span class="s1">@param </span><span class="s0">bytes - Little endian byte representation</span>
+     <span class="s0">* </span><span class="s1">@param </span><span class="s0">unsigned - Whether unsigned or not, defaults to signed</span>
+     <span class="s0">* </span><span class="s1">@returns </span><span class="s0">The corresponding Long value</span>
+     <span class="s0">*/</span>
+    <span class="s3">static </span><span class="s2">fromBytesLE</span><span class="s4">(</span><span class="s2">bytes</span><span class="s4">: </span><span class="s2">number</span><span class="s4">[], </span><span class="s2">unsigned</span><span class="s4">?: </span><span class="s2">boolean</span><span class="s4">): </span><span class="s2">Long</span><span class="s4">;</span>
+    <span class="s0">/**</span>
+     <span class="s0">* Creates a Long from its big endian byte representation.</span>
+     <span class="s0">* </span><span class="s1">@param </span><span class="s0">bytes - Big endian byte representation</span>
+     <span class="s0">* </span><span class="s1">@param </span><span class="s0">unsigned - Whether unsigned or not, defaults to signed</span>
+     <span class="s0">* </span><span class="s1">@returns </span><span class="s0">The corresponding Long value</span>
+     <span class="s0">*/</span>
+    <span class="s3">static </span><span class="s2">fromBytesBE</span><span class="s4">(</span><span class="s2">bytes</span><span class="s4">: </span><span class="s2">number</span><span class="s4">[], </span><span class="s2">unsigned</span><span class="s4">?: </span><span class="s2">boolean</span><span class="s4">): </span><span class="s2">Long</span><span class="s4">;</span>
+    <span class="s0">/**</span>
+     <span class="s0">* Tests if the specified object is a Long.</span>
+     <span class="s0">*/</span>
+    <span class="s3">static </span><span class="s2">isLong</span><span class="s4">(</span><span class="s2">value</span><span class="s4">: </span><span class="s2">unknown</span><span class="s4">): </span><span class="s2">value </span><span class="s4">is </span><span class="s2">Long</span><span class="s4">;</span>
+    <span class="s0">/**</span>
+     <span class="s0">* Converts the specified value to a Long.</span>
+     <span class="s0">* </span><span class="s1">@param </span><span class="s0">unsigned - Whether unsigned or not, defaults to signed</span>
+     <span class="s0">*/</span>
+    <span class="s3">static </span><span class="s2">fromValue</span><span class="s4">(</span><span class="s2">val</span><span class="s4">: </span><span class="s2">number </span><span class="s4">| </span><span class="s2">string </span><span class="s4">| {</span>
+        <span class="s2">low</span><span class="s4">: </span><span class="s2">number</span><span class="s4">;</span>
+        <span class="s2">high</span><span class="s4">: </span><span class="s2">number</span><span class="s4">;</span>
+        <span class="s2">unsigned</span><span class="s4">?: </span><span class="s2">boolean</span><span class="s4">;</span>
+    <span class="s4">}, </span><span class="s2">unsigned</span><span class="s4">?: </span><span class="s2">boolean</span><span class="s4">): </span><span class="s2">Long</span><span class="s4">;</span>
+    <span class="s0">/** Returns the sum of this and the specified Long. */</span>
+    <span class="s2">add</span><span class="s4">(</span><span class="s2">addend</span><span class="s4">: </span><span class="s2">string </span><span class="s4">| </span><span class="s2">number </span><span class="s4">| </span><span class="s2">Long </span><span class="s4">| </span><span class="s2">Timestamp</span><span class="s4">): </span><span class="s2">Long</span><span class="s4">;</span>
+    <span class="s0">/**</span>
+     <span class="s0">* Returns the sum of this and the specified Long.</span>
+     <span class="s0">* </span><span class="s1">@returns </span><span class="s0">Sum</span>
+     <span class="s0">*/</span>
+    <span class="s2">and</span><span class="s4">(</span><span class="s2">other</span><span class="s4">: </span><span class="s2">string </span><span class="s4">| </span><span class="s2">number </span><span class="s4">| </span><span class="s2">Long </span><span class="s4">| </span><span class="s2">Timestamp</span><span class="s4">): </span><span class="s2">Long</span><span class="s4">;</span>
+    <span class="s0">/**</span>
+     <span class="s0">* Compares this Long's value with the specified's.</span>
+     <span class="s0">* </span><span class="s1">@returns </span><span class="s0">0 if they are the same, 1 if the this is greater and -1 if the given one is greater</span>
+     <span class="s0">*/</span>
+    <span class="s2">compare</span><span class="s4">(</span><span class="s2">other</span><span class="s4">: </span><span class="s2">string </span><span class="s4">| </span><span class="s2">number </span><span class="s4">| </span><span class="s2">Long </span><span class="s4">| </span><span class="s2">Timestamp</span><span class="s4">): </span><span class="s7">0 </span><span class="s4">| </span><span class="s7">1 </span><span class="s4">| -</span><span class="s7">1</span><span class="s4">;</span>
+    <span class="s0">/** This is an alias of {</span><span class="s1">@link </span><span class="s0">Long.compare} */</span>
+    <span class="s2">comp</span><span class="s4">(</span><span class="s2">other</span><span class="s4">: </span><span class="s2">string </span><span class="s4">| </span><span class="s2">number </span><span class="s4">| </span><span class="s2">Long </span><span class="s4">| </span><span class="s2">Timestamp</span><span class="s4">): </span><span class="s7">0 </span><span class="s4">| </span><span class="s7">1 </span><span class="s4">| -</span><span class="s7">1</span><span class="s4">;</span>
+    <span class="s0">/**</span>
+     <span class="s0">* Returns this Long divided by the specified. The result is signed if this Long is signed or unsigned if this Long is unsigned.</span>
+     <span class="s0">* </span><span class="s1">@returns </span><span class="s0">Quotient</span>
+     <span class="s0">*/</span>
+    <span class="s2">divide</span><span class="s4">(</span><span class="s2">divisor</span><span class="s4">: </span><span class="s2">string </span><span class="s4">| </span><span class="s2">number </span><span class="s4">| </span><span class="s2">Long </span><span class="s4">| </span><span class="s2">Timestamp</span><span class="s4">): </span><span class="s2">Long</span><span class="s4">;</span>
+    <span class="s0">/**This is an alias of {</span><span class="s1">@link </span><span class="s0">Long.divide} */</span>
+    <span class="s2">div</span><span class="s4">(</span><span class="s2">divisor</span><span class="s4">: </span><span class="s2">string </span><span class="s4">| </span><span class="s2">number </span><span class="s4">| </span><span class="s2">Long </span><span class="s4">| </span><span class="s2">Timestamp</span><span class="s4">): </span><span class="s2">Long</span><span class="s4">;</span>
+    <span class="s0">/**</span>
+     <span class="s0">* Tests if this Long's value equals the specified's.</span>
+     <span class="s0">* </span><span class="s1">@param </span><span class="s0">other - Other value</span>
+     <span class="s0">*/</span>
+    <span class="s2">equals</span><span class="s4">(</span><span class="s2">other</span><span class="s4">: </span><span class="s2">string </span><span class="s4">| </span><span class="s2">number </span><span class="s4">| </span><span class="s2">Long </span><span class="s4">| </span><span class="s2">Timestamp</span><span class="s4">): </span><span class="s2">boolean</span><span class="s4">;</span>
+    <span class="s0">/** This is an alias of {</span><span class="s1">@link </span><span class="s0">Long.equals} */</span>
+    <span class="s2">eq</span><span class="s4">(</span><span class="s2">other</span><span class="s4">: </span><span class="s2">string </span><span class="s4">| </span><span class="s2">number </span><span class="s4">| </span><span class="s2">Long </span><span class="s4">| </span><span class="s2">Timestamp</span><span class="s4">): </span><span class="s2">boolean</span><span class="s4">;</span>
+    <span class="s0">/** Gets the high 32 bits as a signed integer. */</span>
+    <span class="s2">getHighBits</span><span class="s4">(): </span><span class="s2">number</span><span class="s4">;</span>
+    <span class="s0">/** Gets the high 32 bits as an unsigned integer. */</span>
+    <span class="s2">getHighBitsUnsigned</span><span class="s4">(): </span><span class="s2">number</span><span class="s4">;</span>
+    <span class="s0">/** Gets the low 32 bits as a signed integer. */</span>
+    <span class="s2">getLowBits</span><span class="s4">(): </span><span class="s2">number</span><span class="s4">;</span>
+    <span class="s0">/** Gets the low 32 bits as an unsigned integer. */</span>
+    <span class="s2">getLowBitsUnsigned</span><span class="s4">(): </span><span class="s2">number</span><span class="s4">;</span>
+    <span class="s0">/** Gets the number of bits needed to represent the absolute value of this Long. */</span>
+    <span class="s2">getNumBitsAbs</span><span class="s4">(): </span><span class="s2">number</span><span class="s4">;</span>
+    <span class="s0">/** Tests if this Long's value is greater than the specified's. */</span>
+    <span class="s2">greaterThan</span><span class="s4">(</span><span class="s2">other</span><span class="s4">: </span><span class="s2">string </span><span class="s4">| </span><span class="s2">number </span><span class="s4">| </span><span class="s2">Long </span><span class="s4">| </span><span class="s2">Timestamp</span><span class="s4">): </span><span class="s2">boolean</span><span class="s4">;</span>
+    <span class="s0">/** This is an alias of {</span><span class="s1">@link </span><span class="s0">Long.greaterThan} */</span>
+    <span class="s2">gt</span><span class="s4">(</span><span class="s2">other</span><span class="s4">: </span><span class="s2">string </span><span class="s4">| </span><span class="s2">number </span><span class="s4">| </span><span class="s2">Long </span><span class="s4">| </span><span class="s2">Timestamp</span><span class="s4">): </span><span class="s2">boolean</span><span class="s4">;</span>
+    <span class="s0">/** Tests if this Long's value is greater than or equal the specified's. */</span>
+    <span class="s2">greaterThanOrEqual</span><span class="s4">(</span><span class="s2">other</span><span class="s4">: </span><span class="s2">string </span><span class="s4">| </span><span class="s2">number </span><span class="s4">| </span><span class="s2">Long </span><span class="s4">| </span><span class="s2">Timestamp</span><span class="s4">): </span><span class="s2">boolean</span><span class="s4">;</span>
+    <span class="s0">/** This is an alias of {</span><span class="s1">@link </span><span class="s0">Long.greaterThanOrEqual} */</span>
+    <span class="s2">gte</span><span class="s4">(</span><span class="s2">other</span><span class="s4">: </span><span class="s2">string </span><span class="s4">| </span><span class="s2">number </span><span class="s4">| </span><span class="s2">Long </span><span class="s4">| </span><span class="s2">Timestamp</span><span class="s4">): </span><span class="s2">boolean</span><span class="s4">;</span>
+    <span class="s0">/** This is an alias of {</span><span class="s1">@link </span><span class="s0">Long.greaterThanOrEqual} */</span>
+    <span class="s2">ge</span><span class="s4">(</span><span class="s2">other</span><span class="s4">: </span><span class="s2">string </span><span class="s4">| </span><span class="s2">number </span><span class="s4">| </span><span class="s2">Long </span><span class="s4">| </span><span class="s2">Timestamp</span><span class="s4">): </span><span class="s2">boolean</span><span class="s4">;</span>
+    <span class="s0">/** Tests if this Long's value is even. */</span>
+    <span class="s2">isEven</span><span class="s4">(): </span><span class="s2">boolean</span><span class="s4">;</span>
+    <span class="s0">/** Tests if this Long's value is negative. */</span>
+    <span class="s2">isNegative</span><span class="s4">(): </span><span class="s2">boolean</span><span class="s4">;</span>
+    <span class="s0">/** Tests if this Long's value is odd. */</span>
+    <span class="s2">isOdd</span><span class="s4">(): </span><span class="s2">boolean</span><span class="s4">;</span>
+    <span class="s0">/** Tests if this Long's value is positive. */</span>
+    <span class="s2">isPositive</span><span class="s4">(): </span><span class="s2">boolean</span><span class="s4">;</span>
+    <span class="s0">/** Tests if this Long's value equals zero. */</span>
+    <span class="s2">isZero</span><span class="s4">(): </span><span class="s2">boolean</span><span class="s4">;</span>
+    <span class="s0">/** Tests if this Long's value is less than the specified's. */</span>
+    <span class="s2">lessThan</span><span class="s4">(</span><span class="s2">other</span><span class="s4">: </span><span class="s2">string </span><span class="s4">| </span><span class="s2">number </span><span class="s4">| </span><span class="s2">Long </span><span class="s4">| </span><span class="s2">Timestamp</span><span class="s4">): </span><span class="s2">boolean</span><span class="s4">;</span>
+    <span class="s0">/** This is an alias of {</span><span class="s1">@link </span><span class="s0">Long#lessThan}. */</span>
+    <span class="s2">lt</span><span class="s4">(</span><span class="s2">other</span><span class="s4">: </span><span class="s2">string </span><span class="s4">| </span><span class="s2">number </span><span class="s4">| </span><span class="s2">Long </span><span class="s4">| </span><span class="s2">Timestamp</span><span class="s4">): </span><span class="s2">boolean</span><span class="s4">;</span>
+    <span class="s0">/** Tests if this Long's value is less than or equal the specified's. */</span>
+    <span class="s2">lessThanOrEqual</span><span class="s4">(</span><span class="s2">other</span><span class="s4">: </span><span class="s2">string </span><span class="s4">| </span><span class="s2">number </span><span class="s4">| </span><span class="s2">Long </span><span class="s4">| </span><span class="s2">Timestamp</span><span class="s4">): </span><span class="s2">boolean</span><span class="s4">;</span>
+    <span class="s0">/** This is an alias of {</span><span class="s1">@link </span><span class="s0">Long.lessThanOrEqual} */</span>
+    <span class="s2">lte</span><span class="s4">(</span><span class="s2">other</span><span class="s4">: </span><span class="s2">string </span><span class="s4">| </span><span class="s2">number </span><span class="s4">| </span><span class="s2">Long </span><span class="s4">| </span><span class="s2">Timestamp</span><span class="s4">): </span><span class="s2">boolean</span><span class="s4">;</span>
+    <span class="s0">/** Returns this Long modulo the specified. */</span>
+    <span class="s2">modulo</span><span class="s4">(</span><span class="s2">divisor</span><span class="s4">: </span><span class="s2">string </span><span class="s4">| </span><span class="s2">number </span><span class="s4">| </span><span class="s2">Long </span><span class="s4">| </span><span class="s2">Timestamp</span><span class="s4">): </span><span class="s2">Long</span><span class="s4">;</span>
+    <span class="s0">/** This is an alias of {</span><span class="s1">@link </span><span class="s0">Long.modulo} */</span>
+    <span class="s2">mod</span><span class="s4">(</span><span class="s2">divisor</span><span class="s4">: </span><span class="s2">string </span><span class="s4">| </span><span class="s2">number </span><span class="s4">| </span><span class="s2">Long </span><span class="s4">| </span><span class="s2">Timestamp</span><span class="s4">): </span><span class="s2">Long</span><span class="s4">;</span>
+    <span class="s0">/** This is an alias of {</span><span class="s1">@link </span><span class="s0">Long.modulo} */</span>
+    <span class="s2">rem</span><span class="s4">(</span><span class="s2">divisor</span><span class="s4">: </span><span class="s2">string </span><span class="s4">| </span><span class="s2">number </span><span class="s4">| </span><span class="s2">Long </span><span class="s4">| </span><span class="s2">Timestamp</span><span class="s4">): </span><span class="s2">Long</span><span class="s4">;</span>
+    <span class="s0">/**</span>
+     <span class="s0">* Returns the product of this and the specified Long.</span>
+     <span class="s0">* </span><span class="s1">@param </span><span class="s0">multiplier - Multiplier</span>
+     <span class="s0">* </span><span class="s1">@returns </span><span class="s0">Product</span>
+     <span class="s0">*/</span>
+    <span class="s2">multiply</span><span class="s4">(</span><span class="s2">multiplier</span><span class="s4">: </span><span class="s2">string </span><span class="s4">| </span><span class="s2">number </span><span class="s4">| </span><span class="s2">Long </span><span class="s4">| </span><span class="s2">Timestamp</span><span class="s4">): </span><span class="s2">Long</span><span class="s4">;</span>
+    <span class="s0">/** This is an alias of {</span><span class="s1">@link </span><span class="s0">Long.multiply} */</span>
+    <span class="s2">mul</span><span class="s4">(</span><span class="s2">multiplier</span><span class="s4">: </span><span class="s2">string </span><span class="s4">| </span><span class="s2">number </span><span class="s4">| </span><span class="s2">Long </span><span class="s4">| </span><span class="s2">Timestamp</span><span class="s4">): </span><span class="s2">Long</span><span class="s4">;</span>
+    <span class="s0">/** Returns the Negation of this Long's value. */</span>
+    <span class="s2">negate</span><span class="s4">(): </span><span class="s2">Long</span><span class="s4">;</span>
+    <span class="s0">/** This is an alias of {</span><span class="s1">@link </span><span class="s0">Long.negate} */</span>
+    <span class="s2">neg</span><span class="s4">(): </span><span class="s2">Long</span><span class="s4">;</span>
+    <span class="s0">/** Returns the bitwise NOT of this Long. */</span>
+    <span class="s2">not</span><span class="s4">(): </span><span class="s2">Long</span><span class="s4">;</span>
+    <span class="s0">/** Tests if this Long's value differs from the specified's. */</span>
+    <span class="s2">notEquals</span><span class="s4">(</span><span class="s2">other</span><span class="s4">: </span><span class="s2">string </span><span class="s4">| </span><span class="s2">number </span><span class="s4">| </span><span class="s2">Long </span><span class="s4">| </span><span class="s2">Timestamp</span><span class="s4">): </span><span class="s2">boolean</span><span class="s4">;</span>
+    <span class="s0">/** This is an alias of {</span><span class="s1">@link </span><span class="s0">Long.notEquals} */</span>
+    <span class="s2">neq</span><span class="s4">(</span><span class="s2">other</span><span class="s4">: </span><span class="s2">string </span><span class="s4">| </span><span class="s2">number </span><span class="s4">| </span><span class="s2">Long </span><span class="s4">| </span><span class="s2">Timestamp</span><span class="s4">): </span><span class="s2">boolean</span><span class="s4">;</span>
+    <span class="s0">/** This is an alias of {</span><span class="s1">@link </span><span class="s0">Long.notEquals} */</span>
+    <span class="s2">ne</span><span class="s4">(</span><span class="s2">other</span><span class="s4">: </span><span class="s2">string </span><span class="s4">| </span><span class="s2">number </span><span class="s4">| </span><span class="s2">Long </span><span class="s4">| </span><span class="s2">Timestamp</span><span class="s4">): </span><span class="s2">boolean</span><span class="s4">;</span>
+    <span class="s0">/**</span>
+     <span class="s0">* Returns the bitwise OR of this Long and the specified.</span>
+     <span class="s0">*/</span>
+    <span class="s2">or</span><span class="s4">(</span><span class="s2">other</span><span class="s4">: </span><span class="s2">number </span><span class="s4">| </span><span class="s2">string </span><span class="s4">| </span><span class="s2">Long</span><span class="s4">): </span><span class="s2">Long</span><span class="s4">;</span>
+    <span class="s0">/**</span>
+     <span class="s0">* Returns this Long with bits shifted to the left by the given amount.</span>
+     <span class="s0">* </span><span class="s1">@param </span><span class="s0">numBits - Number of bits</span>
+     <span class="s0">* </span><span class="s1">@returns </span><span class="s0">Shifted Long</span>
+     <span class="s0">*/</span>
+    <span class="s2">shiftLeft</span><span class="s4">(</span><span class="s2">numBits</span><span class="s4">: </span><span class="s2">number </span><span class="s4">| </span><span class="s2">Long</span><span class="s4">): </span><span class="s2">Long</span><span class="s4">;</span>
+    <span class="s0">/** This is an alias of {</span><span class="s1">@link </span><span class="s0">Long.shiftLeft} */</span>
+    <span class="s2">shl</span><span class="s4">(</span><span class="s2">numBits</span><span class="s4">: </span><span class="s2">number </span><span class="s4">| </span><span class="s2">Long</span><span class="s4">): </span><span class="s2">Long</span><span class="s4">;</span>
+    <span class="s0">/**</span>
+     <span class="s0">* Returns this Long with bits arithmetically shifted to the right by the given amount.</span>
+     <span class="s0">* </span><span class="s1">@param </span><span class="s0">numBits - Number of bits</span>
+     <span class="s0">* </span><span class="s1">@returns </span><span class="s0">Shifted Long</span>
+     <span class="s0">*/</span>
+    <span class="s2">shiftRight</span><span class="s4">(</span><span class="s2">numBits</span><span class="s4">: </span><span class="s2">number </span><span class="s4">| </span><span class="s2">Long</span><span class="s4">): </span><span class="s2">Long</span><span class="s4">;</span>
+    <span class="s0">/** This is an alias of {</span><span class="s1">@link </span><span class="s0">Long.shiftRight} */</span>
+    <span class="s2">shr</span><span class="s4">(</span><span class="s2">numBits</span><span class="s4">: </span><span class="s2">number </span><span class="s4">| </span><span class="s2">Long</span><span class="s4">): </span><span class="s2">Long</span><span class="s4">;</span>
+    <span class="s0">/**</span>
+     <span class="s0">* Returns this Long with bits logically shifted to the right by the given amount.</span>
+     <span class="s0">* </span><span class="s1">@param </span><span class="s0">numBits - Number of bits</span>
+     <span class="s0">* </span><span class="s1">@returns </span><span class="s0">Shifted Long</span>
+     <span class="s0">*/</span>
+    <span class="s2">shiftRightUnsigned</span><span class="s4">(</span><span class="s2">numBits</span><span class="s4">: </span><span class="s2">Long </span><span class="s4">| </span><span class="s2">number</span><span class="s4">): </span><span class="s2">Long</span><span class="s4">;</span>
+    <span class="s0">/** This is an alias of {</span><span class="s1">@link </span><span class="s0">Long.shiftRightUnsigned} */</span>
+    <span class="s2">shr_u</span><span class="s4">(</span><span class="s2">numBits</span><span class="s4">: </span><span class="s2">number </span><span class="s4">| </span><span class="s2">Long</span><span class="s4">): </span><span class="s2">Long</span><span class="s4">;</span>
+    <span class="s0">/** This is an alias of {</span><span class="s1">@link </span><span class="s0">Long.shiftRightUnsigned} */</span>
+    <span class="s2">shru</span><span class="s4">(</span><span class="s2">numBits</span><span class="s4">: </span><span class="s2">number </span><span class="s4">| </span><span class="s2">Long</span><span class="s4">): </span><span class="s2">Long</span><span class="s4">;</span>
+    <span class="s0">/**</span>
+     <span class="s0">* Returns the difference of this and the specified Long.</span>
+     <span class="s0">* </span><span class="s1">@param </span><span class="s0">subtrahend - Subtrahend</span>
+     <span class="s0">* </span><span class="s1">@returns </span><span class="s0">Difference</span>
+     <span class="s0">*/</span>
+    <span class="s2">subtract</span><span class="s4">(</span><span class="s2">subtrahend</span><span class="s4">: </span><span class="s2">string </span><span class="s4">| </span><span class="s2">number </span><span class="s4">| </span><span class="s2">Long </span><span class="s4">| </span><span class="s2">Timestamp</span><span class="s4">): </span><span class="s2">Long</span><span class="s4">;</span>
+    <span class="s0">/** This is an alias of {</span><span class="s1">@link </span><span class="s0">Long.subtract} */</span>
+    <span class="s2">sub</span><span class="s4">(</span><span class="s2">subtrahend</span><span class="s4">: </span><span class="s2">string </span><span class="s4">| </span><span class="s2">number </span><span class="s4">| </span><span class="s2">Long </span><span class="s4">| </span><span class="s2">Timestamp</span><span class="s4">): </span><span class="s2">Long</span><span class="s4">;</span>
+    <span class="s0">/** Converts the Long to a 32 bit integer, assuming it is a 32 bit integer. */</span>
+    <span class="s2">toInt</span><span class="s4">(): </span><span class="s2">number</span><span class="s4">;</span>
+    <span class="s0">/** Converts the Long to a the nearest floating-point representation of this value (double, 53 bit mantissa). */</span>
+    <span class="s2">toNumber</span><span class="s4">(): </span><span class="s2">number</span><span class="s4">;</span>
+    <span class="s0">/** Converts the Long to a BigInt (arbitrary precision). */</span>
+    <span class="s2">toBigInt</span><span class="s4">(): </span><span class="s2">bigint</span><span class="s4">;</span>
+    <span class="s0">/**</span>
+     <span class="s0">* Converts this Long to its byte representation.</span>
+     <span class="s0">* </span><span class="s1">@param </span><span class="s0">le - Whether little or big endian, defaults to big endian</span>
+     <span class="s0">* </span><span class="s1">@returns </span><span class="s0">Byte representation</span>
+     <span class="s0">*/</span>
+    <span class="s2">toBytes</span><span class="s4">(</span><span class="s2">le</span><span class="s4">?: </span><span class="s2">boolean</span><span class="s4">): </span><span class="s2">number</span><span class="s4">[];</span>
+    <span class="s0">/**</span>
+     <span class="s0">* Converts this Long to its little endian byte representation.</span>
+     <span class="s0">* </span><span class="s1">@returns </span><span class="s0">Little endian byte representation</span>
+     <span class="s0">*/</span>
+    <span class="s2">toBytesLE</span><span class="s4">(): </span><span class="s2">number</span><span class="s4">[];</span>
+    <span class="s0">/**</span>
+     <span class="s0">* Converts this Long to its big endian byte representation.</span>
+     <span class="s0">* </span><span class="s1">@returns </span><span class="s0">Big endian byte representation</span>
+     <span class="s0">*/</span>
+    <span class="s2">toBytesBE</span><span class="s4">(): </span><span class="s2">number</span><span class="s4">[];</span>
+    <span class="s0">/**</span>
+     <span class="s0">* Converts this Long to signed.</span>
+     <span class="s0">*/</span>
+    <span class="s2">toSigned</span><span class="s4">(): </span><span class="s2">Long</span><span class="s4">;</span>
+    <span class="s0">/**</span>
+     <span class="s0">* Converts the Long to a string written in the specified radix.</span>
+     <span class="s0">* </span><span class="s1">@param </span><span class="s0">radix - Radix (2-36), defaults to 10</span>
+     <span class="s0">* </span><span class="s1">@throws </span><span class="s0">RangeError If `radix` is out of range</span>
+     <span class="s0">*/</span>
+    <span class="s2">toString</span><span class="s4">(</span><span class="s2">radix</span><span class="s4">?: </span><span class="s2">number</span><span class="s4">): </span><span class="s2">string</span><span class="s4">;</span>
+    <span class="s0">/** Converts this Long to unsigned. */</span>
+    <span class="s2">toUnsigned</span><span class="s4">(): </span><span class="s2">Long</span><span class="s4">;</span>
+    <span class="s0">/** Returns the bitwise XOR of this Long and the given one. */</span>
+    <span class="s2">xor</span><span class="s4">(</span><span class="s2">other</span><span class="s4">: </span><span class="s2">Long </span><span class="s4">| </span><span class="s2">number </span><span class="s4">| </span><span class="s2">string</span><span class="s4">): </span><span class="s2">Long</span><span class="s4">;</span>
+    <span class="s0">/** This is an alias of {</span><span class="s1">@link </span><span class="s0">Long.isZero} */</span>
+    <span class="s2">eqz</span><span class="s4">(): </span><span class="s2">boolean</span><span class="s4">;</span>
+    <span class="s0">/** This is an alias of {</span><span class="s1">@link </span><span class="s0">Long.lessThanOrEqual} */</span>
+    <span class="s2">le</span><span class="s4">(</span><span class="s2">other</span><span class="s4">: </span><span class="s2">string </span><span class="s4">| </span><span class="s2">number </span><span class="s4">| </span><span class="s2">Long </span><span class="s4">| </span><span class="s2">Timestamp</span><span class="s4">): </span><span class="s2">boolean</span><span class="s4">;</span>
+    <span class="s2">toExtendedJSON</span><span class="s4">(</span><span class="s2">options</span><span class="s4">?: </span><span class="s2">EJSONOptions</span><span class="s4">): </span><span class="s2">number </span><span class="s4">| </span><span class="s2">LongExtended</span><span class="s4">;</span>
+    <span class="s3">static </span><span class="s2">fromExtendedJSON</span><span class="s4">(</span><span class="s2">doc</span><span class="s4">: {</span>
+        <span class="s2">$numberLong</span><span class="s4">: </span><span class="s2">string</span><span class="s4">;</span>
+    <span class="s4">}, </span><span class="s2">options</span><span class="s4">?: </span><span class="s2">EJSONOptions</span><span class="s4">): </span><span class="s2">number </span><span class="s4">| </span><span class="s2">Long </span><span class="s4">| </span><span class="s2">bigint</span><span class="s4">;</span>
+    <span class="s2">inspect</span><span class="s4">(</span><span class="s2">depth</span><span class="s4">?: </span><span class="s2">number</span><span class="s4">, </span><span class="s2">options</span><span class="s4">?: </span><span class="s2">unknown</span><span class="s4">, </span><span class="s2">inspect</span><span class="s4">?: </span><span class="s2">InspectFn</span><span class="s4">): </span><span class="s2">string</span><span class="s4">;</span>
+<span class="s4">}</span>
+
+<span class="s0">/** </span><span class="s1">@public </span><span class="s0">*/</span>
+<span class="s3">export </span><span class="s2">declare </span><span class="s3">interface </span><span class="s2">LongExtended </span><span class="s4">{</span>
+    <span class="s2">$numberLong</span><span class="s4">: </span><span class="s2">string</span><span class="s4">;</span>
+<span class="s4">}</span>
+
+<span class="s0">/** </span><span class="s1">@public </span><span class="s0">*/</span>
+<span class="s3">export </span><span class="s2">declare type LongWithoutOverrides </span><span class="s4">= </span><span class="s3">new </span><span class="s4">(</span><span class="s2">low</span><span class="s4">: </span><span class="s2">unknown</span><span class="s4">, </span><span class="s2">high</span><span class="s4">?: </span><span class="s2">number </span><span class="s4">| </span><span class="s2">boolean</span><span class="s4">, </span><span class="s2">unsigned</span><span class="s4">?: </span><span class="s2">boolean</span><span class="s4">) =&gt; {</span>
+    <span class="s4">[</span><span class="s2">P </span><span class="s3">in </span><span class="s2">Exclude</span><span class="s4">&lt;</span><span class="s2">keyof Long</span><span class="s4">, </span><span class="s2">TimestampOverrides</span><span class="s4">&gt;]: </span><span class="s2">Long</span><span class="s4">[</span><span class="s2">P</span><span class="s4">];</span>
+<span class="s4">};</span>
+
+<span class="s0">/** </span><span class="s1">@public </span><span class="s0">*/</span>
+<span class="s3">export </span><span class="s2">declare </span><span class="s3">const </span><span class="s2">LongWithoutOverridesClass</span><span class="s4">: </span><span class="s2">LongWithoutOverrides</span><span class="s4">;</span>
+
+<span class="s0">/**</span>
+ <span class="s0">* A class representation of the BSON MaxKey type.</span>
+ <span class="s0">* </span><span class="s1">@public</span>
+ <span class="s0">* </span><span class="s1">@category </span><span class="s0">BSONType</span>
+ <span class="s0">*/</span>
+<span class="s3">export </span><span class="s2">declare </span><span class="s3">class </span><span class="s2">MaxKey </span><span class="s3">extends </span><span class="s2">BSONValue </span><span class="s4">{</span>
+    <span class="s2">get _bsontype</span><span class="s4">(): </span><span class="s5">'MaxKey'</span><span class="s4">;</span>
+    <span class="s6">/* Excluded from this release type: toExtendedJSON */</span>
+    <span class="s6">/* Excluded from this release type: fromExtendedJSON */</span>
+    <span class="s2">inspect</span><span class="s4">(): </span><span class="s2">string</span><span class="s4">;</span>
+<span class="s4">}</span>
+
+<span class="s0">/** </span><span class="s1">@public </span><span class="s0">*/</span>
+<span class="s3">export </span><span class="s2">declare </span><span class="s3">interface </span><span class="s2">MaxKeyExtended </span><span class="s4">{</span>
+    <span class="s2">$maxKey</span><span class="s4">: </span><span class="s7">1</span><span class="s4">;</span>
+<span class="s4">}</span>
+
+<span class="s0">/**</span>
+ <span class="s0">* A class representation of the BSON MinKey type.</span>
+ <span class="s0">* </span><span class="s1">@public</span>
+ <span class="s0">* </span><span class="s1">@category </span><span class="s0">BSONType</span>
+ <span class="s0">*/</span>
+<span class="s3">export </span><span class="s2">declare </span><span class="s3">class </span><span class="s2">MinKey </span><span class="s3">extends </span><span class="s2">BSONValue </span><span class="s4">{</span>
+    <span class="s2">get _bsontype</span><span class="s4">(): </span><span class="s5">'MinKey'</span><span class="s4">;</span>
+    <span class="s6">/* Excluded from this release type: toExtendedJSON */</span>
+    <span class="s6">/* Excluded from this release type: fromExtendedJSON */</span>
+    <span class="s2">inspect</span><span class="s4">(): </span><span class="s2">string</span><span class="s4">;</span>
+<span class="s4">}</span>
+
+<span class="s0">/** </span><span class="s1">@public </span><span class="s0">*/</span>
+<span class="s3">export </span><span class="s2">declare </span><span class="s3">interface </span><span class="s2">MinKeyExtended </span><span class="s4">{</span>
+    <span class="s2">$minKey</span><span class="s4">: </span><span class="s7">1</span><span class="s4">;</span>
+<span class="s4">}</span>
+
+<span class="s0">/**</span>
+ <span class="s0">* </span><span class="s1">@experimental</span>
+ <span class="s0">* </span><span class="s1">@public</span>
+ <span class="s0">*</span>
+ <span class="s0">* A collection of functions that get or set various numeric types and bit widths from a Uint8Array.</span>
+ <span class="s0">*/</span>
+<span class="s2">declare type NumberUtils </span><span class="s4">= {</span>
+    <span class="s0">/** Is true if the current system is big endian. */</span>
+    <span class="s2">isBigEndian</span><span class="s4">: </span><span class="s2">boolean</span><span class="s4">;</span>
+    <span class="s0">/**</span>
+     <span class="s0">* Parses a signed int32 at offset. Throws a `RangeError` if value is negative.</span>
+     <span class="s0">*/</span>
+    <span class="s2">getNonnegativeInt32LE</span><span class="s4">: (</span><span class="s2">source</span><span class="s4">: </span><span class="s2">Uint8Array</span><span class="s4">, </span><span class="s2">offset</span><span class="s4">: </span><span class="s2">number</span><span class="s4">) =&gt; </span><span class="s2">number</span><span class="s4">;</span>
+    <span class="s2">getInt32LE</span><span class="s4">: (</span><span class="s2">source</span><span class="s4">: </span><span class="s2">Uint8Array</span><span class="s4">, </span><span class="s2">offset</span><span class="s4">: </span><span class="s2">number</span><span class="s4">) =&gt; </span><span class="s2">number</span><span class="s4">;</span>
+    <span class="s2">getUint32LE</span><span class="s4">: (</span><span class="s2">source</span><span class="s4">: </span><span class="s2">Uint8Array</span><span class="s4">, </span><span class="s2">offset</span><span class="s4">: </span><span class="s2">number</span><span class="s4">) =&gt; </span><span class="s2">number</span><span class="s4">;</span>
+    <span class="s2">getUint32BE</span><span class="s4">: (</span><span class="s2">source</span><span class="s4">: </span><span class="s2">Uint8Array</span><span class="s4">, </span><span class="s2">offset</span><span class="s4">: </span><span class="s2">number</span><span class="s4">) =&gt; </span><span class="s2">number</span><span class="s4">;</span>
+    <span class="s2">getBigInt64LE</span><span class="s4">: (</span><span class="s2">source</span><span class="s4">: </span><span class="s2">Uint8Array</span><span class="s4">, </span><span class="s2">offset</span><span class="s4">: </span><span class="s2">number</span><span class="s4">) =&gt; </span><span class="s2">bigint</span><span class="s4">;</span>
+    <span class="s2">getFloat64LE</span><span class="s4">: (</span><span class="s2">source</span><span class="s4">: </span><span class="s2">Uint8Array</span><span class="s4">, </span><span class="s2">offset</span><span class="s4">: </span><span class="s2">number</span><span class="s4">) =&gt; </span><span class="s2">number</span><span class="s4">;</span>
+    <span class="s2">setInt32BE</span><span class="s4">: (</span><span class="s2">destination</span><span class="s4">: </span><span class="s2">Uint8Array</span><span class="s4">, </span><span class="s2">offset</span><span class="s4">: </span><span class="s2">number</span><span class="s4">, </span><span class="s2">value</span><span class="s4">: </span><span class="s2">number</span><span class="s4">) =&gt; </span><span class="s7">4</span><span class="s4">;</span>
+    <span class="s2">setInt32LE</span><span class="s4">: (</span><span class="s2">destination</span><span class="s4">: </span><span class="s2">Uint8Array</span><span class="s4">, </span><span class="s2">offset</span><span class="s4">: </span><span class="s2">number</span><span class="s4">, </span><span class="s2">value</span><span class="s4">: </span><span class="s2">number</span><span class="s4">) =&gt; </span><span class="s7">4</span><span class="s4">;</span>
+    <span class="s2">setBigInt64LE</span><span class="s4">: (</span><span class="s2">destination</span><span class="s4">: </span><span class="s2">Uint8Array</span><span class="s4">, </span><span class="s2">offset</span><span class="s4">: </span><span class="s2">number</span><span class="s4">, </span><span class="s2">value</span><span class="s4">: </span><span class="s2">bigint</span><span class="s4">) =&gt; </span><span class="s7">8</span><span class="s4">;</span>
+    <span class="s2">setFloat64LE</span><span class="s4">: (</span><span class="s2">destination</span><span class="s4">: </span><span class="s2">Uint8Array</span><span class="s4">, </span><span class="s2">offset</span><span class="s4">: </span><span class="s2">number</span><span class="s4">, </span><span class="s2">value</span><span class="s4">: </span><span class="s2">number</span><span class="s4">) =&gt; </span><span class="s7">8</span><span class="s4">;</span>
+<span class="s4">};</span>
+
+<span class="s0">/**</span>
+ <span class="s0">* Number parsing and serializing utilities.</span>
+ <span class="s0">*</span>
+ <span class="s0">* </span><span class="s1">@experimental</span>
+ <span class="s0">* </span><span class="s1">@public</span>
+ <span class="s0">*/</span>
+<span class="s2">declare </span><span class="s3">const </span><span class="s2">NumberUtils</span><span class="s4">: </span><span class="s2">NumberUtils</span><span class="s4">;</span>
+
+<span class="s0">/**</span>
+ <span class="s0">* A class representation of the BSON ObjectId type.</span>
+ <span class="s0">* </span><span class="s1">@public</span>
+ <span class="s0">* </span><span class="s1">@category </span><span class="s0">BSONType</span>
+ <span class="s0">*/</span>
+<span class="s3">export </span><span class="s2">declare </span><span class="s3">class </span><span class="s2">ObjectId </span><span class="s3">extends </span><span class="s2">BSONValue </span><span class="s4">{</span>
+    <span class="s2">get _bsontype</span><span class="s4">(): </span><span class="s5">'ObjectId'</span><span class="s4">;</span>
+    <span class="s6">/* Excluded from this release type: index */</span>
+    <span class="s3">static </span><span class="s2">cacheHexString</span><span class="s4">: </span><span class="s2">boolean</span><span class="s4">;</span>
+    <span class="s6">/* Excluded from this release type: buffer */</span>
+    <span class="s0">/**</span>
+     <span class="s0">* Create ObjectId from a number.</span>
+     <span class="s0">*</span>
+     <span class="s0">* </span><span class="s1">@param </span><span class="s0">inputId - A number.</span>
+     <span class="s0">* </span><span class="s1">@deprecated </span><span class="s0">Instead, use `static createFromTime()` to set a numeric value for the new ObjectId.</span>
+     <span class="s0">*/</span>
+    <span class="s2">constructor</span><span class="s4">(</span><span class="s2">inputId</span><span class="s4">: </span><span class="s2">number</span><span class="s4">);</span>
+    <span class="s0">/**</span>
+     <span class="s0">* Create ObjectId from a 24 character hex string.</span>
+     <span class="s0">*</span>
+     <span class="s0">* </span><span class="s1">@param </span><span class="s0">inputId - A 24 character hex string.</span>
+     <span class="s0">*/</span>
+    <span class="s2">constructor</span><span class="s4">(</span><span class="s2">inputId</span><span class="s4">: </span><span class="s2">string</span><span class="s4">);</span>
+    <span class="s0">/**</span>
+     <span class="s0">* Create ObjectId from the BSON ObjectId type.</span>
+     <span class="s0">*</span>
+     <span class="s0">* </span><span class="s1">@param </span><span class="s0">inputId - The BSON ObjectId type.</span>
+     <span class="s0">*/</span>
+    <span class="s2">constructor</span><span class="s4">(</span><span class="s2">inputId</span><span class="s4">: </span><span class="s2">ObjectId</span><span class="s4">);</span>
+    <span class="s0">/**</span>
+     <span class="s0">* Create ObjectId from the object type that has the toHexString method.</span>
+     <span class="s0">*</span>
+     <span class="s0">* </span><span class="s1">@param </span><span class="s0">inputId - The ObjectIdLike type.</span>
+     <span class="s0">*/</span>
+    <span class="s2">constructor</span><span class="s4">(</span><span class="s2">inputId</span><span class="s4">: </span><span class="s2">ObjectIdLike</span><span class="s4">);</span>
+    <span class="s0">/**</span>
+     <span class="s0">* Create ObjectId from a 12 byte binary Buffer.</span>
+     <span class="s0">*</span>
+     <span class="s0">* </span><span class="s1">@param </span><span class="s0">inputId - A 12 byte binary Buffer.</span>
+     <span class="s0">*/</span>
+    <span class="s2">constructor</span><span class="s4">(</span><span class="s2">inputId</span><span class="s4">: </span><span class="s2">Uint8Array</span><span class="s4">);</span>
+    <span class="s0">/** To generate a new ObjectId, use ObjectId() with no argument. */</span>
+    <span class="s2">constructor</span><span class="s4">();</span>
+    <span class="s0">/**</span>
+     <span class="s0">* Implementation overload.</span>
+     <span class="s0">*</span>
+     <span class="s0">* </span><span class="s1">@param </span><span class="s0">inputId - All input types that are used in the constructor implementation.</span>
+     <span class="s0">*/</span>
+    <span class="s2">constructor</span><span class="s4">(</span><span class="s2">inputId</span><span class="s4">?: </span><span class="s2">string </span><span class="s4">| </span><span class="s2">number </span><span class="s4">| </span><span class="s2">ObjectId </span><span class="s4">| </span><span class="s2">ObjectIdLike </span><span class="s4">| </span><span class="s2">Uint8Array</span><span class="s4">);</span>
+    <span class="s0">/**</span>
+     <span class="s0">* The ObjectId bytes</span>
+     <span class="s0">* </span><span class="s1">@readonly</span>
+     <span class="s0">*/</span>
+    <span class="s2">get id</span><span class="s4">(): </span><span class="s2">Uint8Array</span><span class="s4">;</span>
+    <span class="s2">set id</span><span class="s4">(</span><span class="s2">value</span><span class="s4">: </span><span class="s2">Uint8Array</span><span class="s4">);</span>
+    <span class="s6">/* Excluded from this release type: validateHexString */</span>
+    <span class="s0">/** Returns the ObjectId id as a 24 lowercase character hex string representation */</span>
+    <span class="s2">toHexString</span><span class="s4">(): </span><span class="s2">string</span><span class="s4">;</span>
+    <span class="s6">/* Excluded from this release type: getInc */</span>
+    <span class="s0">/**</span>
+     <span class="s0">* Generate a 12 byte id buffer used in ObjectId's</span>
+     <span class="s0">*</span>
+     <span class="s0">* </span><span class="s1">@param </span><span class="s0">time - pass in a second based timestamp.</span>
+     <span class="s0">*/</span>
+    <span class="s3">static </span><span class="s2">generate</span><span class="s4">(</span><span class="s2">time</span><span class="s4">?: </span><span class="s2">number</span><span class="s4">): </span><span class="s2">Uint8Array</span><span class="s4">;</span>
+    <span class="s0">/**</span>
+     <span class="s0">* Converts the id into a 24 character hex string for printing, unless encoding is provided.</span>
+     <span class="s0">* </span><span class="s1">@param </span><span class="s0">encoding - hex or base64</span>
+     <span class="s0">*/</span>
+    <span class="s2">toString</span><span class="s4">(</span><span class="s2">encoding</span><span class="s4">?: </span><span class="s5">'hex' </span><span class="s4">| </span><span class="s5">'base64'</span><span class="s4">): </span><span class="s2">string</span><span class="s4">;</span>
+    <span class="s0">/** Converts to its JSON the 24 character hex string representation. */</span>
+    <span class="s2">toJSON</span><span class="s4">(): </span><span class="s2">string</span><span class="s4">;</span>
+    <span class="s6">/* Excluded from this release type: is */</span>
+    <span class="s0">/**</span>
+     <span class="s0">* Compares the equality of this ObjectId with `otherID`.</span>
+     <span class="s0">*</span>
+     <span class="s0">* </span><span class="s1">@param </span><span class="s0">otherId - ObjectId instance to compare against.</span>
+     <span class="s0">*/</span>
+    <span class="s2">equals</span><span class="s4">(</span><span class="s2">otherId</span><span class="s4">: </span><span class="s2">string </span><span class="s4">| </span><span class="s2">ObjectId </span><span class="s4">| </span><span class="s2">ObjectIdLike </span><span class="s4">| </span><span class="s2">undefined </span><span class="s4">| </span><span class="s3">null</span><span class="s4">): </span><span class="s2">boolean</span><span class="s4">;</span>
+    <span class="s0">/** Returns the generation date (accurate up to the second) that this ID was generated. */</span>
+    <span class="s2">getTimestamp</span><span class="s4">(): </span><span class="s2">Date</span><span class="s4">;</span>
+    <span class="s6">/* Excluded from this release type: createPk */</span>
+    <span class="s6">/* Excluded from this release type: serializeInto */</span>
+    <span class="s0">/**</span>
+     <span class="s0">* Creates an ObjectId from a second based number, with the rest of the ObjectId zeroed out. Used for comparisons or sorting the ObjectId.</span>
+     <span class="s0">*</span>
+     <span class="s0">* </span><span class="s1">@param </span><span class="s0">time - an integer number representing a number of seconds.</span>
+     <span class="s0">*/</span>
+    <span class="s3">static </span><span class="s2">createFromTime</span><span class="s4">(</span><span class="s2">time</span><span class="s4">: </span><span class="s2">number</span><span class="s4">): </span><span class="s2">ObjectId</span><span class="s4">;</span>
+    <span class="s0">/**</span>
+     <span class="s0">* Creates an ObjectId from a hex string representation of an ObjectId.</span>
+     <span class="s0">*</span>
+     <span class="s0">* </span><span class="s1">@param </span><span class="s0">hexString - create a ObjectId from a passed in 24 character hexstring.</span>
+     <span class="s0">*/</span>
+    <span class="s3">static </span><span class="s2">createFromHexString</span><span class="s4">(</span><span class="s2">hexString</span><span class="s4">: </span><span class="s2">string</span><span class="s4">): </span><span class="s2">ObjectId</span><span class="s4">;</span>
+    <span class="s0">/** Creates an ObjectId instance from a base64 string */</span>
+    <span class="s3">static </span><span class="s2">createFromBase64</span><span class="s4">(</span><span class="s2">base64</span><span class="s4">: </span><span class="s2">string</span><span class="s4">): </span><span class="s2">ObjectId</span><span class="s4">;</span>
+    <span class="s0">/**</span>
+     <span class="s0">* Checks if a value can be used to create a valid bson ObjectId</span>
+     <span class="s0">* </span><span class="s1">@param </span><span class="s0">id - any JS value</span>
+     <span class="s0">*/</span>
+    <span class="s3">static </span><span class="s2">isValid</span><span class="s4">(</span><span class="s2">id</span><span class="s4">: </span><span class="s2">string </span><span class="s4">| </span><span class="s2">number </span><span class="s4">| </span><span class="s2">ObjectId </span><span class="s4">| </span><span class="s2">ObjectIdLike </span><span class="s4">| </span><span class="s2">Uint8Array</span><span class="s4">): </span><span class="s2">boolean</span><span class="s4">;</span>
+    <span class="s6">/* Excluded from this release type: toExtendedJSON */</span>
+    <span class="s6">/* Excluded from this release type: fromExtendedJSON */</span>
+    <span class="s6">/* Excluded from this release type: isCached */</span>
+    <span class="s0">/**</span>
+     <span class="s0">* Converts to a string representation of this Id.</span>
+     <span class="s0">*</span>
+     <span class="s0">* </span><span class="s1">@returns </span><span class="s0">return the 24 character hex string representation.</span>
+     <span class="s0">*/</span>
+    <span class="s2">inspect</span><span class="s4">(</span><span class="s2">depth</span><span class="s4">?: </span><span class="s2">number</span><span class="s4">, </span><span class="s2">options</span><span class="s4">?: </span><span class="s2">unknown</span><span class="s4">, </span><span class="s2">inspect</span><span class="s4">?: </span><span class="s2">InspectFn</span><span class="s4">): </span><span class="s2">string</span><span class="s4">;</span>
+<span class="s4">}</span>
+
+<span class="s0">/** </span><span class="s1">@public </span><span class="s0">*/</span>
+<span class="s3">export </span><span class="s2">declare </span><span class="s3">interface </span><span class="s2">ObjectIdExtended </span><span class="s4">{</span>
+    <span class="s2">$oid</span><span class="s4">: </span><span class="s2">string</span><span class="s4">;</span>
+<span class="s4">}</span>
+
+<span class="s0">/** </span><span class="s1">@public </span><span class="s0">*/</span>
+<span class="s3">export </span><span class="s2">declare </span><span class="s3">interface </span><span class="s2">ObjectIdLike </span><span class="s4">{</span>
+    <span class="s2">id</span><span class="s4">: </span><span class="s2">string </span><span class="s4">| </span><span class="s2">Uint8Array</span><span class="s4">;</span>
+    <span class="s2">__id</span><span class="s4">?: </span><span class="s2">string</span><span class="s4">;</span>
+    <span class="s2">toHexString</span><span class="s4">(): </span><span class="s2">string</span><span class="s4">;</span>
+<span class="s4">}</span>
+
+<span class="s0">/**</span>
+ <span class="s0">* </span><span class="s1">@experimental</span>
+ <span class="s0">* </span><span class="s1">@public</span>
+ <span class="s0">*</span>
+ <span class="s0">* A new set of BSON APIs that are currently experimental and not intended for production use.</span>
+ <span class="s0">*/</span>
+<span class="s3">export </span><span class="s2">declare type OnDemand </span><span class="s4">= {</span>
+    <span class="s2">parseToElements</span><span class="s4">: (</span><span class="s3">this</span><span class="s4">: </span><span class="s3">void</span><span class="s4">, </span><span class="s2">bytes</span><span class="s4">: </span><span class="s2">Uint8Array</span><span class="s4">, </span><span class="s2">startOffset</span><span class="s4">?: </span><span class="s2">number</span><span class="s4">) =&gt; </span><span class="s2">Iterable</span><span class="s4">&lt;</span><span class="s2">BSONElement</span><span class="s4">&gt;;</span>
+    <span class="s2">BSONElement</span><span class="s4">: </span><span class="s2">BSONElement</span><span class="s4">;</span>
+    <span class="s2">ByteUtils</span><span class="s4">: </span><span class="s2">ByteUtils</span><span class="s4">;</span>
+    <span class="s2">NumberUtils</span><span class="s4">: </span><span class="s2">NumberUtils</span><span class="s4">;</span>
+<span class="s4">};</span>
+
+<span class="s0">/**</span>
+ <span class="s0">* </span><span class="s1">@experimental</span>
+ <span class="s0">* </span><span class="s1">@public</span>
+ <span class="s0">*/</span>
+<span class="s3">export </span><span class="s2">declare </span><span class="s3">const </span><span class="s2">onDemand</span><span class="s4">: </span><span class="s2">OnDemand</span><span class="s4">;</span>
+
+<span class="s0">/**</span>
+ <span class="s0">* Parse an Extended JSON string, constructing the JavaScript value or object described by that</span>
+ <span class="s0">* string.</span>
+ <span class="s0">*</span>
+ <span class="s0">* </span><span class="s1">@example</span>
+ <span class="s0">* ```js</span>
+ <span class="s0">* const { EJSON } = require('bson');</span>
+ <span class="s0">* const text = '{ &quot;int32&quot;: { &quot;$numberInt&quot;: &quot;10&quot; } }';</span>
+ <span class="s0">*</span>
+ <span class="s0">* // prints { int32: { [String: '10'] _bsontype: 'Int32', value: '10' } }</span>
+ <span class="s0">* console.log(EJSON.parse(text, { relaxed: false }));</span>
+ <span class="s0">*</span>
+ <span class="s0">* // prints { int32: 10 }</span>
+ <span class="s0">* console.log(EJSON.parse(text));</span>
+ <span class="s0">* ```</span>
+ <span class="s0">*/</span>
+<span class="s2">declare </span><span class="s3">function </span><span class="s2">parse</span><span class="s4">(</span><span class="s2">text</span><span class="s4">: </span><span class="s2">string</span><span class="s4">, </span><span class="s2">options</span><span class="s4">?: </span><span class="s2">EJSONOptions</span><span class="s4">): </span><span class="s2">any</span><span class="s4">;</span>
+
+<span class="s0">/**</span>
+ <span class="s0">* Serialize a Javascript object.</span>
+ <span class="s0">*</span>
+ <span class="s0">* </span><span class="s1">@param </span><span class="s0">object - the Javascript object to serialize.</span>
+ <span class="s0">* </span><span class="s1">@returns </span><span class="s0">Buffer object containing the serialized object.</span>
+ <span class="s0">* </span><span class="s1">@public</span>
+ <span class="s0">*/</span>
+<span class="s3">export </span><span class="s2">declare </span><span class="s3">function </span><span class="s2">serialize</span><span class="s4">(</span><span class="s2">object</span><span class="s4">: </span><span class="s2">Document</span><span class="s4">, </span><span class="s2">options</span><span class="s4">?: </span><span class="s2">SerializeOptions</span><span class="s4">): </span><span class="s2">Uint8Array</span><span class="s4">;</span>
+
+<span class="s0">/** </span><span class="s1">@public </span><span class="s0">*/</span>
+<span class="s3">export </span><span class="s2">declare </span><span class="s3">interface </span><span class="s2">SerializeOptions </span><span class="s4">{</span>
+    <span class="s0">/**</span>
+     <span class="s0">* the serializer will check if keys are valid.</span>
+     <span class="s0">* </span><span class="s1">@defaultValue </span><span class="s0">`false`</span>
+     <span class="s0">*/</span>
+    <span class="s2">checkKeys</span><span class="s4">?: </span><span class="s2">boolean</span><span class="s4">;</span>
+    <span class="s0">/**</span>
+     <span class="s0">* serialize the javascript functions</span>
+     <span class="s0">* </span><span class="s1">@defaultValue </span><span class="s0">`false`</span>
+     <span class="s0">*/</span>
+    <span class="s2">serializeFunctions</span><span class="s4">?: </span><span class="s2">boolean</span><span class="s4">;</span>
+    <span class="s0">/**</span>
+     <span class="s0">* serialize will not emit undefined fields</span>
+     <span class="s0">* note that the driver sets this to `false`</span>
+     <span class="s0">* </span><span class="s1">@defaultValue </span><span class="s0">`true`</span>
+     <span class="s0">*/</span>
+    <span class="s2">ignoreUndefined</span><span class="s4">?: </span><span class="s2">boolean</span><span class="s4">;</span>
+    <span class="s6">/* Excluded from this release type: minInternalBufferSize */</span>
+    <span class="s0">/**</span>
+     <span class="s0">* the index in the buffer where we wish to start serializing into</span>
+     <span class="s0">* </span><span class="s1">@defaultValue </span><span class="s0">`0`</span>
+     <span class="s0">*/</span>
+    <span class="s2">index</span><span class="s4">?: </span><span class="s2">number</span><span class="s4">;</span>
+<span class="s4">}</span>
+
+<span class="s0">/**</span>
+ <span class="s0">* Serialize a Javascript object using a predefined Buffer and index into the buffer,</span>
+ <span class="s0">* useful when pre-allocating the space for serialization.</span>
+ <span class="s0">*</span>
+ <span class="s0">* </span><span class="s1">@param </span><span class="s0">object - the Javascript object to serialize.</span>
+ <span class="s0">* </span><span class="s1">@param </span><span class="s0">finalBuffer - the Buffer you pre-allocated to store the serialized BSON object.</span>
+ <span class="s0">* </span><span class="s1">@returns </span><span class="s0">the index pointing to the last written byte in the buffer.</span>
+ <span class="s0">* </span><span class="s1">@public</span>
+ <span class="s0">*/</span>
+<span class="s3">export </span><span class="s2">declare </span><span class="s3">function </span><span class="s2">serializeWithBufferAndIndex</span><span class="s4">(</span><span class="s2">object</span><span class="s4">: </span><span class="s2">Document</span><span class="s4">, </span><span class="s2">finalBuffer</span><span class="s4">: </span><span class="s2">Uint8Array</span><span class="s4">, </span><span class="s2">options</span><span class="s4">?: </span><span class="s2">SerializeOptions</span><span class="s4">): </span><span class="s2">number</span><span class="s4">;</span>
+
+<span class="s0">/**</span>
+ <span class="s0">* Sets the size of the internal serialization buffer.</span>
+ <span class="s0">*</span>
+ <span class="s0">* </span><span class="s1">@param </span><span class="s0">size - The desired size for the internal serialization buffer in bytes</span>
+ <span class="s0">* </span><span class="s1">@public</span>
+ <span class="s0">*/</span>
+<span class="s3">export </span><span class="s2">declare </span><span class="s3">function </span><span class="s2">setInternalBufferSize</span><span class="s4">(</span><span class="s2">size</span><span class="s4">: </span><span class="s2">number</span><span class="s4">): </span><span class="s3">void</span><span class="s4">;</span>
+
+<span class="s0">/**</span>
+ <span class="s0">* Converts a BSON document to an Extended JSON string, optionally replacing values if a replacer</span>
+ <span class="s0">* function is specified or optionally including only the specified properties if a replacer array</span>
+ <span class="s0">* is specified.</span>
+ <span class="s0">*</span>
+ <span class="s0">* </span><span class="s1">@param </span><span class="s0">value - The value to convert to extended JSON</span>
+ <span class="s0">* </span><span class="s1">@param </span><span class="s0">replacer - A function that alters the behavior of the stringification process, or an array of String and Number objects that serve as a whitelist for selecting/filtering the properties of the value object to be included in the JSON string. If this value is null or not provided, all properties of the object are included in the resulting JSON string</span>
+ <span class="s0">* </span><span class="s1">@param </span><span class="s0">space - A String or Number object that's used to insert white space into the output JSON string for readability purposes.</span>
+ <span class="s0">* </span><span class="s1">@param </span><span class="s0">options - Optional settings</span>
+ <span class="s0">*</span>
+ <span class="s0">* </span><span class="s1">@example</span>
+ <span class="s0">* ```js</span>
+ <span class="s0">* const { EJSON } = require('bson');</span>
+ <span class="s0">* const Int32 = require('mongodb').Int32;</span>
+ <span class="s0">* const doc = { int32: new Int32(10) };</span>
+ <span class="s0">*</span>
+ <span class="s0">* // prints '{&quot;int32&quot;:{&quot;$numberInt&quot;:&quot;10&quot;}}'</span>
+ <span class="s0">* console.log(EJSON.stringify(doc, { relaxed: false }));</span>
+ <span class="s0">*</span>
+ <span class="s0">* // prints '{&quot;int32&quot;:10}'</span>
+ <span class="s0">* console.log(EJSON.stringify(doc));</span>
+ <span class="s0">* ```</span>
+ <span class="s0">*/</span>
+<span class="s2">declare </span><span class="s3">function </span><span class="s2">stringify</span><span class="s4">(</span><span class="s2">value</span><span class="s4">: </span><span class="s2">any</span><span class="s4">, </span><span class="s2">replacer</span><span class="s4">?: (</span><span class="s2">number </span><span class="s4">| </span><span class="s2">string</span><span class="s4">)[] | ((</span><span class="s3">this</span><span class="s4">: </span><span class="s2">any</span><span class="s4">, </span><span class="s2">key</span><span class="s4">: </span><span class="s2">string</span><span class="s4">, </span><span class="s2">value</span><span class="s4">: </span><span class="s2">any</span><span class="s4">) =&gt; </span><span class="s2">any</span><span class="s4">) | </span><span class="s2">EJSONOptions</span><span class="s4">, </span><span class="s2">space</span><span class="s4">?: </span><span class="s2">string </span><span class="s4">| </span><span class="s2">number</span><span class="s4">, </span><span class="s2">options</span><span class="s4">?: </span><span class="s2">EJSONOptions</span><span class="s4">): </span><span class="s2">string</span><span class="s4">;</span>
+
+<span class="s0">/**</span>
+ <span class="s0">* </span><span class="s1">@public</span>
+ <span class="s0">* </span><span class="s1">@category </span><span class="s0">BSONType</span>
+ <span class="s0">*</span>
+ <span class="s0">* A special type for _internal_ MongoDB use and is **not** associated with the regular Date type.</span>
+ <span class="s0">*/</span>
+<span class="s3">export </span><span class="s2">declare </span><span class="s3">class </span><span class="s2">Timestamp </span><span class="s3">extends </span><span class="s2">LongWithoutOverridesClass </span><span class="s4">{</span>
+    <span class="s2">get _bsontype</span><span class="s4">(): </span><span class="s5">'Timestamp'</span><span class="s4">;</span>
+    <span class="s3">static </span><span class="s2">readonly MAX_VALUE</span><span class="s4">: </span><span class="s2">Long</span><span class="s4">;</span>
+    <span class="s0">/**</span>
+     <span class="s0">* An incrementing ordinal for operations within a given second.</span>
+     <span class="s0">*/</span>
+    <span class="s2">get i</span><span class="s4">(): </span><span class="s2">number</span><span class="s4">;</span>
+    <span class="s0">/**</span>
+     <span class="s0">* A `time_t` value measuring seconds since the Unix epoch</span>
+     <span class="s0">*/</span>
+    <span class="s2">get t</span><span class="s4">(): </span><span class="s2">number</span><span class="s4">;</span>
+    <span class="s0">/**</span>
+     <span class="s0">* </span><span class="s1">@param </span><span class="s0">int - A 64-bit bigint representing the Timestamp.</span>
+     <span class="s0">*/</span>
+    <span class="s2">constructor</span><span class="s4">(</span><span class="s2">int</span><span class="s4">: </span><span class="s2">bigint</span><span class="s4">);</span>
+    <span class="s0">/**</span>
+     <span class="s0">* </span><span class="s1">@param </span><span class="s0">long - A 64-bit Long representing the Timestamp.</span>
+     <span class="s0">*/</span>
+    <span class="s2">constructor</span><span class="s4">(</span><span class="s2">long</span><span class="s4">: </span><span class="s2">Long</span><span class="s4">);</span>
+    <span class="s0">/**</span>
+     <span class="s0">* </span><span class="s1">@param </span><span class="s0">value - A pair of two values indicating timestamp and increment.</span>
+     <span class="s0">*/</span>
+    <span class="s2">constructor</span><span class="s4">(</span><span class="s2">value</span><span class="s4">: {</span>
+        <span class="s2">t</span><span class="s4">: </span><span class="s2">number</span><span class="s4">;</span>
+        <span class="s2">i</span><span class="s4">: </span><span class="s2">number</span><span class="s4">;</span>
+    <span class="s4">});</span>
+    <span class="s2">toJSON</span><span class="s4">(): {</span>
+        <span class="s2">$timestamp</span><span class="s4">: </span><span class="s2">string</span><span class="s4">;</span>
+    <span class="s4">};</span>
+    <span class="s0">/** Returns a Timestamp represented by the given (32-bit) integer value. */</span>
+    <span class="s3">static </span><span class="s2">fromInt</span><span class="s4">(</span><span class="s2">value</span><span class="s4">: </span><span class="s2">number</span><span class="s4">): </span><span class="s2">Timestamp</span><span class="s4">;</span>
+    <span class="s0">/** Returns a Timestamp representing the given number value, provided that it is a finite number. Otherwise, zero is returned. */</span>
+    <span class="s3">static </span><span class="s2">fromNumber</span><span class="s4">(</span><span class="s2">value</span><span class="s4">: </span><span class="s2">number</span><span class="s4">): </span><span class="s2">Timestamp</span><span class="s4">;</span>
+    <span class="s0">/**</span>
+     <span class="s0">* Returns a Timestamp for the given high and low bits. Each is assumed to use 32 bits.</span>
+     <span class="s0">*</span>
+     <span class="s0">* </span><span class="s1">@param </span><span class="s0">lowBits - the low 32-bits.</span>
+     <span class="s0">* </span><span class="s1">@param </span><span class="s0">highBits - the high 32-bits.</span>
+     <span class="s0">*/</span>
+    <span class="s3">static </span><span class="s2">fromBits</span><span class="s4">(</span><span class="s2">lowBits</span><span class="s4">: </span><span class="s2">number</span><span class="s4">, </span><span class="s2">highBits</span><span class="s4">: </span><span class="s2">number</span><span class="s4">): </span><span class="s2">Timestamp</span><span class="s4">;</span>
+    <span class="s0">/**</span>
+     <span class="s0">* Returns a Timestamp from the given string, optionally using the given radix.</span>
+     <span class="s0">*</span>
+     <span class="s0">* </span><span class="s1">@param </span><span class="s0">str - the textual representation of the Timestamp.</span>
+     <span class="s0">* </span><span class="s1">@param </span><span class="s0">optRadix - the radix in which the text is written.</span>
+     <span class="s0">*/</span>
+    <span class="s3">static </span><span class="s2">fromString</span><span class="s4">(</span><span class="s2">str</span><span class="s4">: </span><span class="s2">string</span><span class="s4">, </span><span class="s2">optRadix</span><span class="s4">: </span><span class="s2">number</span><span class="s4">): </span><span class="s2">Timestamp</span><span class="s4">;</span>
+    <span class="s6">/* Excluded from this release type: toExtendedJSON */</span>
+    <span class="s6">/* Excluded from this release type: fromExtendedJSON */</span>
+    <span class="s2">inspect</span><span class="s4">(</span><span class="s2">depth</span><span class="s4">?: </span><span class="s2">number</span><span class="s4">, </span><span class="s2">options</span><span class="s4">?: </span><span class="s2">unknown</span><span class="s4">, </span><span class="s2">inspect</span><span class="s4">?: </span><span class="s2">InspectFn</span><span class="s4">): </span><span class="s2">string</span><span class="s4">;</span>
+<span class="s4">}</span>
+
+<span class="s0">/** </span><span class="s1">@public </span><span class="s0">*/</span>
+<span class="s3">export </span><span class="s2">declare </span><span class="s3">interface </span><span class="s2">TimestampExtended </span><span class="s4">{</span>
+    <span class="s2">$timestamp</span><span class="s4">: {</span>
+        <span class="s2">t</span><span class="s4">: </span><span class="s2">number</span><span class="s4">;</span>
+        <span class="s2">i</span><span class="s4">: </span><span class="s2">number</span><span class="s4">;</span>
+    <span class="s4">};</span>
+<span class="s4">}</span>
+
+<span class="s0">/** </span><span class="s1">@public </span><span class="s0">*/</span>
+<span class="s3">export </span><span class="s2">declare type TimestampOverrides </span><span class="s4">= </span><span class="s5">'_bsontype' </span><span class="s4">| </span><span class="s5">'toExtendedJSON' </span><span class="s4">| </span><span class="s5">'fromExtendedJSON' </span><span class="s4">| </span><span class="s5">'inspect'</span><span class="s4">;</span>
+
+<span class="s0">/**</span>
+ <span class="s0">* A class representation of the BSON UUID type.</span>
+ <span class="s0">* </span><span class="s1">@public</span>
+ <span class="s0">*/</span>
+<span class="s3">export </span><span class="s2">declare </span><span class="s3">class </span><span class="s2">UUID </span><span class="s3">extends </span><span class="s2">Binary </span><span class="s4">{</span>
+    <span class="s0">/**</span>
+     <span class="s0">* Create a UUID type</span>
+     <span class="s0">*</span>
+     <span class="s0">* When the argument to the constructor is omitted a random v4 UUID will be generated.</span>
+     <span class="s0">*</span>
+     <span class="s0">* </span><span class="s1">@param </span><span class="s0">input - Can be a 32 or 36 character hex string (dashes excluded/included) or a 16 byte binary Buffer.</span>
+     <span class="s0">*/</span>
+    <span class="s2">constructor</span><span class="s4">(</span><span class="s2">input</span><span class="s4">?: </span><span class="s2">string </span><span class="s4">| </span><span class="s2">Uint8Array </span><span class="s4">| </span><span class="s2">UUID</span><span class="s4">);</span>
+    <span class="s0">/**</span>
+     <span class="s0">* The UUID bytes</span>
+     <span class="s0">* </span><span class="s1">@readonly</span>
+     <span class="s0">*/</span>
+    <span class="s2">get id</span><span class="s4">(): </span><span class="s2">Uint8Array</span><span class="s4">;</span>
+    <span class="s2">set id</span><span class="s4">(</span><span class="s2">value</span><span class="s4">: </span><span class="s2">Uint8Array</span><span class="s4">);</span>
+    <span class="s0">/**</span>
+     <span class="s0">* Returns the UUID id as a 32 or 36 character hex string representation, excluding/including dashes (defaults to 36 character dash separated)</span>
+     <span class="s0">* </span><span class="s1">@param </span><span class="s0">includeDashes - should the string exclude dash-separators.</span>
+     <span class="s0">*/</span>
+    <span class="s2">toHexString</span><span class="s4">(</span><span class="s2">includeDashes</span><span class="s4">?: </span><span class="s2">boolean</span><span class="s4">): </span><span class="s2">string</span><span class="s4">;</span>
+    <span class="s0">/**</span>
+     <span class="s0">* Converts the id into a 36 character (dashes included) hex string, unless a encoding is specified.</span>
+     <span class="s0">*/</span>
+    <span class="s2">toString</span><span class="s4">(</span><span class="s2">encoding</span><span class="s4">?: </span><span class="s5">'hex' </span><span class="s4">| </span><span class="s5">'base64'</span><span class="s4">): </span><span class="s2">string</span><span class="s4">;</span>
+    <span class="s0">/**</span>
+     <span class="s0">* Converts the id into its JSON string representation.</span>
+     <span class="s0">* A 36 character (dashes included) hex string in the format: xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx</span>
+     <span class="s0">*/</span>
+    <span class="s2">toJSON</span><span class="s4">(): </span><span class="s2">string</span><span class="s4">;</span>
+    <span class="s0">/**</span>
+     <span class="s0">* Compares the equality of this UUID with `otherID`.</span>
+     <span class="s0">*</span>
+     <span class="s0">* </span><span class="s1">@param </span><span class="s0">otherId - UUID instance to compare against.</span>
+     <span class="s0">*/</span>
+    <span class="s2">equals</span><span class="s4">(</span><span class="s2">otherId</span><span class="s4">: </span><span class="s2">string </span><span class="s4">| </span><span class="s2">Uint8Array </span><span class="s4">| </span><span class="s2">UUID</span><span class="s4">): </span><span class="s2">boolean</span><span class="s4">;</span>
+    <span class="s0">/**</span>
+     <span class="s0">* Creates a Binary instance from the current UUID.</span>
+     <span class="s0">*/</span>
+    <span class="s2">toBinary</span><span class="s4">(): </span><span class="s2">Binary</span><span class="s4">;</span>
+    <span class="s0">/**</span>
+     <span class="s0">* Generates a populated buffer containing a v4 uuid</span>
+     <span class="s0">*/</span>
+    <span class="s3">static </span><span class="s2">generate</span><span class="s4">(): </span><span class="s2">Uint8Array</span><span class="s4">;</span>
+    <span class="s0">/**</span>
+     <span class="s0">* Checks if a value is a valid bson UUID</span>
+     <span class="s0">* </span><span class="s1">@param </span><span class="s0">input - UUID, string or Buffer to validate.</span>
+     <span class="s0">*/</span>
+    <span class="s3">static </span><span class="s2">isValid</span><span class="s4">(</span><span class="s2">input</span><span class="s4">: </span><span class="s2">string </span><span class="s4">| </span><span class="s2">Uint8Array </span><span class="s4">| </span><span class="s2">UUID </span><span class="s4">| </span><span class="s2">Binary</span><span class="s4">): </span><span class="s2">boolean</span><span class="s4">;</span>
+    <span class="s0">/**</span>
+     <span class="s0">* Creates an UUID from a hex string representation of an UUID.</span>
+     <span class="s0">* </span><span class="s1">@param </span><span class="s0">hexString - 32 or 36 character hex string (dashes excluded/included).</span>
+     <span class="s0">*/</span>
+    <span class="s3">static </span><span class="s2">createFromHexString</span><span class="s4">(</span><span class="s2">hexString</span><span class="s4">: </span><span class="s2">string</span><span class="s4">): </span><span class="s2">UUID</span><span class="s4">;</span>
+    <span class="s0">/** Creates an UUID from a base64 string representation of an UUID. */</span>
+    <span class="s3">static </span><span class="s2">createFromBase64</span><span class="s4">(</span><span class="s2">base64</span><span class="s4">: </span><span class="s2">string</span><span class="s4">): </span><span class="s2">UUID</span><span class="s4">;</span>
+    <span class="s6">/* Excluded from this release type: bytesFromString */</span>
+    <span class="s6">/* Excluded from this release type: isValidUUIDString */</span>
+    <span class="s0">/**</span>
+     <span class="s0">* Converts to a string representation of this Id.</span>
+     <span class="s0">*</span>
+     <span class="s0">* </span><span class="s1">@returns </span><span class="s0">return the 36 character hex string representation.</span>
+     <span class="s0">*</span>
+     <span class="s0">*/</span>
+    <span class="s2">inspect</span><span class="s4">(</span><span class="s2">depth</span><span class="s4">?: </span><span class="s2">number</span><span class="s4">, </span><span class="s2">options</span><span class="s4">?: </span><span class="s2">unknown</span><span class="s4">, </span><span class="s2">inspect</span><span class="s4">?: </span><span class="s2">InspectFn</span><span class="s4">): </span><span class="s2">string</span><span class="s4">;</span>
+<span class="s4">}</span>
+
+<span class="s0">/** </span><span class="s1">@public </span><span class="s0">*/</span>
+<span class="s3">export </span><span class="s2">declare type UUIDExtended </span><span class="s4">= {</span>
+    <span class="s2">$uuid</span><span class="s4">: </span><span class="s2">string</span><span class="s4">;</span>
+<span class="s4">};</span>
+
+<span class="s3">export </span><span class="s4">{ }</span>
+</pre>
+</body>
+</html>

@@ -1,0 +1,40 @@
+<html>
+<head>
+<title>index.ts</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+<style type="text/css">
+.s0 { color: #cf8e6d;}
+.s1 { color: #bcbec4;}
+.s2 { color: #bcbec4;}
+.s3 { color: #6aab73;}
+.s4 { color: #7a7e85;}
+</style>
+</head>
+<body bgcolor="#1e1f22">
+<table CELLSPACING=0 CELLPADDING=5 COLS=1 WIDTH="100%" BGCOLOR="#606060" >
+<tr><td><center>
+<font face="Arial, Helvetica" color="#000000">
+index.ts</font>
+</center></td></tr></table>
+<pre><span class="s0">import </span><span class="s2">* as </span><span class="s1">BSON from </span><span class="s3">'./bson'</span><span class="s2">;</span>
+
+<span class="s4">// Export all named properties from BSON to support</span>
+<span class="s4">// import { ObjectId, serialize } from 'bson';</span>
+<span class="s4">// const { ObjectId, serialize } = require('bson');</span>
+<span class="s0">export </span><span class="s2">* </span><span class="s1">from </span><span class="s3">'./bson'</span><span class="s2">;</span>
+
+<span class="s4">// Export BSON as a namespace to support:</span>
+<span class="s4">// import { BSON } from 'bson';</span>
+<span class="s4">// const { BSON } = require('bson');</span>
+<span class="s0">export </span><span class="s2">{ </span><span class="s1">BSON </span><span class="s2">};</span>
+
+<span class="s4">// BSON does **NOT** have a default export</span>
+
+<span class="s4">// The following will crash in es module environments</span>
+<span class="s4">// import BSON from 'bson';</span>
+
+<span class="s4">// The following will work as expected, BSON as a namespace of all the APIs (BSON.ObjectId, BSON.serialize)</span>
+<span class="s4">// const BSON = require('bson');</span>
+</pre>
+</body>
+</html>

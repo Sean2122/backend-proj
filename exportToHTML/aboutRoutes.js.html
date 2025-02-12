@@ -1,0 +1,37 @@
+<html>
+<head>
+<title>aboutRoutes.js</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+<style type="text/css">
+.s0 { color: #cf8e6d;}
+.s1 { color: #bcbec4;}
+.s2 { color: #bcbec4;}
+.s3 { color: #6aab73;}
+.s4 { color: #7a7e85;}
+.s5 { color: #2aacb8;}
+</style>
+</head>
+<body bgcolor="#1e1f22">
+<table CELLSPACING=0 CELLPADDING=5 COLS=1 WIDTH="100%" BGCOLOR="#606060" >
+<tr><td><center>
+<font face="Arial, Helvetica" color="#000000">
+aboutRoutes.js</font>
+</center></td></tr></table>
+<pre><span class="s0">const </span><span class="s1">express </span><span class="s2">= </span><span class="s1">require</span><span class="s2">(</span><span class="s3">'express'</span><span class="s2">);</span>
+<span class="s0">const </span><span class="s1">router </span><span class="s2">= </span><span class="s1">express</span><span class="s2">.</span><span class="s1">Router</span><span class="s2">();</span>
+<span class="s0">const </span><span class="s1">TeamMember </span><span class="s2">= </span><span class="s1">require</span><span class="s2">(</span><span class="s3">'../models/TeamMember'</span><span class="s2">);</span>
+
+<span class="s4">// GET /api/about - Retrieve team members (only first_name &amp; last_name)</span>
+<span class="s1">router</span><span class="s2">.</span><span class="s1">get</span><span class="s2">(</span><span class="s3">'/about'</span><span class="s2">, </span><span class="s1">async </span><span class="s2">(</span><span class="s1">req</span><span class="s2">, </span><span class="s1">res</span><span class="s2">) =&gt; {</span>
+    <span class="s0">try </span><span class="s2">{</span>
+        <span class="s0">const </span><span class="s1">teamMembers </span><span class="s2">= </span><span class="s0">await </span><span class="s1">TeamMember</span><span class="s2">.</span><span class="s1">find</span><span class="s2">({}, </span><span class="s3">'first_name last_name'</span><span class="s2">);</span>
+        <span class="s1">res</span><span class="s2">.</span><span class="s1">json</span><span class="s2">(</span><span class="s1">teamMembers</span><span class="s2">);</span>
+    <span class="s2">} </span><span class="s0">catch </span><span class="s2">(</span><span class="s1">error</span><span class="s2">) {</span>
+        <span class="s1">res</span><span class="s2">.</span><span class="s1">status</span><span class="s2">(</span><span class="s5">500</span><span class="s2">).</span><span class="s1">json</span><span class="s2">({ </span><span class="s1">message</span><span class="s2">: </span><span class="s3">'Server error'</span><span class="s2">, </span><span class="s1">error </span><span class="s2">});</span>
+    <span class="s2">}</span>
+<span class="s2">});</span>
+
+<span class="s1">module</span><span class="s2">.</span><span class="s1">exports </span><span class="s2">= </span><span class="s1">router</span><span class="s2">;</span>
+</pre>
+</body>
+</html>

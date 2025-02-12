@@ -1,0 +1,139 @@
+<html>
+<head>
+<title>userRoutes.js</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+<style type="text/css">
+.s0 { color: #cf8e6d;}
+.s1 { color: #bcbec4;}
+.s2 { color: #bcbec4;}
+.s3 { color: #6aab73;}
+.s4 { color: #7a7e85;}
+.s5 { color: #2aacb8;}
+</style>
+</head>
+<body bgcolor="#1e1f22">
+<table CELLSPACING=0 CELLPADDING=5 COLS=1 WIDTH="100%" BGCOLOR="#606060" >
+<tr><td><center>
+<font face="Arial, Helvetica" color="#000000">
+userRoutes.js</font>
+</center></td></tr></table>
+<pre><span class="s0">const </span><span class="s1">express </span><span class="s2">= </span><span class="s1">require</span><span class="s2">(</span><span class="s3">'express'</span><span class="s2">);</span>
+<span class="s0">const </span><span class="s1">router </span><span class="s2">= </span><span class="s1">express</span><span class="s2">.</span><span class="s1">Router</span><span class="s2">();</span>
+<span class="s0">const </span><span class="s1">User </span><span class="s2">= </span><span class="s1">require</span><span class="s2">(</span><span class="s3">'../models/User'</span><span class="s2">);</span>
+<span class="s0">const </span><span class="s1">Cost </span><span class="s2">= </span><span class="s1">require</span><span class="s2">(</span><span class="s3">'../models/Cost'</span><span class="s2">); </span><span class="s4">// Import the Cost model</span>
+
+<span class="s4">// Middleware to parse JSON requests</span>
+<span class="s1">router</span><span class="s2">.</span><span class="s1">use</span><span class="s2">(</span><span class="s1">express</span><span class="s2">.</span><span class="s1">json</span><span class="s2">());</span>
+
+<span class="s4">// GET all users</span>
+<span class="s1">router</span><span class="s2">.</span><span class="s1">get</span><span class="s2">(</span><span class="s3">'/'</span><span class="s2">, </span><span class="s1">async </span><span class="s2">(</span><span class="s1">req</span><span class="s2">, </span><span class="s1">res</span><span class="s2">) =&gt; {</span>
+    <span class="s0">try </span><span class="s2">{</span>
+        <span class="s0">const </span><span class="s1">users </span><span class="s2">= </span><span class="s0">await </span><span class="s1">User</span><span class="s2">.</span><span class="s1">find</span><span class="s2">().</span><span class="s1">lean</span><span class="s2">(); </span><span class="s4">// Use .lean() to get plain objects</span>
+
+        <span class="s4">// Get total costs for each user</span>
+        <span class="s0">const </span><span class="s1">usersWithTotal </span><span class="s2">= </span><span class="s0">await </span><span class="s1">Promise</span><span class="s2">.</span><span class="s1">all</span><span class="s2">(</span><span class="s1">users</span><span class="s2">.</span><span class="s1">map</span><span class="s2">(</span><span class="s1">async </span><span class="s2">(</span><span class="s1">user</span><span class="s2">) =&gt; {</span>
+            <span class="s0">const </span><span class="s2">{ </span><span class="s1">createdAt</span><span class="s2">, </span><span class="s1">updatedAt</span><span class="s2">, </span><span class="s1">__v</span><span class="s2">, </span><span class="s1">...userData </span><span class="s2">} = </span><span class="s1">user</span><span class="s2">;</span>
+
+            <span class="s4">// Convert user._id to string to match the userid stored in cost</span>
+            <span class="s0">const </span><span class="s1">totalCost </span><span class="s2">= </span><span class="s0">await </span><span class="s1">Cost</span><span class="s2">.</span><span class="s1">aggregate</span><span class="s2">([</span>
+                <span class="s2">{ </span><span class="s1">$match</span><span class="s2">: { </span><span class="s1">userid</span><span class="s2">: </span><span class="s1">user</span><span class="s2">.</span><span class="s1">_id</span><span class="s2">.</span><span class="s1">toString</span><span class="s2">() } }, </span><span class="s4">// Convert _id to string for comparison</span>
+                <span class="s2">{ </span><span class="s1">$group</span><span class="s2">: { </span><span class="s1">_id</span><span class="s2">: </span><span class="s0">null</span><span class="s2">, </span><span class="s1">total</span><span class="s2">: { </span><span class="s1">$sum</span><span class="s2">: </span><span class="s3">&quot;$sum&quot; </span><span class="s2">} } } </span><span class="s4">// Aggregate sum of costs</span>
+            <span class="s2">]);</span>
+
+            <span class="s0">const </span><span class="s1">total </span><span class="s2">= </span><span class="s1">totalCost</span><span class="s2">.</span><span class="s1">length </span><span class="s2">&gt; </span><span class="s5">0 </span><span class="s2">? </span><span class="s1">totalCost</span><span class="s2">[</span><span class="s5">0</span><span class="s2">].</span><span class="s1">total </span><span class="s2">: </span><span class="s5">0</span><span class="s2">; </span><span class="s4">// Default to 0 if no costs exist</span>
+
+            <span class="s0">return </span><span class="s2">{</span>
+                <span class="s1">...userData</span><span class="s2">,</span>
+                <span class="s1">total</span><span class="s2">, </span><span class="s4">// Add the total cost to the user data</span>
+                <span class="s1">birthday</span><span class="s2">: </span><span class="s1">user</span><span class="s2">.</span><span class="s1">birthday</span><span class="s2">.</span><span class="s1">toISOString</span><span class="s2">().</span><span class="s1">split</span><span class="s2">(</span><span class="s3">'T'</span><span class="s2">)[</span><span class="s5">0</span><span class="s2">] </span><span class="s4">// Format birthday</span>
+            <span class="s2">};</span>
+        <span class="s2">}));</span>
+
+        <span class="s1">res</span><span class="s2">.</span><span class="s1">json</span><span class="s2">(</span><span class="s1">usersWithTotal</span><span class="s2">);</span>
+    <span class="s2">} </span><span class="s0">catch </span><span class="s2">(</span><span class="s1">err</span><span class="s2">) {</span>
+        <span class="s1">res</span><span class="s2">.</span><span class="s1">status</span><span class="s2">(</span><span class="s5">500</span><span class="s2">).</span><span class="s1">json</span><span class="s2">({ </span><span class="s1">message</span><span class="s2">: </span><span class="s3">'Server error'</span><span class="s2">, </span><span class="s1">error</span><span class="s2">: </span><span class="s1">err</span><span class="s2">.</span><span class="s1">message </span><span class="s2">});</span>
+    <span class="s2">}</span>
+<span class="s2">});</span>
+
+
+<span class="s4">// GET a single user by ID with total costs</span>
+<span class="s1">router</span><span class="s2">.</span><span class="s1">get</span><span class="s2">(</span><span class="s3">'/:id'</span><span class="s2">, </span><span class="s1">async </span><span class="s2">(</span><span class="s1">req</span><span class="s2">, </span><span class="s1">res</span><span class="s2">) =&gt; {</span>
+    <span class="s0">try </span><span class="s2">{</span>
+        <span class="s0">const </span><span class="s1">user </span><span class="s2">= </span><span class="s0">await </span><span class="s1">User</span><span class="s2">.</span><span class="s1">findById</span><span class="s2">(</span><span class="s1">req</span><span class="s2">.</span><span class="s1">params</span><span class="s2">.</span><span class="s1">id</span><span class="s2">).</span><span class="s1">lean</span><span class="s2">(); </span><span class="s4">// Use .lean() to get plain object</span>
+        <span class="s0">if </span><span class="s2">(!</span><span class="s1">user</span><span class="s2">) </span><span class="s0">return </span><span class="s1">res</span><span class="s2">.</span><span class="s1">status</span><span class="s2">(</span><span class="s5">404</span><span class="s2">).</span><span class="s1">json</span><span class="s2">({ </span><span class="s1">message</span><span class="s2">: </span><span class="s3">'User not found' </span><span class="s2">});</span>
+
+        <span class="s4">// Get total cost for the user</span>
+        <span class="s0">const </span><span class="s1">totalCosts </span><span class="s2">= </span><span class="s0">await </span><span class="s1">Cost</span><span class="s2">.</span><span class="s1">aggregate</span><span class="s2">([</span>
+            <span class="s2">{ </span><span class="s1">$match</span><span class="s2">: { </span><span class="s1">userid</span><span class="s2">: </span><span class="s1">req</span><span class="s2">.</span><span class="s1">params</span><span class="s2">.</span><span class="s1">id </span><span class="s2">} }, </span><span class="s4">// Match costs by user ID</span>
+            <span class="s2">{ </span><span class="s1">$group</span><span class="s2">: { </span><span class="s1">_id</span><span class="s2">: </span><span class="s0">null</span><span class="s2">, </span><span class="s1">total</span><span class="s2">: { </span><span class="s1">$sum</span><span class="s2">: </span><span class="s3">&quot;$sum&quot; </span><span class="s2">} } } </span><span class="s4">// Sum up the costs</span>
+        <span class="s2">]);</span>
+
+        <span class="s0">const </span><span class="s1">total </span><span class="s2">= </span><span class="s1">totalCosts</span><span class="s2">.</span><span class="s1">length </span><span class="s2">&gt; </span><span class="s5">0 </span><span class="s2">? </span><span class="s1">totalCosts</span><span class="s2">[</span><span class="s5">0</span><span class="s2">].</span><span class="s1">total </span><span class="s2">: </span><span class="s5">0</span><span class="s2">; </span><span class="s4">// If costs exist, sum them, else 0</span>
+
+        <span class="s4">// Destructure and remove unwanted fields</span>
+        <span class="s0">const </span><span class="s2">{ </span><span class="s1">createdAt</span><span class="s2">, </span><span class="s1">updatedAt</span><span class="s2">, </span><span class="s1">__v</span><span class="s2">, </span><span class="s1">...userData </span><span class="s2">} = </span><span class="s1">user</span><span class="s2">;</span>
+
+        <span class="s1">res</span><span class="s2">.</span><span class="s1">json</span><span class="s2">({</span>
+            <span class="s1">...userData</span><span class="s2">,</span>
+            <span class="s1">total</span><span class="s2">: </span><span class="s1">total </span><span class="s4">// Add the total costs</span>
+        <span class="s2">});</span>
+    <span class="s2">} </span><span class="s0">catch </span><span class="s2">(</span><span class="s1">err</span><span class="s2">) {</span>
+        <span class="s1">res</span><span class="s2">.</span><span class="s1">status</span><span class="s2">(</span><span class="s5">500</span><span class="s2">).</span><span class="s1">json</span><span class="s2">({ </span><span class="s1">message</span><span class="s2">: </span><span class="s3">'Server error'</span><span class="s2">, </span><span class="s1">error</span><span class="s2">: </span><span class="s1">err</span><span class="s2">.</span><span class="s1">message </span><span class="s2">});</span>
+    <span class="s2">}</span>
+<span class="s2">});</span>
+
+<span class="s4">// POST /api/users - Add a new user</span>
+<span class="s1">router</span><span class="s2">.</span><span class="s1">post</span><span class="s2">(</span><span class="s3">'/'</span><span class="s2">, </span><span class="s1">async </span><span class="s2">(</span><span class="s1">req</span><span class="s2">, </span><span class="s1">res</span><span class="s2">) =&gt; {</span>
+    <span class="s0">try </span><span class="s2">{</span>
+        <span class="s0">const </span><span class="s2">{ </span><span class="s1">first_name</span><span class="s2">, </span><span class="s1">last_name</span><span class="s2">, </span><span class="s1">birthday</span><span class="s2">, </span><span class="s1">marital_status</span><span class="s2">, </span><span class="s1">email </span><span class="s2">} = </span><span class="s1">req</span><span class="s2">.</span><span class="s1">body</span><span class="s2">;</span>
+
+        <span class="s0">if </span><span class="s2">(!</span><span class="s1">first_name </span><span class="s2">|| !</span><span class="s1">last_name </span><span class="s2">|| !</span><span class="s1">birthday </span><span class="s2">|| !</span><span class="s1">marital_status </span><span class="s2">|| !</span><span class="s1">email</span><span class="s2">) {</span>
+            <span class="s0">return </span><span class="s1">res</span><span class="s2">.</span><span class="s1">status</span><span class="s2">(</span><span class="s5">400</span><span class="s2">).</span><span class="s1">json</span><span class="s2">({ </span><span class="s1">message</span><span class="s2">: </span><span class="s3">'All fields are required' </span><span class="s2">});</span>
+        <span class="s2">}</span>
+
+        <span class="s4">// Validate birthday format</span>
+        <span class="s0">if </span><span class="s2">(</span><span class="s1">isNaN</span><span class="s2">(</span><span class="s1">Date</span><span class="s2">.</span><span class="s1">parse</span><span class="s2">(</span><span class="s1">birthday</span><span class="s2">))) {</span>
+            <span class="s0">return </span><span class="s1">res</span><span class="s2">.</span><span class="s1">status</span><span class="s2">(</span><span class="s5">400</span><span class="s2">).</span><span class="s1">json</span><span class="s2">({ </span><span class="s1">message</span><span class="s2">: </span><span class="s3">'Invalid birthday format. Use YYYY-MM-DD' </span><span class="s2">});</span>
+        <span class="s2">}</span>
+
+        <span class="s0">const </span><span class="s1">newUser </span><span class="s2">= </span><span class="s0">new </span><span class="s1">User</span><span class="s2">({ </span><span class="s1">first_name</span><span class="s2">, </span><span class="s1">last_name</span><span class="s2">, </span><span class="s1">birthday</span><span class="s2">, </span><span class="s1">marital_status</span><span class="s2">, </span><span class="s1">email </span><span class="s2">});</span>
+        <span class="s0">await </span><span class="s1">newUser</span><span class="s2">.</span><span class="s1">save</span><span class="s2">();</span>
+        <span class="s1">res</span><span class="s2">.</span><span class="s1">status</span><span class="s2">(</span><span class="s5">201</span><span class="s2">).</span><span class="s1">json</span><span class="s2">(</span><span class="s1">newUser</span><span class="s2">);</span>
+    <span class="s2">} </span><span class="s0">catch </span><span class="s2">(</span><span class="s1">err</span><span class="s2">) {</span>
+        <span class="s1">console</span><span class="s2">.</span><span class="s1">error</span><span class="s2">(</span><span class="s3">&quot;Error in POST /api/users:&quot;</span><span class="s2">, </span><span class="s1">err</span><span class="s2">);</span>
+        <span class="s1">res</span><span class="s2">.</span><span class="s1">status</span><span class="s2">(</span><span class="s5">500</span><span class="s2">).</span><span class="s1">json</span><span class="s2">({ </span><span class="s1">message</span><span class="s2">: </span><span class="s3">'Server error'</span><span class="s2">, </span><span class="s1">error</span><span class="s2">: </span><span class="s1">err</span><span class="s2">.</span><span class="s1">message </span><span class="s2">});</span>
+    <span class="s2">}</span>
+<span class="s2">});</span>
+
+<span class="s4">// PUT /api/users/:id - Update user by ID</span>
+<span class="s1">router</span><span class="s2">.</span><span class="s1">put</span><span class="s2">(</span><span class="s3">'/:id'</span><span class="s2">, </span><span class="s1">async </span><span class="s2">(</span><span class="s1">req</span><span class="s2">, </span><span class="s1">res</span><span class="s2">) =&gt; {</span>
+    <span class="s0">try </span><span class="s2">{</span>
+        <span class="s0">const </span><span class="s2">{ </span><span class="s1">first_name</span><span class="s2">, </span><span class="s1">last_name</span><span class="s2">, </span><span class="s1">birthday</span><span class="s2">, </span><span class="s1">marital_status</span><span class="s2">, </span><span class="s1">email </span><span class="s2">} = </span><span class="s1">req</span><span class="s2">.</span><span class="s1">body</span><span class="s2">;</span>
+        <span class="s0">const </span><span class="s1">updatedUser </span><span class="s2">= </span><span class="s0">await </span><span class="s1">User</span><span class="s2">.</span><span class="s1">findByIdAndUpdate</span><span class="s2">(</span>
+            <span class="s1">req</span><span class="s2">.</span><span class="s1">params</span><span class="s2">.</span><span class="s1">id</span><span class="s2">,</span>
+            <span class="s2">{ </span><span class="s1">first_name</span><span class="s2">, </span><span class="s1">last_name</span><span class="s2">, </span><span class="s1">birthday</span><span class="s2">, </span><span class="s1">marital_status</span><span class="s2">, </span><span class="s1">email </span><span class="s2">},</span>
+            <span class="s2">{ </span><span class="s0">new</span><span class="s2">: </span><span class="s0">true </span><span class="s2">}</span>
+        <span class="s2">);</span>
+
+        <span class="s0">if </span><span class="s2">(!</span><span class="s1">updatedUser</span><span class="s2">) </span><span class="s0">return </span><span class="s1">res</span><span class="s2">.</span><span class="s1">status</span><span class="s2">(</span><span class="s5">404</span><span class="s2">).</span><span class="s1">json</span><span class="s2">({ </span><span class="s1">message</span><span class="s2">: </span><span class="s3">'User not found' </span><span class="s2">});</span>
+        <span class="s1">res</span><span class="s2">.</span><span class="s1">json</span><span class="s2">(</span><span class="s1">updatedUser</span><span class="s2">);</span>
+    <span class="s2">} </span><span class="s0">catch </span><span class="s2">(</span><span class="s1">err</span><span class="s2">) {</span>
+        <span class="s1">res</span><span class="s2">.</span><span class="s1">status</span><span class="s2">(</span><span class="s5">500</span><span class="s2">).</span><span class="s1">json</span><span class="s2">({ </span><span class="s1">message</span><span class="s2">: </span><span class="s3">'Server error' </span><span class="s2">});</span>
+    <span class="s2">}</span>
+<span class="s2">});</span>
+
+<span class="s4">// DELETE /api/users/:id - Delete a user by ID</span>
+<span class="s1">router</span><span class="s2">.</span><span class="s1">delete</span><span class="s2">(</span><span class="s3">'/:id'</span><span class="s2">, </span><span class="s1">async </span><span class="s2">(</span><span class="s1">req</span><span class="s2">, </span><span class="s1">res</span><span class="s2">) =&gt; {</span>
+    <span class="s0">try </span><span class="s2">{</span>
+        <span class="s0">const </span><span class="s1">deletedUser </span><span class="s2">= </span><span class="s0">await </span><span class="s1">User</span><span class="s2">.</span><span class="s1">findByIdAndDelete</span><span class="s2">(</span><span class="s1">req</span><span class="s2">.</span><span class="s1">params</span><span class="s2">.</span><span class="s1">id</span><span class="s2">);</span>
+        <span class="s0">if </span><span class="s2">(!</span><span class="s1">deletedUser</span><span class="s2">) </span><span class="s0">return </span><span class="s1">res</span><span class="s2">.</span><span class="s1">status</span><span class="s2">(</span><span class="s5">404</span><span class="s2">).</span><span class="s1">json</span><span class="s2">({ </span><span class="s1">message</span><span class="s2">: </span><span class="s3">'User not found' </span><span class="s2">});</span>
+        <span class="s1">res</span><span class="s2">.</span><span class="s1">json</span><span class="s2">({ </span><span class="s1">message</span><span class="s2">: </span><span class="s3">'User deleted successfully' </span><span class="s2">});</span>
+    <span class="s2">} </span><span class="s0">catch </span><span class="s2">(</span><span class="s1">err</span><span class="s2">) {</span>
+        <span class="s1">res</span><span class="s2">.</span><span class="s1">status</span><span class="s2">(</span><span class="s5">500</span><span class="s2">).</span><span class="s1">json</span><span class="s2">({ </span><span class="s1">message</span><span class="s2">: </span><span class="s3">'Server error' </span><span class="s2">});</span>
+    <span class="s2">}</span>
+<span class="s2">});</span>
+
+<span class="s1">module</span><span class="s2">.</span><span class="s1">exports </span><span class="s2">= </span><span class="s1">router</span><span class="s2">;</span>
+</pre>
+</body>
+</html>

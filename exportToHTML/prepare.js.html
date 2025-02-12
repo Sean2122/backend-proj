@@ -1,0 +1,42 @@
+<html>
+<head>
+<title>prepare.js</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+<style type="text/css">
+.s0 { color: #7a7e85;}
+.s1 { color: #bcbec4;}
+.s2 { color: #cf8e6d;}
+.s3 { color: #bcbec4;}
+.s4 { color: #6aab73;}
+.s5 { color: #42c3d4;}
+.s6 { color: #2aacb8;}
+</style>
+</head>
+<body bgcolor="#1e1f22">
+<table CELLSPACING=0 CELLPADDING=5 COLS=1 WIDTH="100%" BGCOLOR="#606060" >
+<tr><td><center>
+<font face="Arial, Helvetica" color="#000000">
+prepare.js</font>
+</center></td></tr></table>
+<pre><span class="s0">#! /usr/bin/env node</span>
+<span class="s2">var </span><span class="s1">cp </span><span class="s3">= </span><span class="s1">require</span><span class="s3">(</span><span class="s4">'child_process'</span><span class="s3">);</span>
+<span class="s2">var </span><span class="s1">fs </span><span class="s3">= </span><span class="s1">require</span><span class="s3">(</span><span class="s4">'fs'</span><span class="s3">);</span>
+
+<span class="s2">var </span><span class="s1">nodeMajorVersion </span><span class="s3">= +</span><span class="s1">process</span><span class="s3">.</span><span class="s1">version</span><span class="s3">.</span><span class="s1">match</span><span class="s3">(</span><span class="s5">/^v(\d+)\.\d+/</span><span class="s3">)[</span><span class="s6">1</span><span class="s3">];</span>
+
+<span class="s2">if </span><span class="s3">(</span><span class="s1">fs</span><span class="s3">.</span><span class="s1">existsSync</span><span class="s3">(</span><span class="s4">'src'</span><span class="s3">) &amp;&amp; </span><span class="s1">nodeMajorVersion </span><span class="s3">&gt;= </span><span class="s6">10</span><span class="s3">) {</span>
+  <span class="s1">cp</span><span class="s3">.</span><span class="s1">spawnSync</span><span class="s3">(</span><span class="s4">'npm'</span><span class="s3">, [</span><span class="s4">'run'</span><span class="s3">, </span><span class="s4">'build'</span><span class="s3">], { </span><span class="s1">stdio</span><span class="s3">: </span><span class="s4">'inherit'</span><span class="s3">, </span><span class="s1">shell</span><span class="s3">: </span><span class="s2">true </span><span class="s3">});</span>
+<span class="s3">} </span><span class="s2">else </span><span class="s3">{</span>
+  <span class="s2">if </span><span class="s3">(!</span><span class="s1">fs</span><span class="s3">.</span><span class="s1">existsSync</span><span class="s3">(</span><span class="s4">'lib'</span><span class="s3">)) {</span>
+    <span class="s1">console</span><span class="s3">.</span><span class="s1">warn</span><span class="s3">(</span><span class="s4">'BSON: No compiled javascript present, the library is not installed correctly.'</span><span class="s3">);</span>
+    <span class="s2">if </span><span class="s3">(</span><span class="s1">nodeMajorVersion </span><span class="s3">&lt; </span><span class="s6">10</span><span class="s3">) {</span>
+      <span class="s1">console</span><span class="s3">.</span><span class="s1">warn</span><span class="s3">(</span>
+        <span class="s4">'This library can only be compiled in nodejs version 10 or later, currently running: ' </span><span class="s3">+</span>
+          <span class="s1">nodeMajorVersion</span>
+      <span class="s3">);</span>
+    <span class="s3">}</span>
+  <span class="s3">}</span>
+<span class="s3">}</span>
+</pre>
+</body>
+</html>

@@ -1,0 +1,880 @@
+<html>
+<head>
+<title>decimal128.ts</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+<style type="text/css">
+.s0 { color: #cf8e6d;}
+.s1 { color: #bcbec4;}
+.s2 { color: #bcbec4;}
+.s3 { color: #6aab73;}
+.s4 { color: #42c3d4;}
+.s5 { color: #2aacb8;}
+.s6 { color: #7a7e85;}
+.s7 { color: #5f826b; font-style: italic;}
+.s8 { color: #67a37c; font-style: italic;}
+</style>
+</head>
+<body bgcolor="#1e1f22">
+<table CELLSPACING=0 CELLPADDING=5 COLS=1 WIDTH="100%" BGCOLOR="#606060" >
+<tr><td><center>
+<font face="Arial, Helvetica" color="#000000">
+decimal128.ts</font>
+</center></td></tr></table>
+<pre><span class="s0">import </span><span class="s2">{ </span><span class="s1">BSONValue </span><span class="s2">} </span><span class="s1">from </span><span class="s3">'./bson_value'</span><span class="s2">;</span>
+<span class="s0">import </span><span class="s2">{ </span><span class="s1">BSONError </span><span class="s2">} </span><span class="s1">from </span><span class="s3">'./error'</span><span class="s2">;</span>
+<span class="s0">import </span><span class="s2">{ </span><span class="s1">Long </span><span class="s2">} </span><span class="s1">from </span><span class="s3">'./long'</span><span class="s2">;</span>
+<span class="s0">import </span><span class="s2">{ </span><span class="s1">type InspectFn</span><span class="s2">, </span><span class="s1">defaultInspect</span><span class="s2">, </span><span class="s1">isUint8Array </span><span class="s2">} </span><span class="s1">from </span><span class="s3">'./parser/utils'</span><span class="s2">;</span>
+<span class="s0">import </span><span class="s2">{ </span><span class="s1">ByteUtils </span><span class="s2">} </span><span class="s1">from </span><span class="s3">'./utils/byte_utils'</span><span class="s2">;</span>
+
+<span class="s0">const </span><span class="s1">PARSE_STRING_REGEXP </span><span class="s2">= </span><span class="s4">/^(\+|-)?(\d+|(\d*\.\d*))?(E|e)?([-+])?(\d+)?$/</span><span class="s2">;</span>
+<span class="s0">const </span><span class="s1">PARSE_INF_REGEXP </span><span class="s2">= </span><span class="s4">/^(\+|-)?(Infinity|inf)$/i</span><span class="s2">;</span>
+<span class="s0">const </span><span class="s1">PARSE_NAN_REGEXP </span><span class="s2">= </span><span class="s4">/^(\+|-)?NaN$/i</span><span class="s2">;</span>
+
+<span class="s0">const </span><span class="s1">EXPONENT_MAX </span><span class="s2">= </span><span class="s5">6111</span><span class="s2">;</span>
+<span class="s0">const </span><span class="s1">EXPONENT_MIN </span><span class="s2">= -</span><span class="s5">6176</span><span class="s2">;</span>
+<span class="s0">const </span><span class="s1">EXPONENT_BIAS </span><span class="s2">= </span><span class="s5">6176</span><span class="s2">;</span>
+<span class="s0">const </span><span class="s1">MAX_DIGITS </span><span class="s2">= </span><span class="s5">34</span><span class="s2">;</span>
+
+<span class="s6">// Nan value bits as 32 bit values (due to lack of longs)</span>
+<span class="s0">const </span><span class="s1">NAN_BUFFER </span><span class="s2">= </span><span class="s1">ByteUtils</span><span class="s2">.</span><span class="s1">fromNumberArray</span><span class="s2">(</span>
+  <span class="s2">[</span>
+    <span class="s5">0x7c</span><span class="s2">, </span><span class="s5">0x00</span><span class="s2">, </span><span class="s5">0x00</span><span class="s2">, </span><span class="s5">0x00</span><span class="s2">, </span><span class="s5">0x00</span><span class="s2">, </span><span class="s5">0x00</span><span class="s2">, </span><span class="s5">0x00</span><span class="s2">, </span><span class="s5">0x00</span><span class="s2">, </span><span class="s5">0x00</span><span class="s2">, </span><span class="s5">0x00</span><span class="s2">, </span><span class="s5">0x00</span><span class="s2">, </span><span class="s5">0x00</span><span class="s2">, </span><span class="s5">0x00</span><span class="s2">, </span><span class="s5">0x00</span><span class="s2">, </span><span class="s5">0x00</span><span class="s2">, </span><span class="s5">0x00</span>
+  <span class="s2">].</span><span class="s1">reverse</span><span class="s2">()</span>
+<span class="s2">);</span>
+<span class="s6">// Infinity value bits 32 bit values (due to lack of longs)</span>
+<span class="s0">const </span><span class="s1">INF_NEGATIVE_BUFFER </span><span class="s2">= </span><span class="s1">ByteUtils</span><span class="s2">.</span><span class="s1">fromNumberArray</span><span class="s2">(</span>
+  <span class="s2">[</span>
+    <span class="s5">0xf8</span><span class="s2">, </span><span class="s5">0x00</span><span class="s2">, </span><span class="s5">0x00</span><span class="s2">, </span><span class="s5">0x00</span><span class="s2">, </span><span class="s5">0x00</span><span class="s2">, </span><span class="s5">0x00</span><span class="s2">, </span><span class="s5">0x00</span><span class="s2">, </span><span class="s5">0x00</span><span class="s2">, </span><span class="s5">0x00</span><span class="s2">, </span><span class="s5">0x00</span><span class="s2">, </span><span class="s5">0x00</span><span class="s2">, </span><span class="s5">0x00</span><span class="s2">, </span><span class="s5">0x00</span><span class="s2">, </span><span class="s5">0x00</span><span class="s2">, </span><span class="s5">0x00</span><span class="s2">, </span><span class="s5">0x00</span>
+  <span class="s2">].</span><span class="s1">reverse</span><span class="s2">()</span>
+<span class="s2">);</span>
+<span class="s0">const </span><span class="s1">INF_POSITIVE_BUFFER </span><span class="s2">= </span><span class="s1">ByteUtils</span><span class="s2">.</span><span class="s1">fromNumberArray</span><span class="s2">(</span>
+  <span class="s2">[</span>
+    <span class="s5">0x78</span><span class="s2">, </span><span class="s5">0x00</span><span class="s2">, </span><span class="s5">0x00</span><span class="s2">, </span><span class="s5">0x00</span><span class="s2">, </span><span class="s5">0x00</span><span class="s2">, </span><span class="s5">0x00</span><span class="s2">, </span><span class="s5">0x00</span><span class="s2">, </span><span class="s5">0x00</span><span class="s2">, </span><span class="s5">0x00</span><span class="s2">, </span><span class="s5">0x00</span><span class="s2">, </span><span class="s5">0x00</span><span class="s2">, </span><span class="s5">0x00</span><span class="s2">, </span><span class="s5">0x00</span><span class="s2">, </span><span class="s5">0x00</span><span class="s2">, </span><span class="s5">0x00</span><span class="s2">, </span><span class="s5">0x00</span>
+  <span class="s2">].</span><span class="s1">reverse</span><span class="s2">()</span>
+<span class="s2">);</span>
+
+<span class="s0">const </span><span class="s1">EXPONENT_REGEX </span><span class="s2">= </span><span class="s4">/^([-+])?(\d+)?$/</span><span class="s2">;</span>
+
+<span class="s6">// Extract least significant 5 bits</span>
+<span class="s0">const </span><span class="s1">COMBINATION_MASK </span><span class="s2">= </span><span class="s5">0x1f</span><span class="s2">;</span>
+<span class="s6">// Extract least significant 14 bits</span>
+<span class="s0">const </span><span class="s1">EXPONENT_MASK </span><span class="s2">= </span><span class="s5">0x3fff</span><span class="s2">;</span>
+<span class="s6">// Value of combination field for Inf</span>
+<span class="s0">const </span><span class="s1">COMBINATION_INFINITY </span><span class="s2">= </span><span class="s5">30</span><span class="s2">;</span>
+<span class="s6">// Value of combination field for NaN</span>
+<span class="s0">const </span><span class="s1">COMBINATION_NAN </span><span class="s2">= </span><span class="s5">31</span><span class="s2">;</span>
+
+<span class="s6">// Detect if the value is a digit</span>
+<span class="s0">function </span><span class="s1">isDigit</span><span class="s2">(</span><span class="s1">value</span><span class="s2">: </span><span class="s1">string</span><span class="s2">): </span><span class="s1">boolean </span><span class="s2">{</span>
+  <span class="s0">return </span><span class="s2">!</span><span class="s1">isNaN</span><span class="s2">(</span><span class="s1">parseInt</span><span class="s2">(</span><span class="s1">value</span><span class="s2">, </span><span class="s5">10</span><span class="s2">));</span>
+<span class="s2">}</span>
+
+<span class="s6">// Divide two uint128 values</span>
+<span class="s0">function </span><span class="s1">divideu128</span><span class="s2">(</span><span class="s1">value</span><span class="s2">: { </span><span class="s1">parts</span><span class="s2">: [</span><span class="s1">number</span><span class="s2">, </span><span class="s1">number</span><span class="s2">, </span><span class="s1">number</span><span class="s2">, </span><span class="s1">number</span><span class="s2">] }) {</span>
+  <span class="s0">const </span><span class="s1">DIVISOR </span><span class="s2">= </span><span class="s1">Long</span><span class="s2">.</span><span class="s1">fromNumber</span><span class="s2">(</span><span class="s5">1000 </span><span class="s2">* </span><span class="s5">1000 </span><span class="s2">* </span><span class="s5">1000</span><span class="s2">);</span>
+  <span class="s0">let </span><span class="s1">_rem </span><span class="s2">= </span><span class="s1">Long</span><span class="s2">.</span><span class="s1">fromNumber</span><span class="s2">(</span><span class="s5">0</span><span class="s2">);</span>
+
+  <span class="s0">if </span><span class="s2">(!</span><span class="s1">value</span><span class="s2">.</span><span class="s1">parts</span><span class="s2">[</span><span class="s5">0</span><span class="s2">] &amp;&amp; !</span><span class="s1">value</span><span class="s2">.</span><span class="s1">parts</span><span class="s2">[</span><span class="s5">1</span><span class="s2">] &amp;&amp; !</span><span class="s1">value</span><span class="s2">.</span><span class="s1">parts</span><span class="s2">[</span><span class="s5">2</span><span class="s2">] &amp;&amp; !</span><span class="s1">value</span><span class="s2">.</span><span class="s1">parts</span><span class="s2">[</span><span class="s5">3</span><span class="s2">]) {</span>
+    <span class="s0">return </span><span class="s2">{ </span><span class="s1">quotient</span><span class="s2">: </span><span class="s1">value</span><span class="s2">, </span><span class="s1">rem</span><span class="s2">: </span><span class="s1">_rem </span><span class="s2">};</span>
+  <span class="s2">}</span>
+
+  <span class="s0">for </span><span class="s2">(</span><span class="s0">let </span><span class="s1">i </span><span class="s2">= </span><span class="s5">0</span><span class="s2">; </span><span class="s1">i </span><span class="s2">&lt;= </span><span class="s5">3</span><span class="s2">; </span><span class="s1">i</span><span class="s2">++) {</span>
+    <span class="s6">// Adjust remainder to match value of next dividend</span>
+    <span class="s1">_rem </span><span class="s2">= </span><span class="s1">_rem</span><span class="s2">.</span><span class="s1">shiftLeft</span><span class="s2">(</span><span class="s5">32</span><span class="s2">);</span>
+    <span class="s6">// Add the divided to _rem</span>
+    <span class="s1">_rem </span><span class="s2">= </span><span class="s1">_rem</span><span class="s2">.</span><span class="s1">add</span><span class="s2">(</span><span class="s0">new </span><span class="s1">Long</span><span class="s2">(</span><span class="s1">value</span><span class="s2">.</span><span class="s1">parts</span><span class="s2">[</span><span class="s1">i</span><span class="s2">], </span><span class="s5">0</span><span class="s2">));</span>
+    <span class="s1">value</span><span class="s2">.</span><span class="s1">parts</span><span class="s2">[</span><span class="s1">i</span><span class="s2">] = </span><span class="s1">_rem</span><span class="s2">.</span><span class="s1">div</span><span class="s2">(</span><span class="s1">DIVISOR</span><span class="s2">).</span><span class="s1">low</span><span class="s2">;</span>
+    <span class="s1">_rem </span><span class="s2">= </span><span class="s1">_rem</span><span class="s2">.</span><span class="s1">modulo</span><span class="s2">(</span><span class="s1">DIVISOR</span><span class="s2">);</span>
+  <span class="s2">}</span>
+
+  <span class="s0">return </span><span class="s2">{ </span><span class="s1">quotient</span><span class="s2">: </span><span class="s1">value</span><span class="s2">, </span><span class="s1">rem</span><span class="s2">: </span><span class="s1">_rem </span><span class="s2">};</span>
+<span class="s2">}</span>
+
+<span class="s6">// Multiply two Long values and return the 128 bit value</span>
+<span class="s0">function </span><span class="s1">multiply64x2</span><span class="s2">(</span><span class="s1">left</span><span class="s2">: </span><span class="s1">Long</span><span class="s2">, </span><span class="s1">right</span><span class="s2">: </span><span class="s1">Long</span><span class="s2">): { </span><span class="s1">high</span><span class="s2">: </span><span class="s1">Long</span><span class="s2">; </span><span class="s1">low</span><span class="s2">: </span><span class="s1">Long </span><span class="s2">} {</span>
+  <span class="s0">if </span><span class="s2">(!</span><span class="s1">left </span><span class="s2">&amp;&amp; !</span><span class="s1">right</span><span class="s2">) {</span>
+    <span class="s0">return </span><span class="s2">{ </span><span class="s1">high</span><span class="s2">: </span><span class="s1">Long</span><span class="s2">.</span><span class="s1">fromNumber</span><span class="s2">(</span><span class="s5">0</span><span class="s2">), </span><span class="s1">low</span><span class="s2">: </span><span class="s1">Long</span><span class="s2">.</span><span class="s1">fromNumber</span><span class="s2">(</span><span class="s5">0</span><span class="s2">) };</span>
+  <span class="s2">}</span>
+
+  <span class="s0">const </span><span class="s1">leftHigh </span><span class="s2">= </span><span class="s1">left</span><span class="s2">.</span><span class="s1">shiftRightUnsigned</span><span class="s2">(</span><span class="s5">32</span><span class="s2">);</span>
+  <span class="s0">const </span><span class="s1">leftLow </span><span class="s2">= </span><span class="s0">new </span><span class="s1">Long</span><span class="s2">(</span><span class="s1">left</span><span class="s2">.</span><span class="s1">getLowBits</span><span class="s2">(), </span><span class="s5">0</span><span class="s2">);</span>
+  <span class="s0">const </span><span class="s1">rightHigh </span><span class="s2">= </span><span class="s1">right</span><span class="s2">.</span><span class="s1">shiftRightUnsigned</span><span class="s2">(</span><span class="s5">32</span><span class="s2">);</span>
+  <span class="s0">const </span><span class="s1">rightLow </span><span class="s2">= </span><span class="s0">new </span><span class="s1">Long</span><span class="s2">(</span><span class="s1">right</span><span class="s2">.</span><span class="s1">getLowBits</span><span class="s2">(), </span><span class="s5">0</span><span class="s2">);</span>
+
+  <span class="s0">let </span><span class="s1">productHigh </span><span class="s2">= </span><span class="s1">leftHigh</span><span class="s2">.</span><span class="s1">multiply</span><span class="s2">(</span><span class="s1">rightHigh</span><span class="s2">);</span>
+  <span class="s0">let </span><span class="s1">productMid </span><span class="s2">= </span><span class="s1">leftHigh</span><span class="s2">.</span><span class="s1">multiply</span><span class="s2">(</span><span class="s1">rightLow</span><span class="s2">);</span>
+  <span class="s0">const </span><span class="s1">productMid2 </span><span class="s2">= </span><span class="s1">leftLow</span><span class="s2">.</span><span class="s1">multiply</span><span class="s2">(</span><span class="s1">rightHigh</span><span class="s2">);</span>
+  <span class="s0">let </span><span class="s1">productLow </span><span class="s2">= </span><span class="s1">leftLow</span><span class="s2">.</span><span class="s1">multiply</span><span class="s2">(</span><span class="s1">rightLow</span><span class="s2">);</span>
+
+  <span class="s1">productHigh </span><span class="s2">= </span><span class="s1">productHigh</span><span class="s2">.</span><span class="s1">add</span><span class="s2">(</span><span class="s1">productMid</span><span class="s2">.</span><span class="s1">shiftRightUnsigned</span><span class="s2">(</span><span class="s5">32</span><span class="s2">));</span>
+  <span class="s1">productMid </span><span class="s2">= </span><span class="s0">new </span><span class="s1">Long</span><span class="s2">(</span><span class="s1">productMid</span><span class="s2">.</span><span class="s1">getLowBits</span><span class="s2">(), </span><span class="s5">0</span><span class="s2">)</span>
+    <span class="s2">.</span><span class="s1">add</span><span class="s2">(</span><span class="s1">productMid2</span><span class="s2">)</span>
+    <span class="s2">.</span><span class="s1">add</span><span class="s2">(</span><span class="s1">productLow</span><span class="s2">.</span><span class="s1">shiftRightUnsigned</span><span class="s2">(</span><span class="s5">32</span><span class="s2">));</span>
+
+  <span class="s1">productHigh </span><span class="s2">= </span><span class="s1">productHigh</span><span class="s2">.</span><span class="s1">add</span><span class="s2">(</span><span class="s1">productMid</span><span class="s2">.</span><span class="s1">shiftRightUnsigned</span><span class="s2">(</span><span class="s5">32</span><span class="s2">));</span>
+  <span class="s1">productLow </span><span class="s2">= </span><span class="s1">productMid</span><span class="s2">.</span><span class="s1">shiftLeft</span><span class="s2">(</span><span class="s5">32</span><span class="s2">).</span><span class="s1">add</span><span class="s2">(</span><span class="s0">new </span><span class="s1">Long</span><span class="s2">(</span><span class="s1">productLow</span><span class="s2">.</span><span class="s1">getLowBits</span><span class="s2">(), </span><span class="s5">0</span><span class="s2">));</span>
+
+  <span class="s6">// Return the 128 bit result</span>
+  <span class="s0">return </span><span class="s2">{ </span><span class="s1">high</span><span class="s2">: </span><span class="s1">productHigh</span><span class="s2">, </span><span class="s1">low</span><span class="s2">: </span><span class="s1">productLow </span><span class="s2">};</span>
+<span class="s2">}</span>
+
+<span class="s0">function </span><span class="s1">lessThan</span><span class="s2">(</span><span class="s1">left</span><span class="s2">: </span><span class="s1">Long</span><span class="s2">, </span><span class="s1">right</span><span class="s2">: </span><span class="s1">Long</span><span class="s2">): </span><span class="s1">boolean </span><span class="s2">{</span>
+  <span class="s6">// Make values unsigned</span>
+  <span class="s0">const </span><span class="s1">uhleft </span><span class="s2">= </span><span class="s1">left</span><span class="s2">.</span><span class="s1">high </span><span class="s2">&gt;&gt;&gt; </span><span class="s5">0</span><span class="s2">;</span>
+  <span class="s0">const </span><span class="s1">uhright </span><span class="s2">= </span><span class="s1">right</span><span class="s2">.</span><span class="s1">high </span><span class="s2">&gt;&gt;&gt; </span><span class="s5">0</span><span class="s2">;</span>
+
+  <span class="s6">// Compare high bits first</span>
+  <span class="s0">if </span><span class="s2">(</span><span class="s1">uhleft </span><span class="s2">&lt; </span><span class="s1">uhright</span><span class="s2">) {</span>
+    <span class="s0">return true</span><span class="s2">;</span>
+  <span class="s2">} </span><span class="s0">else if </span><span class="s2">(</span><span class="s1">uhleft </span><span class="s2">=== </span><span class="s1">uhright</span><span class="s2">) {</span>
+    <span class="s0">const </span><span class="s1">ulleft </span><span class="s2">= </span><span class="s1">left</span><span class="s2">.</span><span class="s1">low </span><span class="s2">&gt;&gt;&gt; </span><span class="s5">0</span><span class="s2">;</span>
+    <span class="s0">const </span><span class="s1">ulright </span><span class="s2">= </span><span class="s1">right</span><span class="s2">.</span><span class="s1">low </span><span class="s2">&gt;&gt;&gt; </span><span class="s5">0</span><span class="s2">;</span>
+    <span class="s0">if </span><span class="s2">(</span><span class="s1">ulleft </span><span class="s2">&lt; </span><span class="s1">ulright</span><span class="s2">) </span><span class="s0">return true</span><span class="s2">;</span>
+  <span class="s2">}</span>
+
+  <span class="s0">return false</span><span class="s2">;</span>
+<span class="s2">}</span>
+
+<span class="s0">function </span><span class="s1">invalidErr</span><span class="s2">(</span><span class="s1">string</span><span class="s2">: </span><span class="s1">string</span><span class="s2">, </span><span class="s1">message</span><span class="s2">: </span><span class="s1">string</span><span class="s2">) {</span>
+  <span class="s0">throw new </span><span class="s1">BSONError</span><span class="s2">(</span><span class="s3">`&quot;</span><span class="s1">$</span><span class="s2">{</span><span class="s1">string</span><span class="s2">}</span><span class="s3">&quot; is not a valid Decimal128 string - </span><span class="s1">$</span><span class="s2">{</span><span class="s1">message</span><span class="s2">}</span><span class="s3">`</span><span class="s2">);</span>
+<span class="s2">}</span>
+
+<span class="s7">/** </span><span class="s8">@public </span><span class="s7">*/</span>
+<span class="s0">export interface </span><span class="s1">Decimal128Extended </span><span class="s2">{</span>
+  <span class="s1">$numberDecimal</span><span class="s2">: </span><span class="s1">string</span><span class="s2">;</span>
+<span class="s2">}</span>
+
+<span class="s7">/**</span>
+ <span class="s7">* A class representation of the BSON Decimal128 type.</span>
+ <span class="s7">* </span><span class="s8">@public</span>
+ <span class="s7">* </span><span class="s8">@category </span><span class="s7">BSONType</span>
+ <span class="s7">*/</span>
+<span class="s0">export class </span><span class="s1">Decimal128 </span><span class="s0">extends </span><span class="s1">BSONValue </span><span class="s2">{</span>
+  <span class="s1">get _bsontype</span><span class="s2">(): </span><span class="s3">'Decimal128' </span><span class="s2">{</span>
+    <span class="s0">return </span><span class="s3">'Decimal128'</span><span class="s2">;</span>
+  <span class="s2">}</span>
+
+  <span class="s1">readonly bytes</span><span class="s2">!: </span><span class="s1">Uint8Array</span><span class="s2">;</span>
+
+  <span class="s7">/**</span>
+   <span class="s7">* </span><span class="s8">@param </span><span class="s7">bytes - a buffer containing the raw Decimal128 bytes in little endian order,</span>
+   <span class="s7">*                or a string representation as returned by .toString()</span>
+   <span class="s7">*/</span>
+  <span class="s1">constructor</span><span class="s2">(</span><span class="s1">bytes</span><span class="s2">: </span><span class="s1">Uint8Array </span><span class="s2">| </span><span class="s1">string</span><span class="s2">) {</span>
+    <span class="s0">super</span><span class="s2">();</span>
+    <span class="s0">if </span><span class="s2">(</span><span class="s0">typeof </span><span class="s1">bytes </span><span class="s2">=== </span><span class="s3">'string'</span><span class="s2">) {</span>
+      <span class="s0">this</span><span class="s2">.</span><span class="s1">bytes </span><span class="s2">= </span><span class="s1">Decimal128</span><span class="s2">.</span><span class="s1">fromString</span><span class="s2">(</span><span class="s1">bytes</span><span class="s2">).</span><span class="s1">bytes</span><span class="s2">;</span>
+    <span class="s2">} </span><span class="s0">else if </span><span class="s2">(</span><span class="s1">bytes </span><span class="s0">instanceof </span><span class="s1">Uint8Array </span><span class="s2">|| </span><span class="s1">isUint8Array</span><span class="s2">(</span><span class="s1">bytes</span><span class="s2">)) {</span>
+      <span class="s0">if </span><span class="s2">(</span><span class="s1">bytes</span><span class="s2">.</span><span class="s1">byteLength </span><span class="s2">!== </span><span class="s5">16</span><span class="s2">) {</span>
+        <span class="s0">throw new </span><span class="s1">BSONError</span><span class="s2">(</span><span class="s3">'Decimal128 must take a Buffer of 16 bytes'</span><span class="s2">);</span>
+      <span class="s2">}</span>
+      <span class="s0">this</span><span class="s2">.</span><span class="s1">bytes </span><span class="s2">= </span><span class="s1">bytes</span><span class="s2">;</span>
+    <span class="s2">} </span><span class="s0">else </span><span class="s2">{</span>
+      <span class="s0">throw new </span><span class="s1">BSONError</span><span class="s2">(</span><span class="s3">'Decimal128 must take a Buffer or string'</span><span class="s2">);</span>
+    <span class="s2">}</span>
+  <span class="s2">}</span>
+
+  <span class="s7">/**</span>
+   <span class="s7">* Create a Decimal128 instance from a string representation</span>
+   <span class="s7">*</span>
+   <span class="s7">* </span><span class="s8">@param </span><span class="s7">representation - a numeric string representation.</span>
+   <span class="s7">*/</span>
+  <span class="s0">static </span><span class="s1">fromString</span><span class="s2">(</span><span class="s1">representation</span><span class="s2">: </span><span class="s1">string</span><span class="s2">): </span><span class="s1">Decimal128 </span><span class="s2">{</span>
+    <span class="s0">return </span><span class="s1">Decimal128</span><span class="s2">.</span><span class="s1">_fromString</span><span class="s2">(</span><span class="s1">representation</span><span class="s2">, { </span><span class="s1">allowRounding</span><span class="s2">: </span><span class="s0">false </span><span class="s2">});</span>
+  <span class="s2">}</span>
+
+  <span class="s7">/**</span>
+   <span class="s7">* Create a Decimal128 instance from a string representation, allowing for rounding to 34</span>
+   <span class="s7">* significant digits</span>
+   <span class="s7">*</span>
+   <span class="s7">* </span><span class="s8">@example </span><span class="s7">Example of a number that will be rounded</span>
+   <span class="s7">* ```ts</span>
+   <span class="s7">* &gt; let d = Decimal128.fromString('37.499999999999999196428571428571375')</span>
+   <span class="s7">* Uncaught:</span>
+   <span class="s7">* BSONError: &quot;37.499999999999999196428571428571375&quot; is not a valid Decimal128 string - inexact rounding</span>
+   <span class="s7">* at invalidErr (/home/wajames/js-bson/lib/bson.cjs:1402:11)</span>
+   <span class="s7">* at Decimal128.fromStringInternal (/home/wajames/js-bson/lib/bson.cjs:1633:25)</span>
+   <span class="s7">* at Decimal128.fromString (/home/wajames/js-bson/lib/bson.cjs:1424:27)</span>
+   <span class="s7">*</span>
+   <span class="s7">* &gt; d = Decimal128.fromStringWithRounding('37.499999999999999196428571428571375')</span>
+   <span class="s7">* new Decimal128(&quot;37.49999999999999919642857142857138&quot;)</span>
+   <span class="s7">* ```</span>
+   <span class="s7">* </span><span class="s8">@param </span><span class="s7">representation - a numeric string representation.</span>
+   <span class="s7">*/</span>
+  <span class="s0">static </span><span class="s1">fromStringWithRounding</span><span class="s2">(</span><span class="s1">representation</span><span class="s2">: </span><span class="s1">string</span><span class="s2">): </span><span class="s1">Decimal128 </span><span class="s2">{</span>
+    <span class="s0">return </span><span class="s1">Decimal128</span><span class="s2">.</span><span class="s1">_fromString</span><span class="s2">(</span><span class="s1">representation</span><span class="s2">, { </span><span class="s1">allowRounding</span><span class="s2">: </span><span class="s0">true </span><span class="s2">});</span>
+  <span class="s2">}</span>
+
+  <span class="s0">private static </span><span class="s1">_fromString</span><span class="s2">(</span><span class="s1">representation</span><span class="s2">: </span><span class="s1">string</span><span class="s2">, </span><span class="s1">options</span><span class="s2">: { </span><span class="s1">allowRounding</span><span class="s2">: </span><span class="s1">boolean </span><span class="s2">}) {</span>
+    <span class="s6">// Parse state tracking</span>
+    <span class="s0">let </span><span class="s1">isNegative </span><span class="s2">= </span><span class="s0">false</span><span class="s2">;</span>
+    <span class="s0">let </span><span class="s1">sawSign </span><span class="s2">= </span><span class="s0">false</span><span class="s2">;</span>
+    <span class="s0">let </span><span class="s1">sawRadix </span><span class="s2">= </span><span class="s0">false</span><span class="s2">;</span>
+    <span class="s0">let </span><span class="s1">foundNonZero </span><span class="s2">= </span><span class="s0">false</span><span class="s2">;</span>
+
+    <span class="s6">// Total number of significant digits (no leading or trailing zero)</span>
+    <span class="s0">let </span><span class="s1">significantDigits </span><span class="s2">= </span><span class="s5">0</span><span class="s2">;</span>
+    <span class="s6">// Total number of significand digits read</span>
+    <span class="s0">let </span><span class="s1">nDigitsRead </span><span class="s2">= </span><span class="s5">0</span><span class="s2">;</span>
+    <span class="s6">// Total number of digits (no leading zeros)</span>
+    <span class="s0">let </span><span class="s1">nDigits </span><span class="s2">= </span><span class="s5">0</span><span class="s2">;</span>
+    <span class="s6">// The number of the digits after radix</span>
+    <span class="s0">let </span><span class="s1">radixPosition </span><span class="s2">= </span><span class="s5">0</span><span class="s2">;</span>
+    <span class="s6">// The index of the first non-zero in *str*</span>
+    <span class="s0">let </span><span class="s1">firstNonZero </span><span class="s2">= </span><span class="s5">0</span><span class="s2">;</span>
+
+    <span class="s6">// Digits Array</span>
+    <span class="s0">const </span><span class="s1">digits </span><span class="s2">= [</span><span class="s5">0</span><span class="s2">];</span>
+    <span class="s6">// The number of digits in digits</span>
+    <span class="s0">let </span><span class="s1">nDigitsStored </span><span class="s2">= </span><span class="s5">0</span><span class="s2">;</span>
+    <span class="s6">// Insertion pointer for digits</span>
+    <span class="s0">let </span><span class="s1">digitsInsert </span><span class="s2">= </span><span class="s5">0</span><span class="s2">;</span>
+    <span class="s6">// The index of the last digit</span>
+    <span class="s0">let </span><span class="s1">lastDigit </span><span class="s2">= </span><span class="s5">0</span><span class="s2">;</span>
+
+    <span class="s6">// Exponent</span>
+    <span class="s0">let </span><span class="s1">exponent </span><span class="s2">= </span><span class="s5">0</span><span class="s2">;</span>
+    <span class="s6">// The high 17 digits of the significand</span>
+    <span class="s0">let </span><span class="s1">significandHigh </span><span class="s2">= </span><span class="s0">new </span><span class="s1">Long</span><span class="s2">(</span><span class="s5">0</span><span class="s2">, </span><span class="s5">0</span><span class="s2">);</span>
+    <span class="s6">// The low 17 digits of the significand</span>
+    <span class="s0">let </span><span class="s1">significandLow </span><span class="s2">= </span><span class="s0">new </span><span class="s1">Long</span><span class="s2">(</span><span class="s5">0</span><span class="s2">, </span><span class="s5">0</span><span class="s2">);</span>
+    <span class="s6">// The biased exponent</span>
+    <span class="s0">let </span><span class="s1">biasedExponent </span><span class="s2">= </span><span class="s5">0</span><span class="s2">;</span>
+
+    <span class="s6">// Read index</span>
+    <span class="s0">let </span><span class="s1">index </span><span class="s2">= </span><span class="s5">0</span><span class="s2">;</span>
+
+    <span class="s6">// Naively prevent against REDOS attacks.</span>
+    <span class="s6">// TODO: implementing a custom parsing for this, or refactoring the regex would yield</span>
+    <span class="s6">//       further gains.</span>
+    <span class="s0">if </span><span class="s2">(</span><span class="s1">representation</span><span class="s2">.</span><span class="s1">length </span><span class="s2">&gt;= </span><span class="s5">7000</span><span class="s2">) {</span>
+      <span class="s0">throw new </span><span class="s1">BSONError</span><span class="s2">(</span><span class="s3">'' </span><span class="s2">+ </span><span class="s1">representation </span><span class="s2">+ </span><span class="s3">' not a valid Decimal128 string'</span><span class="s2">);</span>
+    <span class="s2">}</span>
+
+    <span class="s6">// Results</span>
+    <span class="s0">const </span><span class="s1">stringMatch </span><span class="s2">= </span><span class="s1">representation</span><span class="s2">.</span><span class="s1">match</span><span class="s2">(</span><span class="s1">PARSE_STRING_REGEXP</span><span class="s2">);</span>
+    <span class="s0">const </span><span class="s1">infMatch </span><span class="s2">= </span><span class="s1">representation</span><span class="s2">.</span><span class="s1">match</span><span class="s2">(</span><span class="s1">PARSE_INF_REGEXP</span><span class="s2">);</span>
+    <span class="s0">const </span><span class="s1">nanMatch </span><span class="s2">= </span><span class="s1">representation</span><span class="s2">.</span><span class="s1">match</span><span class="s2">(</span><span class="s1">PARSE_NAN_REGEXP</span><span class="s2">);</span>
+
+    <span class="s6">// Validate the string</span>
+    <span class="s0">if </span><span class="s2">((!</span><span class="s1">stringMatch </span><span class="s2">&amp;&amp; !</span><span class="s1">infMatch </span><span class="s2">&amp;&amp; !</span><span class="s1">nanMatch</span><span class="s2">) || </span><span class="s1">representation</span><span class="s2">.</span><span class="s1">length </span><span class="s2">=== </span><span class="s5">0</span><span class="s2">) {</span>
+      <span class="s0">throw new </span><span class="s1">BSONError</span><span class="s2">(</span><span class="s3">'' </span><span class="s2">+ </span><span class="s1">representation </span><span class="s2">+ </span><span class="s3">' not a valid Decimal128 string'</span><span class="s2">);</span>
+    <span class="s2">}</span>
+
+    <span class="s0">if </span><span class="s2">(</span><span class="s1">stringMatch</span><span class="s2">) {</span>
+      <span class="s6">// full_match = stringMatch[0]</span>
+      <span class="s6">// sign = stringMatch[1]</span>
+
+      <span class="s0">const </span><span class="s1">unsignedNumber </span><span class="s2">= </span><span class="s1">stringMatch</span><span class="s2">[</span><span class="s5">2</span><span class="s2">];</span>
+      <span class="s6">// stringMatch[3] is undefined if a whole number (ex &quot;1&quot;, 12&quot;)</span>
+      <span class="s6">// but defined if a number w/ decimal in it (ex &quot;1.0, 12.2&quot;)</span>
+
+      <span class="s0">const </span><span class="s1">e </span><span class="s2">= </span><span class="s1">stringMatch</span><span class="s2">[</span><span class="s5">4</span><span class="s2">];</span>
+      <span class="s0">const </span><span class="s1">expSign </span><span class="s2">= </span><span class="s1">stringMatch</span><span class="s2">[</span><span class="s5">5</span><span class="s2">];</span>
+      <span class="s0">const </span><span class="s1">expNumber </span><span class="s2">= </span><span class="s1">stringMatch</span><span class="s2">[</span><span class="s5">6</span><span class="s2">];</span>
+
+      <span class="s6">// they provided e, but didn't give an exponent number. for ex &quot;1e&quot;</span>
+      <span class="s0">if </span><span class="s2">(</span><span class="s1">e </span><span class="s2">&amp;&amp; </span><span class="s1">expNumber </span><span class="s2">=== </span><span class="s1">undefined</span><span class="s2">) </span><span class="s1">invalidErr</span><span class="s2">(</span><span class="s1">representation</span><span class="s2">, </span><span class="s3">'missing exponent power'</span><span class="s2">);</span>
+
+      <span class="s6">// they provided e, but didn't give a number before it. for ex &quot;e1&quot;</span>
+      <span class="s0">if </span><span class="s2">(</span><span class="s1">e </span><span class="s2">&amp;&amp; </span><span class="s1">unsignedNumber </span><span class="s2">=== </span><span class="s1">undefined</span><span class="s2">) </span><span class="s1">invalidErr</span><span class="s2">(</span><span class="s1">representation</span><span class="s2">, </span><span class="s3">'missing exponent base'</span><span class="s2">);</span>
+
+      <span class="s0">if </span><span class="s2">(</span><span class="s1">e </span><span class="s2">=== </span><span class="s1">undefined </span><span class="s2">&amp;&amp; (</span><span class="s1">expSign </span><span class="s2">|| </span><span class="s1">expNumber</span><span class="s2">)) {</span>
+        <span class="s1">invalidErr</span><span class="s2">(</span><span class="s1">representation</span><span class="s2">, </span><span class="s3">'missing e before exponent'</span><span class="s2">);</span>
+      <span class="s2">}</span>
+    <span class="s2">}</span>
+
+    <span class="s6">// Get the negative or positive sign</span>
+    <span class="s0">if </span><span class="s2">(</span><span class="s1">representation</span><span class="s2">[</span><span class="s1">index</span><span class="s2">] === </span><span class="s3">'+' </span><span class="s2">|| </span><span class="s1">representation</span><span class="s2">[</span><span class="s1">index</span><span class="s2">] === </span><span class="s3">'-'</span><span class="s2">) {</span>
+      <span class="s1">sawSign </span><span class="s2">= </span><span class="s0">true</span><span class="s2">;</span>
+      <span class="s1">isNegative </span><span class="s2">= </span><span class="s1">representation</span><span class="s2">[</span><span class="s1">index</span><span class="s2">++] === </span><span class="s3">'-'</span><span class="s2">;</span>
+    <span class="s2">}</span>
+
+    <span class="s6">// Check if user passed Infinity or NaN</span>
+    <span class="s0">if </span><span class="s2">(!</span><span class="s1">isDigit</span><span class="s2">(</span><span class="s1">representation</span><span class="s2">[</span><span class="s1">index</span><span class="s2">]) &amp;&amp; </span><span class="s1">representation</span><span class="s2">[</span><span class="s1">index</span><span class="s2">] !== </span><span class="s3">'.'</span><span class="s2">) {</span>
+      <span class="s0">if </span><span class="s2">(</span><span class="s1">representation</span><span class="s2">[</span><span class="s1">index</span><span class="s2">] === </span><span class="s3">'i' </span><span class="s2">|| </span><span class="s1">representation</span><span class="s2">[</span><span class="s1">index</span><span class="s2">] === </span><span class="s3">'I'</span><span class="s2">) {</span>
+        <span class="s0">return new </span><span class="s1">Decimal128</span><span class="s2">(</span><span class="s1">isNegative </span><span class="s2">? </span><span class="s1">INF_NEGATIVE_BUFFER </span><span class="s2">: </span><span class="s1">INF_POSITIVE_BUFFER</span><span class="s2">);</span>
+      <span class="s2">} </span><span class="s0">else if </span><span class="s2">(</span><span class="s1">representation</span><span class="s2">[</span><span class="s1">index</span><span class="s2">] === </span><span class="s3">'N'</span><span class="s2">) {</span>
+        <span class="s0">return new </span><span class="s1">Decimal128</span><span class="s2">(</span><span class="s1">NAN_BUFFER</span><span class="s2">);</span>
+      <span class="s2">}</span>
+    <span class="s2">}</span>
+
+    <span class="s6">// Read all the digits</span>
+    <span class="s0">while </span><span class="s2">(</span><span class="s1">isDigit</span><span class="s2">(</span><span class="s1">representation</span><span class="s2">[</span><span class="s1">index</span><span class="s2">]) || </span><span class="s1">representation</span><span class="s2">[</span><span class="s1">index</span><span class="s2">] === </span><span class="s3">'.'</span><span class="s2">) {</span>
+      <span class="s0">if </span><span class="s2">(</span><span class="s1">representation</span><span class="s2">[</span><span class="s1">index</span><span class="s2">] === </span><span class="s3">'.'</span><span class="s2">) {</span>
+        <span class="s0">if </span><span class="s2">(</span><span class="s1">sawRadix</span><span class="s2">) </span><span class="s1">invalidErr</span><span class="s2">(</span><span class="s1">representation</span><span class="s2">, </span><span class="s3">'contains multiple periods'</span><span class="s2">);</span>
+
+        <span class="s1">sawRadix </span><span class="s2">= </span><span class="s0">true</span><span class="s2">;</span>
+        <span class="s1">index </span><span class="s2">= </span><span class="s1">index </span><span class="s2">+ </span><span class="s5">1</span><span class="s2">;</span>
+        <span class="s0">continue</span><span class="s2">;</span>
+      <span class="s2">}</span>
+
+      <span class="s0">if </span><span class="s2">(</span><span class="s1">nDigitsStored </span><span class="s2">&lt; </span><span class="s1">MAX_DIGITS</span><span class="s2">) {</span>
+        <span class="s0">if </span><span class="s2">(</span><span class="s1">representation</span><span class="s2">[</span><span class="s1">index</span><span class="s2">] !== </span><span class="s3">'0' </span><span class="s2">|| </span><span class="s1">foundNonZero</span><span class="s2">) {</span>
+          <span class="s0">if </span><span class="s2">(!</span><span class="s1">foundNonZero</span><span class="s2">) {</span>
+            <span class="s1">firstNonZero </span><span class="s2">= </span><span class="s1">nDigitsRead</span><span class="s2">;</span>
+          <span class="s2">}</span>
+
+          <span class="s1">foundNonZero </span><span class="s2">= </span><span class="s0">true</span><span class="s2">;</span>
+
+          <span class="s6">// Only store 34 digits</span>
+          <span class="s1">digits</span><span class="s2">[</span><span class="s1">digitsInsert</span><span class="s2">++] = </span><span class="s1">parseInt</span><span class="s2">(</span><span class="s1">representation</span><span class="s2">[</span><span class="s1">index</span><span class="s2">], </span><span class="s5">10</span><span class="s2">);</span>
+          <span class="s1">nDigitsStored </span><span class="s2">= </span><span class="s1">nDigitsStored </span><span class="s2">+ </span><span class="s5">1</span><span class="s2">;</span>
+        <span class="s2">}</span>
+      <span class="s2">}</span>
+
+      <span class="s0">if </span><span class="s2">(</span><span class="s1">foundNonZero</span><span class="s2">) </span><span class="s1">nDigits </span><span class="s2">= </span><span class="s1">nDigits </span><span class="s2">+ </span><span class="s5">1</span><span class="s2">;</span>
+      <span class="s0">if </span><span class="s2">(</span><span class="s1">sawRadix</span><span class="s2">) </span><span class="s1">radixPosition </span><span class="s2">= </span><span class="s1">radixPosition </span><span class="s2">+ </span><span class="s5">1</span><span class="s2">;</span>
+
+      <span class="s1">nDigitsRead </span><span class="s2">= </span><span class="s1">nDigitsRead </span><span class="s2">+ </span><span class="s5">1</span><span class="s2">;</span>
+      <span class="s1">index </span><span class="s2">= </span><span class="s1">index </span><span class="s2">+ </span><span class="s5">1</span><span class="s2">;</span>
+    <span class="s2">}</span>
+
+    <span class="s0">if </span><span class="s2">(</span><span class="s1">sawRadix </span><span class="s2">&amp;&amp; !</span><span class="s1">nDigitsRead</span><span class="s2">)</span>
+      <span class="s0">throw new </span><span class="s1">BSONError</span><span class="s2">(</span><span class="s3">'' </span><span class="s2">+ </span><span class="s1">representation </span><span class="s2">+ </span><span class="s3">' not a valid Decimal128 string'</span><span class="s2">);</span>
+
+    <span class="s6">// Read exponent if exists</span>
+    <span class="s0">if </span><span class="s2">(</span><span class="s1">representation</span><span class="s2">[</span><span class="s1">index</span><span class="s2">] === </span><span class="s3">'e' </span><span class="s2">|| </span><span class="s1">representation</span><span class="s2">[</span><span class="s1">index</span><span class="s2">] === </span><span class="s3">'E'</span><span class="s2">) {</span>
+      <span class="s6">// Read exponent digits</span>
+      <span class="s0">const </span><span class="s1">match </span><span class="s2">= </span><span class="s1">representation</span><span class="s2">.</span><span class="s1">substr</span><span class="s2">(++</span><span class="s1">index</span><span class="s2">).</span><span class="s1">match</span><span class="s2">(</span><span class="s1">EXPONENT_REGEX</span><span class="s2">);</span>
+
+      <span class="s6">// No digits read</span>
+      <span class="s0">if </span><span class="s2">(!</span><span class="s1">match </span><span class="s2">|| !</span><span class="s1">match</span><span class="s2">[</span><span class="s5">2</span><span class="s2">]) </span><span class="s0">return new </span><span class="s1">Decimal128</span><span class="s2">(</span><span class="s1">NAN_BUFFER</span><span class="s2">);</span>
+
+      <span class="s6">// Get exponent</span>
+      <span class="s1">exponent </span><span class="s2">= </span><span class="s1">parseInt</span><span class="s2">(</span><span class="s1">match</span><span class="s2">[</span><span class="s5">0</span><span class="s2">], </span><span class="s5">10</span><span class="s2">);</span>
+
+      <span class="s6">// Adjust the index</span>
+      <span class="s1">index </span><span class="s2">= </span><span class="s1">index </span><span class="s2">+ </span><span class="s1">match</span><span class="s2">[</span><span class="s5">0</span><span class="s2">].</span><span class="s1">length</span><span class="s2">;</span>
+    <span class="s2">}</span>
+
+    <span class="s6">// Return not a number</span>
+    <span class="s0">if </span><span class="s2">(</span><span class="s1">representation</span><span class="s2">[</span><span class="s1">index</span><span class="s2">]) </span><span class="s0">return new </span><span class="s1">Decimal128</span><span class="s2">(</span><span class="s1">NAN_BUFFER</span><span class="s2">);</span>
+
+    <span class="s6">// Done reading input</span>
+    <span class="s6">// Find first non-zero digit in digits</span>
+    <span class="s0">if </span><span class="s2">(!</span><span class="s1">nDigitsStored</span><span class="s2">) {</span>
+      <span class="s1">digits</span><span class="s2">[</span><span class="s5">0</span><span class="s2">] = </span><span class="s5">0</span><span class="s2">;</span>
+      <span class="s1">nDigits </span><span class="s2">= </span><span class="s5">1</span><span class="s2">;</span>
+      <span class="s1">nDigitsStored </span><span class="s2">= </span><span class="s5">1</span><span class="s2">;</span>
+      <span class="s1">significantDigits </span><span class="s2">= </span><span class="s5">0</span><span class="s2">;</span>
+    <span class="s2">} </span><span class="s0">else </span><span class="s2">{</span>
+      <span class="s1">lastDigit </span><span class="s2">= </span><span class="s1">nDigitsStored </span><span class="s2">- </span><span class="s5">1</span><span class="s2">;</span>
+      <span class="s1">significantDigits </span><span class="s2">= </span><span class="s1">nDigits</span><span class="s2">;</span>
+      <span class="s0">if </span><span class="s2">(</span><span class="s1">significantDigits </span><span class="s2">!== </span><span class="s5">1</span><span class="s2">) {</span>
+        <span class="s0">while </span><span class="s2">(</span>
+          <span class="s1">representation</span><span class="s2">[</span>
+            <span class="s1">firstNonZero </span><span class="s2">+ </span><span class="s1">significantDigits </span><span class="s2">- </span><span class="s5">1 </span><span class="s2">+ </span><span class="s1">Number</span><span class="s2">(</span><span class="s1">sawSign</span><span class="s2">) + </span><span class="s1">Number</span><span class="s2">(</span><span class="s1">sawRadix</span><span class="s2">)</span>
+          <span class="s2">] === </span><span class="s3">'0'</span>
+        <span class="s2">) {</span>
+          <span class="s1">significantDigits </span><span class="s2">= </span><span class="s1">significantDigits </span><span class="s2">- </span><span class="s5">1</span><span class="s2">;</span>
+        <span class="s2">}</span>
+      <span class="s2">}</span>
+    <span class="s2">}</span>
+
+    <span class="s6">// Normalization of exponent</span>
+    <span class="s6">// Correct exponent based on radix position, and shift significand as needed</span>
+    <span class="s6">// to represent user input</span>
+
+    <span class="s6">// Overflow prevention</span>
+    <span class="s0">if </span><span class="s2">(</span><span class="s1">exponent </span><span class="s2">&lt;= </span><span class="s1">radixPosition </span><span class="s2">&amp;&amp; </span><span class="s1">radixPosition </span><span class="s2">&gt; </span><span class="s1">exponent </span><span class="s2">+ (</span><span class="s5">1 </span><span class="s2">&lt;&lt; </span><span class="s5">14</span><span class="s2">)) {</span>
+      <span class="s1">exponent </span><span class="s2">= </span><span class="s1">EXPONENT_MIN</span><span class="s2">;</span>
+    <span class="s2">} </span><span class="s0">else </span><span class="s2">{</span>
+      <span class="s1">exponent </span><span class="s2">= </span><span class="s1">exponent </span><span class="s2">- </span><span class="s1">radixPosition</span><span class="s2">;</span>
+    <span class="s2">}</span>
+
+    <span class="s6">// Attempt to normalize the exponent</span>
+    <span class="s0">while </span><span class="s2">(</span><span class="s1">exponent </span><span class="s2">&gt; </span><span class="s1">EXPONENT_MAX</span><span class="s2">) {</span>
+      <span class="s6">// Shift exponent to significand and decrease</span>
+      <span class="s1">lastDigit </span><span class="s2">= </span><span class="s1">lastDigit </span><span class="s2">+ </span><span class="s5">1</span><span class="s2">;</span>
+      <span class="s0">if </span><span class="s2">(</span><span class="s1">lastDigit </span><span class="s2">&gt;= </span><span class="s1">MAX_DIGITS</span><span class="s2">) {</span>
+        <span class="s6">// Check if we have a zero then just hard clamp, otherwise fail</span>
+        <span class="s0">if </span><span class="s2">(</span><span class="s1">significantDigits </span><span class="s2">=== </span><span class="s5">0</span><span class="s2">) {</span>
+          <span class="s1">exponent </span><span class="s2">= </span><span class="s1">EXPONENT_MAX</span><span class="s2">;</span>
+          <span class="s0">break</span><span class="s2">;</span>
+        <span class="s2">}</span>
+
+        <span class="s1">invalidErr</span><span class="s2">(</span><span class="s1">representation</span><span class="s2">, </span><span class="s3">'overflow'</span><span class="s2">);</span>
+      <span class="s2">}</span>
+      <span class="s1">exponent </span><span class="s2">= </span><span class="s1">exponent </span><span class="s2">- </span><span class="s5">1</span><span class="s2">;</span>
+    <span class="s2">}</span>
+
+    <span class="s0">if </span><span class="s2">(</span><span class="s1">options</span><span class="s2">.</span><span class="s1">allowRounding</span><span class="s2">) {</span>
+      <span class="s0">while </span><span class="s2">(</span><span class="s1">exponent </span><span class="s2">&lt; </span><span class="s1">EXPONENT_MIN </span><span class="s2">|| </span><span class="s1">nDigitsStored </span><span class="s2">&lt; </span><span class="s1">nDigits</span><span class="s2">) {</span>
+        <span class="s6">// Shift last digit. can only do this if &lt; significant digits than # stored.</span>
+        <span class="s0">if </span><span class="s2">(</span><span class="s1">lastDigit </span><span class="s2">=== </span><span class="s5">0 </span><span class="s2">&amp;&amp; </span><span class="s1">significantDigits </span><span class="s2">&lt; </span><span class="s1">nDigitsStored</span><span class="s2">) {</span>
+          <span class="s1">exponent </span><span class="s2">= </span><span class="s1">EXPONENT_MIN</span><span class="s2">;</span>
+          <span class="s1">significantDigits </span><span class="s2">= </span><span class="s5">0</span><span class="s2">;</span>
+          <span class="s0">break</span><span class="s2">;</span>
+        <span class="s2">}</span>
+
+        <span class="s0">if </span><span class="s2">(</span><span class="s1">nDigitsStored </span><span class="s2">&lt; </span><span class="s1">nDigits</span><span class="s2">) {</span>
+          <span class="s6">// adjust to match digits not stored</span>
+          <span class="s1">nDigits </span><span class="s2">= </span><span class="s1">nDigits </span><span class="s2">- </span><span class="s5">1</span><span class="s2">;</span>
+        <span class="s2">} </span><span class="s0">else </span><span class="s2">{</span>
+          <span class="s6">// adjust to round</span>
+          <span class="s1">lastDigit </span><span class="s2">= </span><span class="s1">lastDigit </span><span class="s2">- </span><span class="s5">1</span><span class="s2">;</span>
+        <span class="s2">}</span>
+
+        <span class="s0">if </span><span class="s2">(</span><span class="s1">exponent </span><span class="s2">&lt; </span><span class="s1">EXPONENT_MAX</span><span class="s2">) {</span>
+          <span class="s1">exponent </span><span class="s2">= </span><span class="s1">exponent </span><span class="s2">+ </span><span class="s5">1</span><span class="s2">;</span>
+        <span class="s2">} </span><span class="s0">else </span><span class="s2">{</span>
+          <span class="s6">// Check if we have a zero then just hard clamp, otherwise fail</span>
+          <span class="s0">const </span><span class="s1">digitsString </span><span class="s2">= </span><span class="s1">digits</span><span class="s2">.</span><span class="s1">join</span><span class="s2">(</span><span class="s3">''</span><span class="s2">);</span>
+          <span class="s0">if </span><span class="s2">(</span><span class="s1">digitsString</span><span class="s2">.</span><span class="s1">match</span><span class="s2">(</span><span class="s4">/^0+$/</span><span class="s2">)) {</span>
+            <span class="s1">exponent </span><span class="s2">= </span><span class="s1">EXPONENT_MAX</span><span class="s2">;</span>
+            <span class="s0">break</span><span class="s2">;</span>
+          <span class="s2">}</span>
+          <span class="s1">invalidErr</span><span class="s2">(</span><span class="s1">representation</span><span class="s2">, </span><span class="s3">'overflow'</span><span class="s2">);</span>
+        <span class="s2">}</span>
+      <span class="s2">}</span>
+
+      <span class="s6">// Round</span>
+      <span class="s6">// We've normalized the exponent, but might still need to round.</span>
+      <span class="s0">if </span><span class="s2">(</span><span class="s1">lastDigit </span><span class="s2">+ </span><span class="s5">1 </span><span class="s2">&lt; </span><span class="s1">significantDigits</span><span class="s2">) {</span>
+        <span class="s0">let </span><span class="s1">endOfString </span><span class="s2">= </span><span class="s1">nDigitsRead</span><span class="s2">;</span>
+
+        <span class="s6">// If we have seen a radix point, 'string' is 1 longer than we have</span>
+        <span class="s6">// documented with ndigits_read, so inc the position of the first nonzero</span>
+        <span class="s6">// digit and the position that digits are read to.</span>
+        <span class="s0">if </span><span class="s2">(</span><span class="s1">sawRadix</span><span class="s2">) {</span>
+          <span class="s1">firstNonZero </span><span class="s2">= </span><span class="s1">firstNonZero </span><span class="s2">+ </span><span class="s5">1</span><span class="s2">;</span>
+          <span class="s1">endOfString </span><span class="s2">= </span><span class="s1">endOfString </span><span class="s2">+ </span><span class="s5">1</span><span class="s2">;</span>
+        <span class="s2">}</span>
+        <span class="s6">// if negative, we need to increment again to account for - sign at start.</span>
+        <span class="s0">if </span><span class="s2">(</span><span class="s1">sawSign</span><span class="s2">) {</span>
+          <span class="s1">firstNonZero </span><span class="s2">= </span><span class="s1">firstNonZero </span><span class="s2">+ </span><span class="s5">1</span><span class="s2">;</span>
+          <span class="s1">endOfString </span><span class="s2">= </span><span class="s1">endOfString </span><span class="s2">+ </span><span class="s5">1</span><span class="s2">;</span>
+        <span class="s2">}</span>
+
+        <span class="s0">const </span><span class="s1">roundDigit </span><span class="s2">= </span><span class="s1">parseInt</span><span class="s2">(</span><span class="s1">representation</span><span class="s2">[</span><span class="s1">firstNonZero </span><span class="s2">+ </span><span class="s1">lastDigit </span><span class="s2">+ </span><span class="s5">1</span><span class="s2">], </span><span class="s5">10</span><span class="s2">);</span>
+        <span class="s0">let </span><span class="s1">roundBit </span><span class="s2">= </span><span class="s5">0</span><span class="s2">;</span>
+
+        <span class="s0">if </span><span class="s2">(</span><span class="s1">roundDigit </span><span class="s2">&gt;= </span><span class="s5">5</span><span class="s2">) {</span>
+          <span class="s1">roundBit </span><span class="s2">= </span><span class="s5">1</span><span class="s2">;</span>
+          <span class="s0">if </span><span class="s2">(</span><span class="s1">roundDigit </span><span class="s2">=== </span><span class="s5">5</span><span class="s2">) {</span>
+            <span class="s1">roundBit </span><span class="s2">= </span><span class="s1">digits</span><span class="s2">[</span><span class="s1">lastDigit</span><span class="s2">] % </span><span class="s5">2 </span><span class="s2">=== </span><span class="s5">1 </span><span class="s2">? </span><span class="s5">1 </span><span class="s2">: </span><span class="s5">0</span><span class="s2">;</span>
+            <span class="s0">for </span><span class="s2">(</span><span class="s0">let </span><span class="s1">i </span><span class="s2">= </span><span class="s1">firstNonZero </span><span class="s2">+ </span><span class="s1">lastDigit </span><span class="s2">+ </span><span class="s5">2</span><span class="s2">; </span><span class="s1">i </span><span class="s2">&lt; </span><span class="s1">endOfString</span><span class="s2">; </span><span class="s1">i</span><span class="s2">++) {</span>
+              <span class="s0">if </span><span class="s2">(</span><span class="s1">parseInt</span><span class="s2">(</span><span class="s1">representation</span><span class="s2">[</span><span class="s1">i</span><span class="s2">], </span><span class="s5">10</span><span class="s2">)) {</span>
+                <span class="s1">roundBit </span><span class="s2">= </span><span class="s5">1</span><span class="s2">;</span>
+                <span class="s0">break</span><span class="s2">;</span>
+              <span class="s2">}</span>
+            <span class="s2">}</span>
+          <span class="s2">}</span>
+        <span class="s2">}</span>
+
+        <span class="s0">if </span><span class="s2">(</span><span class="s1">roundBit</span><span class="s2">) {</span>
+          <span class="s0">let </span><span class="s1">dIdx </span><span class="s2">= </span><span class="s1">lastDigit</span><span class="s2">;</span>
+
+          <span class="s0">for </span><span class="s2">(; </span><span class="s1">dIdx </span><span class="s2">&gt;= </span><span class="s5">0</span><span class="s2">; </span><span class="s1">dIdx</span><span class="s2">--) {</span>
+            <span class="s0">if </span><span class="s2">(++</span><span class="s1">digits</span><span class="s2">[</span><span class="s1">dIdx</span><span class="s2">] &gt; </span><span class="s5">9</span><span class="s2">) {</span>
+              <span class="s1">digits</span><span class="s2">[</span><span class="s1">dIdx</span><span class="s2">] = </span><span class="s5">0</span><span class="s2">;</span>
+
+              <span class="s6">// overflowed most significant digit</span>
+              <span class="s0">if </span><span class="s2">(</span><span class="s1">dIdx </span><span class="s2">=== </span><span class="s5">0</span><span class="s2">) {</span>
+                <span class="s0">if </span><span class="s2">(</span><span class="s1">exponent </span><span class="s2">&lt; </span><span class="s1">EXPONENT_MAX</span><span class="s2">) {</span>
+                  <span class="s1">exponent </span><span class="s2">= </span><span class="s1">exponent </span><span class="s2">+ </span><span class="s5">1</span><span class="s2">;</span>
+                  <span class="s1">digits</span><span class="s2">[</span><span class="s1">dIdx</span><span class="s2">] = </span><span class="s5">1</span><span class="s2">;</span>
+                <span class="s2">} </span><span class="s0">else </span><span class="s2">{</span>
+                  <span class="s0">return new </span><span class="s1">Decimal128</span><span class="s2">(</span><span class="s1">isNegative </span><span class="s2">? </span><span class="s1">INF_NEGATIVE_BUFFER </span><span class="s2">: </span><span class="s1">INF_POSITIVE_BUFFER</span><span class="s2">);</span>
+                <span class="s2">}</span>
+              <span class="s2">}</span>
+            <span class="s2">} </span><span class="s0">else </span><span class="s2">{</span>
+              <span class="s0">break</span><span class="s2">;</span>
+            <span class="s2">}</span>
+          <span class="s2">}</span>
+        <span class="s2">}</span>
+      <span class="s2">}</span>
+    <span class="s2">} </span><span class="s0">else </span><span class="s2">{</span>
+      <span class="s0">while </span><span class="s2">(</span><span class="s1">exponent </span><span class="s2">&lt; </span><span class="s1">EXPONENT_MIN </span><span class="s2">|| </span><span class="s1">nDigitsStored </span><span class="s2">&lt; </span><span class="s1">nDigits</span><span class="s2">) {</span>
+        <span class="s6">// Shift last digit. can only do this if &lt; significant digits than # stored.</span>
+        <span class="s0">if </span><span class="s2">(</span><span class="s1">lastDigit </span><span class="s2">=== </span><span class="s5">0</span><span class="s2">) {</span>
+          <span class="s0">if </span><span class="s2">(</span><span class="s1">significantDigits </span><span class="s2">=== </span><span class="s5">0</span><span class="s2">) {</span>
+            <span class="s1">exponent </span><span class="s2">= </span><span class="s1">EXPONENT_MIN</span><span class="s2">;</span>
+            <span class="s0">break</span><span class="s2">;</span>
+          <span class="s2">}</span>
+
+          <span class="s1">invalidErr</span><span class="s2">(</span><span class="s1">representation</span><span class="s2">, </span><span class="s3">'exponent underflow'</span><span class="s2">);</span>
+        <span class="s2">}</span>
+
+        <span class="s0">if </span><span class="s2">(</span><span class="s1">nDigitsStored </span><span class="s2">&lt; </span><span class="s1">nDigits</span><span class="s2">) {</span>
+          <span class="s0">if </span><span class="s2">(</span>
+            <span class="s1">representation</span><span class="s2">[</span><span class="s1">nDigits </span><span class="s2">- </span><span class="s5">1 </span><span class="s2">+ </span><span class="s1">Number</span><span class="s2">(</span><span class="s1">sawSign</span><span class="s2">) + </span><span class="s1">Number</span><span class="s2">(</span><span class="s1">sawRadix</span><span class="s2">)] !== </span><span class="s3">'0' </span><span class="s2">&amp;&amp;</span>
+            <span class="s1">significantDigits </span><span class="s2">!== </span><span class="s5">0</span>
+          <span class="s2">) {</span>
+            <span class="s1">invalidErr</span><span class="s2">(</span><span class="s1">representation</span><span class="s2">, </span><span class="s3">'inexact rounding'</span><span class="s2">);</span>
+          <span class="s2">}</span>
+          <span class="s6">// adjust to match digits not stored</span>
+          <span class="s1">nDigits </span><span class="s2">= </span><span class="s1">nDigits </span><span class="s2">- </span><span class="s5">1</span><span class="s2">;</span>
+        <span class="s2">} </span><span class="s0">else </span><span class="s2">{</span>
+          <span class="s0">if </span><span class="s2">(</span><span class="s1">digits</span><span class="s2">[</span><span class="s1">lastDigit</span><span class="s2">] !== </span><span class="s5">0</span><span class="s2">) {</span>
+            <span class="s1">invalidErr</span><span class="s2">(</span><span class="s1">representation</span><span class="s2">, </span><span class="s3">'inexact rounding'</span><span class="s2">);</span>
+          <span class="s2">}</span>
+          <span class="s6">// adjust to round</span>
+          <span class="s1">lastDigit </span><span class="s2">= </span><span class="s1">lastDigit </span><span class="s2">- </span><span class="s5">1</span><span class="s2">;</span>
+        <span class="s2">}</span>
+
+        <span class="s0">if </span><span class="s2">(</span><span class="s1">exponent </span><span class="s2">&lt; </span><span class="s1">EXPONENT_MAX</span><span class="s2">) {</span>
+          <span class="s1">exponent </span><span class="s2">= </span><span class="s1">exponent </span><span class="s2">+ </span><span class="s5">1</span><span class="s2">;</span>
+        <span class="s2">} </span><span class="s0">else </span><span class="s2">{</span>
+          <span class="s1">invalidErr</span><span class="s2">(</span><span class="s1">representation</span><span class="s2">, </span><span class="s3">'overflow'</span><span class="s2">);</span>
+        <span class="s2">}</span>
+      <span class="s2">}</span>
+
+      <span class="s6">// Round</span>
+      <span class="s6">// We've normalized the exponent, but might still need to round.</span>
+      <span class="s0">if </span><span class="s2">(</span><span class="s1">lastDigit </span><span class="s2">+ </span><span class="s5">1 </span><span class="s2">&lt; </span><span class="s1">significantDigits</span><span class="s2">) {</span>
+        <span class="s6">// If we have seen a radix point, 'string' is 1 longer than we have</span>
+        <span class="s6">// documented with ndigits_read, so inc the position of the first nonzero</span>
+        <span class="s6">// digit and the position that digits are read to.</span>
+        <span class="s0">if </span><span class="s2">(</span><span class="s1">sawRadix</span><span class="s2">) {</span>
+          <span class="s1">firstNonZero </span><span class="s2">= </span><span class="s1">firstNonZero </span><span class="s2">+ </span><span class="s5">1</span><span class="s2">;</span>
+        <span class="s2">}</span>
+        <span class="s6">// if saw sign, we need to increment again to account for - or + sign at start.</span>
+        <span class="s0">if </span><span class="s2">(</span><span class="s1">sawSign</span><span class="s2">) {</span>
+          <span class="s1">firstNonZero </span><span class="s2">= </span><span class="s1">firstNonZero </span><span class="s2">+ </span><span class="s5">1</span><span class="s2">;</span>
+        <span class="s2">}</span>
+
+        <span class="s0">const </span><span class="s1">roundDigit </span><span class="s2">= </span><span class="s1">parseInt</span><span class="s2">(</span><span class="s1">representation</span><span class="s2">[</span><span class="s1">firstNonZero </span><span class="s2">+ </span><span class="s1">lastDigit </span><span class="s2">+ </span><span class="s5">1</span><span class="s2">], </span><span class="s5">10</span><span class="s2">);</span>
+
+        <span class="s0">if </span><span class="s2">(</span><span class="s1">roundDigit </span><span class="s2">!== </span><span class="s5">0</span><span class="s2">) {</span>
+          <span class="s1">invalidErr</span><span class="s2">(</span><span class="s1">representation</span><span class="s2">, </span><span class="s3">'inexact rounding'</span><span class="s2">);</span>
+        <span class="s2">}</span>
+      <span class="s2">}</span>
+    <span class="s2">}</span>
+
+    <span class="s6">// Encode significand</span>
+    <span class="s6">// The high 17 digits of the significand</span>
+    <span class="s1">significandHigh </span><span class="s2">= </span><span class="s1">Long</span><span class="s2">.</span><span class="s1">fromNumber</span><span class="s2">(</span><span class="s5">0</span><span class="s2">);</span>
+    <span class="s6">// The low 17 digits of the significand</span>
+    <span class="s1">significandLow </span><span class="s2">= </span><span class="s1">Long</span><span class="s2">.</span><span class="s1">fromNumber</span><span class="s2">(</span><span class="s5">0</span><span class="s2">);</span>
+
+    <span class="s6">// read a zero</span>
+    <span class="s0">if </span><span class="s2">(</span><span class="s1">significantDigits </span><span class="s2">=== </span><span class="s5">0</span><span class="s2">) {</span>
+      <span class="s1">significandHigh </span><span class="s2">= </span><span class="s1">Long</span><span class="s2">.</span><span class="s1">fromNumber</span><span class="s2">(</span><span class="s5">0</span><span class="s2">);</span>
+      <span class="s1">significandLow </span><span class="s2">= </span><span class="s1">Long</span><span class="s2">.</span><span class="s1">fromNumber</span><span class="s2">(</span><span class="s5">0</span><span class="s2">);</span>
+    <span class="s2">} </span><span class="s0">else if </span><span class="s2">(</span><span class="s1">lastDigit </span><span class="s2">&lt; </span><span class="s5">17</span><span class="s2">) {</span>
+      <span class="s0">let </span><span class="s1">dIdx </span><span class="s2">= </span><span class="s5">0</span><span class="s2">;</span>
+      <span class="s1">significandLow </span><span class="s2">= </span><span class="s1">Long</span><span class="s2">.</span><span class="s1">fromNumber</span><span class="s2">(</span><span class="s1">digits</span><span class="s2">[</span><span class="s1">dIdx</span><span class="s2">++]);</span>
+      <span class="s1">significandHigh </span><span class="s2">= </span><span class="s0">new </span><span class="s1">Long</span><span class="s2">(</span><span class="s5">0</span><span class="s2">, </span><span class="s5">0</span><span class="s2">);</span>
+
+      <span class="s0">for </span><span class="s2">(; </span><span class="s1">dIdx </span><span class="s2">&lt;= </span><span class="s1">lastDigit</span><span class="s2">; </span><span class="s1">dIdx</span><span class="s2">++) {</span>
+        <span class="s1">significandLow </span><span class="s2">= </span><span class="s1">significandLow</span><span class="s2">.</span><span class="s1">multiply</span><span class="s2">(</span><span class="s1">Long</span><span class="s2">.</span><span class="s1">fromNumber</span><span class="s2">(</span><span class="s5">10</span><span class="s2">));</span>
+        <span class="s1">significandLow </span><span class="s2">= </span><span class="s1">significandLow</span><span class="s2">.</span><span class="s1">add</span><span class="s2">(</span><span class="s1">Long</span><span class="s2">.</span><span class="s1">fromNumber</span><span class="s2">(</span><span class="s1">digits</span><span class="s2">[</span><span class="s1">dIdx</span><span class="s2">]));</span>
+      <span class="s2">}</span>
+    <span class="s2">} </span><span class="s0">else </span><span class="s2">{</span>
+      <span class="s0">let </span><span class="s1">dIdx </span><span class="s2">= </span><span class="s5">0</span><span class="s2">;</span>
+      <span class="s1">significandHigh </span><span class="s2">= </span><span class="s1">Long</span><span class="s2">.</span><span class="s1">fromNumber</span><span class="s2">(</span><span class="s1">digits</span><span class="s2">[</span><span class="s1">dIdx</span><span class="s2">++]);</span>
+
+      <span class="s0">for </span><span class="s2">(; </span><span class="s1">dIdx </span><span class="s2">&lt;= </span><span class="s1">lastDigit </span><span class="s2">- </span><span class="s5">17</span><span class="s2">; </span><span class="s1">dIdx</span><span class="s2">++) {</span>
+        <span class="s1">significandHigh </span><span class="s2">= </span><span class="s1">significandHigh</span><span class="s2">.</span><span class="s1">multiply</span><span class="s2">(</span><span class="s1">Long</span><span class="s2">.</span><span class="s1">fromNumber</span><span class="s2">(</span><span class="s5">10</span><span class="s2">));</span>
+        <span class="s1">significandHigh </span><span class="s2">= </span><span class="s1">significandHigh</span><span class="s2">.</span><span class="s1">add</span><span class="s2">(</span><span class="s1">Long</span><span class="s2">.</span><span class="s1">fromNumber</span><span class="s2">(</span><span class="s1">digits</span><span class="s2">[</span><span class="s1">dIdx</span><span class="s2">]));</span>
+      <span class="s2">}</span>
+
+      <span class="s1">significandLow </span><span class="s2">= </span><span class="s1">Long</span><span class="s2">.</span><span class="s1">fromNumber</span><span class="s2">(</span><span class="s1">digits</span><span class="s2">[</span><span class="s1">dIdx</span><span class="s2">++]);</span>
+
+      <span class="s0">for </span><span class="s2">(; </span><span class="s1">dIdx </span><span class="s2">&lt;= </span><span class="s1">lastDigit</span><span class="s2">; </span><span class="s1">dIdx</span><span class="s2">++) {</span>
+        <span class="s1">significandLow </span><span class="s2">= </span><span class="s1">significandLow</span><span class="s2">.</span><span class="s1">multiply</span><span class="s2">(</span><span class="s1">Long</span><span class="s2">.</span><span class="s1">fromNumber</span><span class="s2">(</span><span class="s5">10</span><span class="s2">));</span>
+        <span class="s1">significandLow </span><span class="s2">= </span><span class="s1">significandLow</span><span class="s2">.</span><span class="s1">add</span><span class="s2">(</span><span class="s1">Long</span><span class="s2">.</span><span class="s1">fromNumber</span><span class="s2">(</span><span class="s1">digits</span><span class="s2">[</span><span class="s1">dIdx</span><span class="s2">]));</span>
+      <span class="s2">}</span>
+    <span class="s2">}</span>
+
+    <span class="s0">const </span><span class="s1">significand </span><span class="s2">= </span><span class="s1">multiply64x2</span><span class="s2">(</span><span class="s1">significandHigh</span><span class="s2">, </span><span class="s1">Long</span><span class="s2">.</span><span class="s1">fromString</span><span class="s2">(</span><span class="s3">'100000000000000000'</span><span class="s2">));</span>
+    <span class="s1">significand</span><span class="s2">.</span><span class="s1">low </span><span class="s2">= </span><span class="s1">significand</span><span class="s2">.</span><span class="s1">low</span><span class="s2">.</span><span class="s1">add</span><span class="s2">(</span><span class="s1">significandLow</span><span class="s2">);</span>
+
+    <span class="s0">if </span><span class="s2">(</span><span class="s1">lessThan</span><span class="s2">(</span><span class="s1">significand</span><span class="s2">.</span><span class="s1">low</span><span class="s2">, </span><span class="s1">significandLow</span><span class="s2">)) {</span>
+      <span class="s1">significand</span><span class="s2">.</span><span class="s1">high </span><span class="s2">= </span><span class="s1">significand</span><span class="s2">.</span><span class="s1">high</span><span class="s2">.</span><span class="s1">add</span><span class="s2">(</span><span class="s1">Long</span><span class="s2">.</span><span class="s1">fromNumber</span><span class="s2">(</span><span class="s5">1</span><span class="s2">));</span>
+    <span class="s2">}</span>
+
+    <span class="s6">// Biased exponent</span>
+    <span class="s1">biasedExponent </span><span class="s2">= </span><span class="s1">exponent </span><span class="s2">+ </span><span class="s1">EXPONENT_BIAS</span><span class="s2">;</span>
+    <span class="s0">const </span><span class="s1">dec </span><span class="s2">= { </span><span class="s1">low</span><span class="s2">: </span><span class="s1">Long</span><span class="s2">.</span><span class="s1">fromNumber</span><span class="s2">(</span><span class="s5">0</span><span class="s2">), </span><span class="s1">high</span><span class="s2">: </span><span class="s1">Long</span><span class="s2">.</span><span class="s1">fromNumber</span><span class="s2">(</span><span class="s5">0</span><span class="s2">) };</span>
+
+    <span class="s6">// Encode combination, exponent, and significand.</span>
+    <span class="s0">if </span><span class="s2">(</span>
+      <span class="s1">significand</span><span class="s2">.</span><span class="s1">high</span><span class="s2">.</span><span class="s1">shiftRightUnsigned</span><span class="s2">(</span><span class="s5">49</span><span class="s2">).</span><span class="s1">and</span><span class="s2">(</span><span class="s1">Long</span><span class="s2">.</span><span class="s1">fromNumber</span><span class="s2">(</span><span class="s5">1</span><span class="s2">)).</span><span class="s1">equals</span><span class="s2">(</span><span class="s1">Long</span><span class="s2">.</span><span class="s1">fromNumber</span><span class="s2">(</span><span class="s5">1</span><span class="s2">))</span>
+    <span class="s2">) {</span>
+      <span class="s6">// Encode '11' into bits 1 to 3</span>
+      <span class="s1">dec</span><span class="s2">.</span><span class="s1">high </span><span class="s2">= </span><span class="s1">dec</span><span class="s2">.</span><span class="s1">high</span><span class="s2">.</span><span class="s1">or</span><span class="s2">(</span><span class="s1">Long</span><span class="s2">.</span><span class="s1">fromNumber</span><span class="s2">(</span><span class="s5">0x3</span><span class="s2">).</span><span class="s1">shiftLeft</span><span class="s2">(</span><span class="s5">61</span><span class="s2">));</span>
+      <span class="s1">dec</span><span class="s2">.</span><span class="s1">high </span><span class="s2">= </span><span class="s1">dec</span><span class="s2">.</span><span class="s1">high</span><span class="s2">.</span><span class="s1">or</span><span class="s2">(</span>
+        <span class="s1">Long</span><span class="s2">.</span><span class="s1">fromNumber</span><span class="s2">(</span><span class="s1">biasedExponent</span><span class="s2">).</span><span class="s1">and</span><span class="s2">(</span><span class="s1">Long</span><span class="s2">.</span><span class="s1">fromNumber</span><span class="s2">(</span><span class="s5">0x3fff</span><span class="s2">).</span><span class="s1">shiftLeft</span><span class="s2">(</span><span class="s5">47</span><span class="s2">))</span>
+      <span class="s2">);</span>
+      <span class="s1">dec</span><span class="s2">.</span><span class="s1">high </span><span class="s2">= </span><span class="s1">dec</span><span class="s2">.</span><span class="s1">high</span><span class="s2">.</span><span class="s1">or</span><span class="s2">(</span><span class="s1">significand</span><span class="s2">.</span><span class="s1">high</span><span class="s2">.</span><span class="s1">and</span><span class="s2">(</span><span class="s1">Long</span><span class="s2">.</span><span class="s1">fromNumber</span><span class="s2">(</span><span class="s5">0x7fffffffffff</span><span class="s2">)));</span>
+    <span class="s2">} </span><span class="s0">else </span><span class="s2">{</span>
+      <span class="s1">dec</span><span class="s2">.</span><span class="s1">high </span><span class="s2">= </span><span class="s1">dec</span><span class="s2">.</span><span class="s1">high</span><span class="s2">.</span><span class="s1">or</span><span class="s2">(</span><span class="s1">Long</span><span class="s2">.</span><span class="s1">fromNumber</span><span class="s2">(</span><span class="s1">biasedExponent </span><span class="s2">&amp; </span><span class="s5">0x3fff</span><span class="s2">).</span><span class="s1">shiftLeft</span><span class="s2">(</span><span class="s5">49</span><span class="s2">));</span>
+      <span class="s1">dec</span><span class="s2">.</span><span class="s1">high </span><span class="s2">= </span><span class="s1">dec</span><span class="s2">.</span><span class="s1">high</span><span class="s2">.</span><span class="s1">or</span><span class="s2">(</span><span class="s1">significand</span><span class="s2">.</span><span class="s1">high</span><span class="s2">.</span><span class="s1">and</span><span class="s2">(</span><span class="s1">Long</span><span class="s2">.</span><span class="s1">fromNumber</span><span class="s2">(</span><span class="s5">0x1ffffffffffff</span><span class="s2">)));</span>
+    <span class="s2">}</span>
+
+    <span class="s1">dec</span><span class="s2">.</span><span class="s1">low </span><span class="s2">= </span><span class="s1">significand</span><span class="s2">.</span><span class="s1">low</span><span class="s2">;</span>
+
+    <span class="s6">// Encode sign</span>
+    <span class="s0">if </span><span class="s2">(</span><span class="s1">isNegative</span><span class="s2">) {</span>
+      <span class="s1">dec</span><span class="s2">.</span><span class="s1">high </span><span class="s2">= </span><span class="s1">dec</span><span class="s2">.</span><span class="s1">high</span><span class="s2">.</span><span class="s1">or</span><span class="s2">(</span><span class="s1">Long</span><span class="s2">.</span><span class="s1">fromString</span><span class="s2">(</span><span class="s3">'9223372036854775808'</span><span class="s2">));</span>
+    <span class="s2">}</span>
+
+    <span class="s6">// Encode into a buffer</span>
+    <span class="s0">const </span><span class="s1">buffer </span><span class="s2">= </span><span class="s1">ByteUtils</span><span class="s2">.</span><span class="s1">allocateUnsafe</span><span class="s2">(</span><span class="s5">16</span><span class="s2">);</span>
+    <span class="s1">index </span><span class="s2">= </span><span class="s5">0</span><span class="s2">;</span>
+
+    <span class="s6">// Encode the low 64 bits of the decimal</span>
+    <span class="s6">// Encode low bits</span>
+    <span class="s1">buffer</span><span class="s2">[</span><span class="s1">index</span><span class="s2">++] = </span><span class="s1">dec</span><span class="s2">.</span><span class="s1">low</span><span class="s2">.</span><span class="s1">low </span><span class="s2">&amp; </span><span class="s5">0xff</span><span class="s2">;</span>
+    <span class="s1">buffer</span><span class="s2">[</span><span class="s1">index</span><span class="s2">++] = (</span><span class="s1">dec</span><span class="s2">.</span><span class="s1">low</span><span class="s2">.</span><span class="s1">low </span><span class="s2">&gt;&gt; </span><span class="s5">8</span><span class="s2">) &amp; </span><span class="s5">0xff</span><span class="s2">;</span>
+    <span class="s1">buffer</span><span class="s2">[</span><span class="s1">index</span><span class="s2">++] = (</span><span class="s1">dec</span><span class="s2">.</span><span class="s1">low</span><span class="s2">.</span><span class="s1">low </span><span class="s2">&gt;&gt; </span><span class="s5">16</span><span class="s2">) &amp; </span><span class="s5">0xff</span><span class="s2">;</span>
+    <span class="s1">buffer</span><span class="s2">[</span><span class="s1">index</span><span class="s2">++] = (</span><span class="s1">dec</span><span class="s2">.</span><span class="s1">low</span><span class="s2">.</span><span class="s1">low </span><span class="s2">&gt;&gt; </span><span class="s5">24</span><span class="s2">) &amp; </span><span class="s5">0xff</span><span class="s2">;</span>
+    <span class="s6">// Encode high bits</span>
+    <span class="s1">buffer</span><span class="s2">[</span><span class="s1">index</span><span class="s2">++] = </span><span class="s1">dec</span><span class="s2">.</span><span class="s1">low</span><span class="s2">.</span><span class="s1">high </span><span class="s2">&amp; </span><span class="s5">0xff</span><span class="s2">;</span>
+    <span class="s1">buffer</span><span class="s2">[</span><span class="s1">index</span><span class="s2">++] = (</span><span class="s1">dec</span><span class="s2">.</span><span class="s1">low</span><span class="s2">.</span><span class="s1">high </span><span class="s2">&gt;&gt; </span><span class="s5">8</span><span class="s2">) &amp; </span><span class="s5">0xff</span><span class="s2">;</span>
+    <span class="s1">buffer</span><span class="s2">[</span><span class="s1">index</span><span class="s2">++] = (</span><span class="s1">dec</span><span class="s2">.</span><span class="s1">low</span><span class="s2">.</span><span class="s1">high </span><span class="s2">&gt;&gt; </span><span class="s5">16</span><span class="s2">) &amp; </span><span class="s5">0xff</span><span class="s2">;</span>
+    <span class="s1">buffer</span><span class="s2">[</span><span class="s1">index</span><span class="s2">++] = (</span><span class="s1">dec</span><span class="s2">.</span><span class="s1">low</span><span class="s2">.</span><span class="s1">high </span><span class="s2">&gt;&gt; </span><span class="s5">24</span><span class="s2">) &amp; </span><span class="s5">0xff</span><span class="s2">;</span>
+
+    <span class="s6">// Encode the high 64 bits of the decimal</span>
+    <span class="s6">// Encode low bits</span>
+    <span class="s1">buffer</span><span class="s2">[</span><span class="s1">index</span><span class="s2">++] = </span><span class="s1">dec</span><span class="s2">.</span><span class="s1">high</span><span class="s2">.</span><span class="s1">low </span><span class="s2">&amp; </span><span class="s5">0xff</span><span class="s2">;</span>
+    <span class="s1">buffer</span><span class="s2">[</span><span class="s1">index</span><span class="s2">++] = (</span><span class="s1">dec</span><span class="s2">.</span><span class="s1">high</span><span class="s2">.</span><span class="s1">low </span><span class="s2">&gt;&gt; </span><span class="s5">8</span><span class="s2">) &amp; </span><span class="s5">0xff</span><span class="s2">;</span>
+    <span class="s1">buffer</span><span class="s2">[</span><span class="s1">index</span><span class="s2">++] = (</span><span class="s1">dec</span><span class="s2">.</span><span class="s1">high</span><span class="s2">.</span><span class="s1">low </span><span class="s2">&gt;&gt; </span><span class="s5">16</span><span class="s2">) &amp; </span><span class="s5">0xff</span><span class="s2">;</span>
+    <span class="s1">buffer</span><span class="s2">[</span><span class="s1">index</span><span class="s2">++] = (</span><span class="s1">dec</span><span class="s2">.</span><span class="s1">high</span><span class="s2">.</span><span class="s1">low </span><span class="s2">&gt;&gt; </span><span class="s5">24</span><span class="s2">) &amp; </span><span class="s5">0xff</span><span class="s2">;</span>
+    <span class="s6">// Encode high bits</span>
+    <span class="s1">buffer</span><span class="s2">[</span><span class="s1">index</span><span class="s2">++] = </span><span class="s1">dec</span><span class="s2">.</span><span class="s1">high</span><span class="s2">.</span><span class="s1">high </span><span class="s2">&amp; </span><span class="s5">0xff</span><span class="s2">;</span>
+    <span class="s1">buffer</span><span class="s2">[</span><span class="s1">index</span><span class="s2">++] = (</span><span class="s1">dec</span><span class="s2">.</span><span class="s1">high</span><span class="s2">.</span><span class="s1">high </span><span class="s2">&gt;&gt; </span><span class="s5">8</span><span class="s2">) &amp; </span><span class="s5">0xff</span><span class="s2">;</span>
+    <span class="s1">buffer</span><span class="s2">[</span><span class="s1">index</span><span class="s2">++] = (</span><span class="s1">dec</span><span class="s2">.</span><span class="s1">high</span><span class="s2">.</span><span class="s1">high </span><span class="s2">&gt;&gt; </span><span class="s5">16</span><span class="s2">) &amp; </span><span class="s5">0xff</span><span class="s2">;</span>
+    <span class="s1">buffer</span><span class="s2">[</span><span class="s1">index</span><span class="s2">++] = (</span><span class="s1">dec</span><span class="s2">.</span><span class="s1">high</span><span class="s2">.</span><span class="s1">high </span><span class="s2">&gt;&gt; </span><span class="s5">24</span><span class="s2">) &amp; </span><span class="s5">0xff</span><span class="s2">;</span>
+
+    <span class="s6">// Return the new Decimal128</span>
+    <span class="s0">return new </span><span class="s1">Decimal128</span><span class="s2">(</span><span class="s1">buffer</span><span class="s2">);</span>
+  <span class="s2">}</span>
+  <span class="s7">/** Create a string representation of the raw Decimal128 value */</span>
+  <span class="s1">toString</span><span class="s2">(): </span><span class="s1">string </span><span class="s2">{</span>
+    <span class="s6">// Note: bits in this routine are referred to starting at 0,</span>
+    <span class="s6">// from the sign bit, towards the coefficient.</span>
+
+    <span class="s6">// decoded biased exponent (14 bits)</span>
+    <span class="s0">let </span><span class="s1">biased_exponent</span><span class="s2">;</span>
+    <span class="s6">// the number of significand digits</span>
+    <span class="s0">let </span><span class="s1">significand_digits </span><span class="s2">= </span><span class="s5">0</span><span class="s2">;</span>
+    <span class="s6">// the base-10 digits in the significand</span>
+    <span class="s0">const </span><span class="s1">significand </span><span class="s2">= </span><span class="s0">new </span><span class="s1">Array</span><span class="s2">&lt;</span><span class="s1">number</span><span class="s2">&gt;(</span><span class="s5">36</span><span class="s2">);</span>
+    <span class="s0">for </span><span class="s2">(</span><span class="s0">let </span><span class="s1">i </span><span class="s2">= </span><span class="s5">0</span><span class="s2">; </span><span class="s1">i </span><span class="s2">&lt; </span><span class="s1">significand</span><span class="s2">.</span><span class="s1">length</span><span class="s2">; </span><span class="s1">i</span><span class="s2">++) </span><span class="s1">significand</span><span class="s2">[</span><span class="s1">i</span><span class="s2">] = </span><span class="s5">0</span><span class="s2">;</span>
+    <span class="s6">// read pointer into significand</span>
+    <span class="s0">let </span><span class="s1">index </span><span class="s2">= </span><span class="s5">0</span><span class="s2">;</span>
+
+    <span class="s6">// true if the number is zero</span>
+    <span class="s0">let </span><span class="s1">is_zero </span><span class="s2">= </span><span class="s0">false</span><span class="s2">;</span>
+
+    <span class="s6">// the most significant significand bits (50-46)</span>
+    <span class="s0">let </span><span class="s1">significand_msb</span><span class="s2">;</span>
+    <span class="s6">// temporary storage for significand decoding</span>
+    <span class="s0">let </span><span class="s1">significand128</span><span class="s2">: { </span><span class="s1">parts</span><span class="s2">: [</span><span class="s1">number</span><span class="s2">, </span><span class="s1">number</span><span class="s2">, </span><span class="s1">number</span><span class="s2">, </span><span class="s1">number</span><span class="s2">] } = { </span><span class="s1">parts</span><span class="s2">: [</span><span class="s5">0</span><span class="s2">, </span><span class="s5">0</span><span class="s2">, </span><span class="s5">0</span><span class="s2">, </span><span class="s5">0</span><span class="s2">] };</span>
+    <span class="s6">// indexing variables</span>
+    <span class="s0">let </span><span class="s1">j</span><span class="s2">, </span><span class="s1">k</span><span class="s2">;</span>
+
+    <span class="s6">// Output string</span>
+    <span class="s0">const </span><span class="s1">string</span><span class="s2">: </span><span class="s1">string</span><span class="s2">[] = [];</span>
+
+    <span class="s6">// Unpack index</span>
+    <span class="s1">index </span><span class="s2">= </span><span class="s5">0</span><span class="s2">;</span>
+
+    <span class="s6">// Buffer reference</span>
+    <span class="s0">const </span><span class="s1">buffer </span><span class="s2">= </span><span class="s0">this</span><span class="s2">.</span><span class="s1">bytes</span><span class="s2">;</span>
+
+    <span class="s6">// Unpack the low 64bits into a long</span>
+    <span class="s6">// bits 96 - 127</span>
+    <span class="s0">const </span><span class="s1">low </span><span class="s2">=</span>
+      <span class="s1">buffer</span><span class="s2">[</span><span class="s1">index</span><span class="s2">++] | (</span><span class="s1">buffer</span><span class="s2">[</span><span class="s1">index</span><span class="s2">++] &lt;&lt; </span><span class="s5">8</span><span class="s2">) | (</span><span class="s1">buffer</span><span class="s2">[</span><span class="s1">index</span><span class="s2">++] &lt;&lt; </span><span class="s5">16</span><span class="s2">) | (</span><span class="s1">buffer</span><span class="s2">[</span><span class="s1">index</span><span class="s2">++] &lt;&lt; </span><span class="s5">24</span><span class="s2">);</span>
+    <span class="s6">// bits 64 - 95</span>
+    <span class="s0">const </span><span class="s1">midl </span><span class="s2">=</span>
+      <span class="s1">buffer</span><span class="s2">[</span><span class="s1">index</span><span class="s2">++] | (</span><span class="s1">buffer</span><span class="s2">[</span><span class="s1">index</span><span class="s2">++] &lt;&lt; </span><span class="s5">8</span><span class="s2">) | (</span><span class="s1">buffer</span><span class="s2">[</span><span class="s1">index</span><span class="s2">++] &lt;&lt; </span><span class="s5">16</span><span class="s2">) | (</span><span class="s1">buffer</span><span class="s2">[</span><span class="s1">index</span><span class="s2">++] &lt;&lt; </span><span class="s5">24</span><span class="s2">);</span>
+
+    <span class="s6">// Unpack the high 64bits into a long</span>
+    <span class="s6">// bits 32 - 63</span>
+    <span class="s0">const </span><span class="s1">midh </span><span class="s2">=</span>
+      <span class="s1">buffer</span><span class="s2">[</span><span class="s1">index</span><span class="s2">++] | (</span><span class="s1">buffer</span><span class="s2">[</span><span class="s1">index</span><span class="s2">++] &lt;&lt; </span><span class="s5">8</span><span class="s2">) | (</span><span class="s1">buffer</span><span class="s2">[</span><span class="s1">index</span><span class="s2">++] &lt;&lt; </span><span class="s5">16</span><span class="s2">) | (</span><span class="s1">buffer</span><span class="s2">[</span><span class="s1">index</span><span class="s2">++] &lt;&lt; </span><span class="s5">24</span><span class="s2">);</span>
+    <span class="s6">// bits 0 - 31</span>
+    <span class="s0">const </span><span class="s1">high </span><span class="s2">=</span>
+      <span class="s1">buffer</span><span class="s2">[</span><span class="s1">index</span><span class="s2">++] | (</span><span class="s1">buffer</span><span class="s2">[</span><span class="s1">index</span><span class="s2">++] &lt;&lt; </span><span class="s5">8</span><span class="s2">) | (</span><span class="s1">buffer</span><span class="s2">[</span><span class="s1">index</span><span class="s2">++] &lt;&lt; </span><span class="s5">16</span><span class="s2">) | (</span><span class="s1">buffer</span><span class="s2">[</span><span class="s1">index</span><span class="s2">++] &lt;&lt; </span><span class="s5">24</span><span class="s2">);</span>
+
+    <span class="s6">// Unpack index</span>
+    <span class="s1">index </span><span class="s2">= </span><span class="s5">0</span><span class="s2">;</span>
+
+    <span class="s6">// Create the state of the decimal</span>
+    <span class="s0">const </span><span class="s1">dec </span><span class="s2">= {</span>
+      <span class="s1">low</span><span class="s2">: </span><span class="s0">new </span><span class="s1">Long</span><span class="s2">(</span><span class="s1">low</span><span class="s2">, </span><span class="s1">midl</span><span class="s2">),</span>
+      <span class="s1">high</span><span class="s2">: </span><span class="s0">new </span><span class="s1">Long</span><span class="s2">(</span><span class="s1">midh</span><span class="s2">, </span><span class="s1">high</span><span class="s2">)</span>
+    <span class="s2">};</span>
+
+    <span class="s0">if </span><span class="s2">(</span><span class="s1">dec</span><span class="s2">.</span><span class="s1">high</span><span class="s2">.</span><span class="s1">lessThan</span><span class="s2">(</span><span class="s1">Long</span><span class="s2">.</span><span class="s1">ZERO</span><span class="s2">)) {</span>
+      <span class="s1">string</span><span class="s2">.</span><span class="s1">push</span><span class="s2">(</span><span class="s3">'-'</span><span class="s2">);</span>
+    <span class="s2">}</span>
+
+    <span class="s6">// Decode combination field and exponent</span>
+    <span class="s6">// bits 1 - 5</span>
+    <span class="s0">const </span><span class="s1">combination </span><span class="s2">= (</span><span class="s1">high </span><span class="s2">&gt;&gt; </span><span class="s5">26</span><span class="s2">) &amp; </span><span class="s1">COMBINATION_MASK</span><span class="s2">;</span>
+
+    <span class="s0">if </span><span class="s2">(</span><span class="s1">combination </span><span class="s2">&gt;&gt; </span><span class="s5">3 </span><span class="s2">=== </span><span class="s5">3</span><span class="s2">) {</span>
+      <span class="s6">// Check for 'special' values</span>
+      <span class="s0">if </span><span class="s2">(</span><span class="s1">combination </span><span class="s2">=== </span><span class="s1">COMBINATION_INFINITY</span><span class="s2">) {</span>
+        <span class="s0">return </span><span class="s1">string</span><span class="s2">.</span><span class="s1">join</span><span class="s2">(</span><span class="s3">''</span><span class="s2">) + </span><span class="s3">'Infinity'</span><span class="s2">;</span>
+      <span class="s2">} </span><span class="s0">else if </span><span class="s2">(</span><span class="s1">combination </span><span class="s2">=== </span><span class="s1">COMBINATION_NAN</span><span class="s2">) {</span>
+        <span class="s0">return </span><span class="s3">'NaN'</span><span class="s2">;</span>
+      <span class="s2">} </span><span class="s0">else </span><span class="s2">{</span>
+        <span class="s1">biased_exponent </span><span class="s2">= (</span><span class="s1">high </span><span class="s2">&gt;&gt; </span><span class="s5">15</span><span class="s2">) &amp; </span><span class="s1">EXPONENT_MASK</span><span class="s2">;</span>
+        <span class="s1">significand_msb </span><span class="s2">= </span><span class="s5">0x08 </span><span class="s2">+ ((</span><span class="s1">high </span><span class="s2">&gt;&gt; </span><span class="s5">14</span><span class="s2">) &amp; </span><span class="s5">0x01</span><span class="s2">);</span>
+      <span class="s2">}</span>
+    <span class="s2">} </span><span class="s0">else </span><span class="s2">{</span>
+      <span class="s1">significand_msb </span><span class="s2">= (</span><span class="s1">high </span><span class="s2">&gt;&gt; </span><span class="s5">14</span><span class="s2">) &amp; </span><span class="s5">0x07</span><span class="s2">;</span>
+      <span class="s1">biased_exponent </span><span class="s2">= (</span><span class="s1">high </span><span class="s2">&gt;&gt; </span><span class="s5">17</span><span class="s2">) &amp; </span><span class="s1">EXPONENT_MASK</span><span class="s2">;</span>
+    <span class="s2">}</span>
+
+    <span class="s6">// unbiased exponent</span>
+    <span class="s0">const </span><span class="s1">exponent </span><span class="s2">= </span><span class="s1">biased_exponent </span><span class="s2">- </span><span class="s1">EXPONENT_BIAS</span><span class="s2">;</span>
+
+    <span class="s6">// Create string of significand digits</span>
+
+    <span class="s6">// Convert the 114-bit binary number represented by</span>
+    <span class="s6">// (significand_high, significand_low) to at most 34 decimal</span>
+    <span class="s6">// digits through modulo and division.</span>
+    <span class="s1">significand128</span><span class="s2">.</span><span class="s1">parts</span><span class="s2">[</span><span class="s5">0</span><span class="s2">] = (</span><span class="s1">high </span><span class="s2">&amp; </span><span class="s5">0x3fff</span><span class="s2">) + ((</span><span class="s1">significand_msb </span><span class="s2">&amp; </span><span class="s5">0xf</span><span class="s2">) &lt;&lt; </span><span class="s5">14</span><span class="s2">);</span>
+    <span class="s1">significand128</span><span class="s2">.</span><span class="s1">parts</span><span class="s2">[</span><span class="s5">1</span><span class="s2">] = </span><span class="s1">midh</span><span class="s2">;</span>
+    <span class="s1">significand128</span><span class="s2">.</span><span class="s1">parts</span><span class="s2">[</span><span class="s5">2</span><span class="s2">] = </span><span class="s1">midl</span><span class="s2">;</span>
+    <span class="s1">significand128</span><span class="s2">.</span><span class="s1">parts</span><span class="s2">[</span><span class="s5">3</span><span class="s2">] = </span><span class="s1">low</span><span class="s2">;</span>
+
+    <span class="s0">if </span><span class="s2">(</span>
+      <span class="s1">significand128</span><span class="s2">.</span><span class="s1">parts</span><span class="s2">[</span><span class="s5">0</span><span class="s2">] === </span><span class="s5">0 </span><span class="s2">&amp;&amp;</span>
+      <span class="s1">significand128</span><span class="s2">.</span><span class="s1">parts</span><span class="s2">[</span><span class="s5">1</span><span class="s2">] === </span><span class="s5">0 </span><span class="s2">&amp;&amp;</span>
+      <span class="s1">significand128</span><span class="s2">.</span><span class="s1">parts</span><span class="s2">[</span><span class="s5">2</span><span class="s2">] === </span><span class="s5">0 </span><span class="s2">&amp;&amp;</span>
+      <span class="s1">significand128</span><span class="s2">.</span><span class="s1">parts</span><span class="s2">[</span><span class="s5">3</span><span class="s2">] === </span><span class="s5">0</span>
+    <span class="s2">) {</span>
+      <span class="s1">is_zero </span><span class="s2">= </span><span class="s0">true</span><span class="s2">;</span>
+    <span class="s2">} </span><span class="s0">else </span><span class="s2">{</span>
+      <span class="s0">for </span><span class="s2">(</span><span class="s1">k </span><span class="s2">= </span><span class="s5">3</span><span class="s2">; </span><span class="s1">k </span><span class="s2">&gt;= </span><span class="s5">0</span><span class="s2">; </span><span class="s1">k</span><span class="s2">--) {</span>
+        <span class="s0">let </span><span class="s1">least_digits </span><span class="s2">= </span><span class="s5">0</span><span class="s2">;</span>
+        <span class="s6">// Perform the divide</span>
+        <span class="s0">const </span><span class="s1">result </span><span class="s2">= </span><span class="s1">divideu128</span><span class="s2">(</span><span class="s1">significand128</span><span class="s2">);</span>
+        <span class="s1">significand128 </span><span class="s2">= </span><span class="s1">result</span><span class="s2">.</span><span class="s1">quotient</span><span class="s2">;</span>
+        <span class="s1">least_digits </span><span class="s2">= </span><span class="s1">result</span><span class="s2">.</span><span class="s1">rem</span><span class="s2">.</span><span class="s1">low</span><span class="s2">;</span>
+
+        <span class="s6">// We now have the 9 least significant digits (in base 2).</span>
+        <span class="s6">// Convert and output to string.</span>
+        <span class="s0">if </span><span class="s2">(!</span><span class="s1">least_digits</span><span class="s2">) </span><span class="s0">continue</span><span class="s2">;</span>
+
+        <span class="s0">for </span><span class="s2">(</span><span class="s1">j </span><span class="s2">= </span><span class="s5">8</span><span class="s2">; </span><span class="s1">j </span><span class="s2">&gt;= </span><span class="s5">0</span><span class="s2">; </span><span class="s1">j</span><span class="s2">--) {</span>
+          <span class="s6">// significand[k * 9 + j] = Math.round(least_digits % 10);</span>
+          <span class="s1">significand</span><span class="s2">[</span><span class="s1">k </span><span class="s2">* </span><span class="s5">9 </span><span class="s2">+ </span><span class="s1">j</span><span class="s2">] = </span><span class="s1">least_digits </span><span class="s2">% </span><span class="s5">10</span><span class="s2">;</span>
+          <span class="s6">// least_digits = Math.round(least_digits / 10);</span>
+          <span class="s1">least_digits </span><span class="s2">= </span><span class="s1">Math</span><span class="s2">.</span><span class="s1">floor</span><span class="s2">(</span><span class="s1">least_digits </span><span class="s2">/ </span><span class="s5">10</span><span class="s2">);</span>
+        <span class="s2">}</span>
+      <span class="s2">}</span>
+    <span class="s2">}</span>
+
+    <span class="s6">// Output format options:</span>
+    <span class="s6">// Scientific - [-]d.dddE(+/-)dd or [-]dE(+/-)dd</span>
+    <span class="s6">// Regular    - ddd.ddd</span>
+
+    <span class="s0">if </span><span class="s2">(</span><span class="s1">is_zero</span><span class="s2">) {</span>
+      <span class="s1">significand_digits </span><span class="s2">= </span><span class="s5">1</span><span class="s2">;</span>
+      <span class="s1">significand</span><span class="s2">[</span><span class="s1">index</span><span class="s2">] = </span><span class="s5">0</span><span class="s2">;</span>
+    <span class="s2">} </span><span class="s0">else </span><span class="s2">{</span>
+      <span class="s1">significand_digits </span><span class="s2">= </span><span class="s5">36</span><span class="s2">;</span>
+      <span class="s0">while </span><span class="s2">(!</span><span class="s1">significand</span><span class="s2">[</span><span class="s1">index</span><span class="s2">]) {</span>
+        <span class="s1">significand_digits </span><span class="s2">= </span><span class="s1">significand_digits </span><span class="s2">- </span><span class="s5">1</span><span class="s2">;</span>
+        <span class="s1">index </span><span class="s2">= </span><span class="s1">index </span><span class="s2">+ </span><span class="s5">1</span><span class="s2">;</span>
+      <span class="s2">}</span>
+    <span class="s2">}</span>
+
+    <span class="s6">// the exponent if scientific notation is used</span>
+    <span class="s0">const </span><span class="s1">scientific_exponent </span><span class="s2">= </span><span class="s1">significand_digits </span><span class="s2">- </span><span class="s5">1 </span><span class="s2">+ </span><span class="s1">exponent</span><span class="s2">;</span>
+
+    <span class="s6">// The scientific exponent checks are dictated by the string conversion</span>
+    <span class="s6">// specification and are somewhat arbitrary cutoffs.</span>
+    <span class="s6">//</span>
+    <span class="s6">// We must check exponent &gt; 0, because if this is the case, the number</span>
+    <span class="s6">// has trailing zeros.  However, we *cannot* output these trailing zeros,</span>
+    <span class="s6">// because doing so would change the precision of the value, and would</span>
+    <span class="s6">// change stored data if the string converted number is round tripped.</span>
+    <span class="s0">if </span><span class="s2">(</span><span class="s1">scientific_exponent </span><span class="s2">&gt;= </span><span class="s5">34 </span><span class="s2">|| </span><span class="s1">scientific_exponent </span><span class="s2">&lt;= -</span><span class="s5">7 </span><span class="s2">|| </span><span class="s1">exponent </span><span class="s2">&gt; </span><span class="s5">0</span><span class="s2">) {</span>
+      <span class="s6">// Scientific format</span>
+
+      <span class="s6">// if there are too many significant digits, we should just be treating numbers</span>
+      <span class="s6">// as + or - 0 and using the non-scientific exponent (this is for the &quot;invalid</span>
+      <span class="s6">// representation should be treated as 0/-0&quot; spec cases in decimal128-1.json)</span>
+      <span class="s0">if </span><span class="s2">(</span><span class="s1">significand_digits </span><span class="s2">&gt; </span><span class="s5">34</span><span class="s2">) {</span>
+        <span class="s1">string</span><span class="s2">.</span><span class="s1">push</span><span class="s2">(</span><span class="s3">`</span><span class="s1">$</span><span class="s2">{</span><span class="s5">0</span><span class="s2">}</span><span class="s3">`</span><span class="s2">);</span>
+        <span class="s0">if </span><span class="s2">(</span><span class="s1">exponent </span><span class="s2">&gt; </span><span class="s5">0</span><span class="s2">) </span><span class="s1">string</span><span class="s2">.</span><span class="s1">push</span><span class="s2">(</span><span class="s3">`E+</span><span class="s1">$</span><span class="s2">{</span><span class="s1">exponent</span><span class="s2">}</span><span class="s3">`</span><span class="s2">);</span>
+        <span class="s0">else if </span><span class="s2">(</span><span class="s1">exponent </span><span class="s2">&lt; </span><span class="s5">0</span><span class="s2">) </span><span class="s1">string</span><span class="s2">.</span><span class="s1">push</span><span class="s2">(</span><span class="s3">`E</span><span class="s1">$</span><span class="s2">{</span><span class="s1">exponent</span><span class="s2">}</span><span class="s3">`</span><span class="s2">);</span>
+        <span class="s0">return </span><span class="s1">string</span><span class="s2">.</span><span class="s1">join</span><span class="s2">(</span><span class="s3">''</span><span class="s2">);</span>
+      <span class="s2">}</span>
+
+      <span class="s1">string</span><span class="s2">.</span><span class="s1">push</span><span class="s2">(</span><span class="s3">`</span><span class="s1">$</span><span class="s2">{</span><span class="s1">significand</span><span class="s2">[</span><span class="s1">index</span><span class="s2">++]}</span><span class="s3">`</span><span class="s2">);</span>
+      <span class="s1">significand_digits </span><span class="s2">= </span><span class="s1">significand_digits </span><span class="s2">- </span><span class="s5">1</span><span class="s2">;</span>
+
+      <span class="s0">if </span><span class="s2">(</span><span class="s1">significand_digits</span><span class="s2">) {</span>
+        <span class="s1">string</span><span class="s2">.</span><span class="s1">push</span><span class="s2">(</span><span class="s3">'.'</span><span class="s2">);</span>
+      <span class="s2">}</span>
+
+      <span class="s0">for </span><span class="s2">(</span><span class="s0">let </span><span class="s1">i </span><span class="s2">= </span><span class="s5">0</span><span class="s2">; </span><span class="s1">i </span><span class="s2">&lt; </span><span class="s1">significand_digits</span><span class="s2">; </span><span class="s1">i</span><span class="s2">++) {</span>
+        <span class="s1">string</span><span class="s2">.</span><span class="s1">push</span><span class="s2">(</span><span class="s3">`</span><span class="s1">$</span><span class="s2">{</span><span class="s1">significand</span><span class="s2">[</span><span class="s1">index</span><span class="s2">++]}</span><span class="s3">`</span><span class="s2">);</span>
+      <span class="s2">}</span>
+
+      <span class="s6">// Exponent</span>
+      <span class="s1">string</span><span class="s2">.</span><span class="s1">push</span><span class="s2">(</span><span class="s3">'E'</span><span class="s2">);</span>
+      <span class="s0">if </span><span class="s2">(</span><span class="s1">scientific_exponent </span><span class="s2">&gt; </span><span class="s5">0</span><span class="s2">) {</span>
+        <span class="s1">string</span><span class="s2">.</span><span class="s1">push</span><span class="s2">(</span><span class="s3">`+</span><span class="s1">$</span><span class="s2">{</span><span class="s1">scientific_exponent</span><span class="s2">}</span><span class="s3">`</span><span class="s2">);</span>
+      <span class="s2">} </span><span class="s0">else </span><span class="s2">{</span>
+        <span class="s1">string</span><span class="s2">.</span><span class="s1">push</span><span class="s2">(</span><span class="s3">`</span><span class="s1">$</span><span class="s2">{</span><span class="s1">scientific_exponent</span><span class="s2">}</span><span class="s3">`</span><span class="s2">);</span>
+      <span class="s2">}</span>
+    <span class="s2">} </span><span class="s0">else </span><span class="s2">{</span>
+      <span class="s6">// Regular format with no decimal place</span>
+      <span class="s0">if </span><span class="s2">(</span><span class="s1">exponent </span><span class="s2">&gt;= </span><span class="s5">0</span><span class="s2">) {</span>
+        <span class="s0">for </span><span class="s2">(</span><span class="s0">let </span><span class="s1">i </span><span class="s2">= </span><span class="s5">0</span><span class="s2">; </span><span class="s1">i </span><span class="s2">&lt; </span><span class="s1">significand_digits</span><span class="s2">; </span><span class="s1">i</span><span class="s2">++) {</span>
+          <span class="s1">string</span><span class="s2">.</span><span class="s1">push</span><span class="s2">(</span><span class="s3">`</span><span class="s1">$</span><span class="s2">{</span><span class="s1">significand</span><span class="s2">[</span><span class="s1">index</span><span class="s2">++]}</span><span class="s3">`</span><span class="s2">);</span>
+        <span class="s2">}</span>
+      <span class="s2">} </span><span class="s0">else </span><span class="s2">{</span>
+        <span class="s0">let </span><span class="s1">radix_position </span><span class="s2">= </span><span class="s1">significand_digits </span><span class="s2">+ </span><span class="s1">exponent</span><span class="s2">;</span>
+
+        <span class="s6">// non-zero digits before radix</span>
+        <span class="s0">if </span><span class="s2">(</span><span class="s1">radix_position </span><span class="s2">&gt; </span><span class="s5">0</span><span class="s2">) {</span>
+          <span class="s0">for </span><span class="s2">(</span><span class="s0">let </span><span class="s1">i </span><span class="s2">= </span><span class="s5">0</span><span class="s2">; </span><span class="s1">i </span><span class="s2">&lt; </span><span class="s1">radix_position</span><span class="s2">; </span><span class="s1">i</span><span class="s2">++) {</span>
+            <span class="s1">string</span><span class="s2">.</span><span class="s1">push</span><span class="s2">(</span><span class="s3">`</span><span class="s1">$</span><span class="s2">{</span><span class="s1">significand</span><span class="s2">[</span><span class="s1">index</span><span class="s2">++]}</span><span class="s3">`</span><span class="s2">);</span>
+          <span class="s2">}</span>
+        <span class="s2">} </span><span class="s0">else </span><span class="s2">{</span>
+          <span class="s1">string</span><span class="s2">.</span><span class="s1">push</span><span class="s2">(</span><span class="s3">'0'</span><span class="s2">);</span>
+        <span class="s2">}</span>
+
+        <span class="s1">string</span><span class="s2">.</span><span class="s1">push</span><span class="s2">(</span><span class="s3">'.'</span><span class="s2">);</span>
+        <span class="s6">// add leading zeros after radix</span>
+        <span class="s0">while </span><span class="s2">(</span><span class="s1">radix_position</span><span class="s2">++ &lt; </span><span class="s5">0</span><span class="s2">) {</span>
+          <span class="s1">string</span><span class="s2">.</span><span class="s1">push</span><span class="s2">(</span><span class="s3">'0'</span><span class="s2">);</span>
+        <span class="s2">}</span>
+
+        <span class="s0">for </span><span class="s2">(</span><span class="s0">let </span><span class="s1">i </span><span class="s2">= </span><span class="s5">0</span><span class="s2">; </span><span class="s1">i </span><span class="s2">&lt; </span><span class="s1">significand_digits </span><span class="s2">- </span><span class="s1">Math</span><span class="s2">.</span><span class="s1">max</span><span class="s2">(</span><span class="s1">radix_position </span><span class="s2">- </span><span class="s5">1</span><span class="s2">, </span><span class="s5">0</span><span class="s2">); </span><span class="s1">i</span><span class="s2">++) {</span>
+          <span class="s1">string</span><span class="s2">.</span><span class="s1">push</span><span class="s2">(</span><span class="s3">`</span><span class="s1">$</span><span class="s2">{</span><span class="s1">significand</span><span class="s2">[</span><span class="s1">index</span><span class="s2">++]}</span><span class="s3">`</span><span class="s2">);</span>
+        <span class="s2">}</span>
+      <span class="s2">}</span>
+    <span class="s2">}</span>
+
+    <span class="s0">return </span><span class="s1">string</span><span class="s2">.</span><span class="s1">join</span><span class="s2">(</span><span class="s3">''</span><span class="s2">);</span>
+  <span class="s2">}</span>
+
+  <span class="s1">toJSON</span><span class="s2">(): </span><span class="s1">Decimal128Extended </span><span class="s2">{</span>
+    <span class="s0">return </span><span class="s2">{ </span><span class="s1">$numberDecimal</span><span class="s2">: </span><span class="s0">this</span><span class="s2">.</span><span class="s1">toString</span><span class="s2">() };</span>
+  <span class="s2">}</span>
+
+  <span class="s7">/** </span><span class="s8">@internal </span><span class="s7">*/</span>
+  <span class="s1">toExtendedJSON</span><span class="s2">(): </span><span class="s1">Decimal128Extended </span><span class="s2">{</span>
+    <span class="s0">return </span><span class="s2">{ </span><span class="s1">$numberDecimal</span><span class="s2">: </span><span class="s0">this</span><span class="s2">.</span><span class="s1">toString</span><span class="s2">() };</span>
+  <span class="s2">}</span>
+
+  <span class="s7">/** </span><span class="s8">@internal </span><span class="s7">*/</span>
+  <span class="s0">static </span><span class="s1">fromExtendedJSON</span><span class="s2">(</span><span class="s1">doc</span><span class="s2">: </span><span class="s1">Decimal128Extended</span><span class="s2">): </span><span class="s1">Decimal128 </span><span class="s2">{</span>
+    <span class="s0">return </span><span class="s1">Decimal128</span><span class="s2">.</span><span class="s1">fromString</span><span class="s2">(</span><span class="s1">doc</span><span class="s2">.</span><span class="s1">$numberDecimal</span><span class="s2">);</span>
+  <span class="s2">}</span>
+
+  <span class="s1">inspect</span><span class="s2">(</span><span class="s1">depth</span><span class="s2">?: </span><span class="s1">number</span><span class="s2">, </span><span class="s1">options</span><span class="s2">?: </span><span class="s1">unknown</span><span class="s2">, </span><span class="s1">inspect</span><span class="s2">?: </span><span class="s1">InspectFn</span><span class="s2">): </span><span class="s1">string </span><span class="s2">{</span>
+    <span class="s1">inspect </span><span class="s2">??= </span><span class="s1">defaultInspect</span><span class="s2">;</span>
+    <span class="s0">const </span><span class="s1">d128string </span><span class="s2">= </span><span class="s1">inspect</span><span class="s2">(</span><span class="s0">this</span><span class="s2">.</span><span class="s1">toString</span><span class="s2">(), </span><span class="s1">options</span><span class="s2">);</span>
+    <span class="s0">return </span><span class="s3">`new Decimal128(</span><span class="s1">$</span><span class="s2">{</span><span class="s1">d128string</span><span class="s2">}</span><span class="s3">)`</span><span class="s2">;</span>
+  <span class="s2">}</span>
+<span class="s2">}</span>
+</pre>
+</body>
+</html>

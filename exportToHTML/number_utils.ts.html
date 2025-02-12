@@ -1,0 +1,228 @@
+<html>
+<head>
+<title>number_utils.ts</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+<style type="text/css">
+.s0 { color: #cf8e6d;}
+.s1 { color: #bcbec4;}
+.s2 { color: #bcbec4;}
+.s3 { color: #2aacb8;}
+.s4 { color: #7a7e85;}
+.s5 { color: #5f826b; font-style: italic;}
+.s6 { color: #67a37c; font-style: italic;}
+.s7 { color: #6aab73;}
+</style>
+</head>
+<body bgcolor="#1e1f22">
+<table CELLSPACING=0 CELLPADDING=5 COLS=1 WIDTH="100%" BGCOLOR="#606060" >
+<tr><td><center>
+<font face="Arial, Helvetica" color="#000000">
+number_utils.ts</font>
+</center></td></tr></table>
+<pre><span class="s0">const </span><span class="s1">FLOAT </span><span class="s2">= </span><span class="s0">new </span><span class="s1">Float64Array</span><span class="s2">(</span><span class="s3">1</span><span class="s2">);</span>
+<span class="s0">const </span><span class="s1">FLOAT_BYTES </span><span class="s2">= </span><span class="s0">new </span><span class="s1">Uint8Array</span><span class="s2">(</span><span class="s1">FLOAT</span><span class="s2">.</span><span class="s1">buffer</span><span class="s2">, </span><span class="s3">0</span><span class="s2">, </span><span class="s3">8</span><span class="s2">);</span>
+
+<span class="s1">FLOAT</span><span class="s2">[</span><span class="s3">0</span><span class="s2">] = -</span><span class="s3">1</span><span class="s2">;</span>
+<span class="s4">// Little endian [0, 0, 0, 0, 0, 0,  240, 191]</span>
+<span class="s4">// Big endian    [191, 240, 0, 0, 0, 0, 0, 0]</span>
+<span class="s0">const </span><span class="s1">isBigEndian </span><span class="s2">= </span><span class="s1">FLOAT_BYTES</span><span class="s2">[</span><span class="s3">7</span><span class="s2">] === </span><span class="s3">0</span><span class="s2">;</span>
+
+<span class="s5">/**</span>
+ <span class="s5">* </span><span class="s6">@experimental</span>
+ <span class="s5">* </span><span class="s6">@public</span>
+ <span class="s5">*</span>
+ <span class="s5">* A collection of functions that get or set various numeric types and bit widths from a Uint8Array.</span>
+ <span class="s5">*/</span>
+<span class="s0">export </span><span class="s1">type NumberUtils </span><span class="s2">= {</span>
+  <span class="s5">/** Is true if the current system is big endian. */</span>
+  <span class="s1">isBigEndian</span><span class="s2">: </span><span class="s1">boolean</span><span class="s2">;</span>
+  <span class="s5">/**</span>
+   <span class="s5">* Parses a signed int32 at offset. Throws a `RangeError` if value is negative.</span>
+   <span class="s5">*/</span>
+  <span class="s1">getNonnegativeInt32LE</span><span class="s2">: (</span><span class="s1">source</span><span class="s2">: </span><span class="s1">Uint8Array</span><span class="s2">, </span><span class="s1">offset</span><span class="s2">: </span><span class="s1">number</span><span class="s2">) =&gt; </span><span class="s1">number</span><span class="s2">;</span>
+  <span class="s1">getInt32LE</span><span class="s2">: (</span><span class="s1">source</span><span class="s2">: </span><span class="s1">Uint8Array</span><span class="s2">, </span><span class="s1">offset</span><span class="s2">: </span><span class="s1">number</span><span class="s2">) =&gt; </span><span class="s1">number</span><span class="s2">;</span>
+  <span class="s1">getUint32LE</span><span class="s2">: (</span><span class="s1">source</span><span class="s2">: </span><span class="s1">Uint8Array</span><span class="s2">, </span><span class="s1">offset</span><span class="s2">: </span><span class="s1">number</span><span class="s2">) =&gt; </span><span class="s1">number</span><span class="s2">;</span>
+  <span class="s1">getUint32BE</span><span class="s2">: (</span><span class="s1">source</span><span class="s2">: </span><span class="s1">Uint8Array</span><span class="s2">, </span><span class="s1">offset</span><span class="s2">: </span><span class="s1">number</span><span class="s2">) =&gt; </span><span class="s1">number</span><span class="s2">;</span>
+  <span class="s1">getBigInt64LE</span><span class="s2">: (</span><span class="s1">source</span><span class="s2">: </span><span class="s1">Uint8Array</span><span class="s2">, </span><span class="s1">offset</span><span class="s2">: </span><span class="s1">number</span><span class="s2">) =&gt; </span><span class="s1">bigint</span><span class="s2">;</span>
+  <span class="s1">getFloat64LE</span><span class="s2">: (</span><span class="s1">source</span><span class="s2">: </span><span class="s1">Uint8Array</span><span class="s2">, </span><span class="s1">offset</span><span class="s2">: </span><span class="s1">number</span><span class="s2">) =&gt; </span><span class="s1">number</span><span class="s2">;</span>
+  <span class="s1">setInt32BE</span><span class="s2">: (</span><span class="s1">destination</span><span class="s2">: </span><span class="s1">Uint8Array</span><span class="s2">, </span><span class="s1">offset</span><span class="s2">: </span><span class="s1">number</span><span class="s2">, </span><span class="s1">value</span><span class="s2">: </span><span class="s1">number</span><span class="s2">) =&gt; </span><span class="s3">4</span><span class="s2">;</span>
+  <span class="s1">setInt32LE</span><span class="s2">: (</span><span class="s1">destination</span><span class="s2">: </span><span class="s1">Uint8Array</span><span class="s2">, </span><span class="s1">offset</span><span class="s2">: </span><span class="s1">number</span><span class="s2">, </span><span class="s1">value</span><span class="s2">: </span><span class="s1">number</span><span class="s2">) =&gt; </span><span class="s3">4</span><span class="s2">;</span>
+  <span class="s1">setBigInt64LE</span><span class="s2">: (</span><span class="s1">destination</span><span class="s2">: </span><span class="s1">Uint8Array</span><span class="s2">, </span><span class="s1">offset</span><span class="s2">: </span><span class="s1">number</span><span class="s2">, </span><span class="s1">value</span><span class="s2">: </span><span class="s1">bigint</span><span class="s2">) =&gt; </span><span class="s3">8</span><span class="s2">;</span>
+  <span class="s1">setFloat64LE</span><span class="s2">: (</span><span class="s1">destination</span><span class="s2">: </span><span class="s1">Uint8Array</span><span class="s2">, </span><span class="s1">offset</span><span class="s2">: </span><span class="s1">number</span><span class="s2">, </span><span class="s1">value</span><span class="s2">: </span><span class="s1">number</span><span class="s2">) =&gt; </span><span class="s3">8</span><span class="s2">;</span>
+<span class="s2">};</span>
+
+<span class="s5">/**</span>
+ <span class="s5">* Number parsing and serializing utilities.</span>
+ <span class="s5">*</span>
+ <span class="s5">* </span><span class="s6">@experimental</span>
+ <span class="s5">* </span><span class="s6">@public</span>
+ <span class="s5">*/</span>
+<span class="s0">export const </span><span class="s1">NumberUtils</span><span class="s2">: </span><span class="s1">NumberUtils </span><span class="s2">= {</span>
+  <span class="s1">isBigEndian</span><span class="s2">,</span>
+
+  <span class="s1">getNonnegativeInt32LE</span><span class="s2">(</span><span class="s1">source</span><span class="s2">: </span><span class="s1">Uint8Array</span><span class="s2">, </span><span class="s1">offset</span><span class="s2">: </span><span class="s1">number</span><span class="s2">): </span><span class="s1">number </span><span class="s2">{</span>
+    <span class="s0">if </span><span class="s2">(</span><span class="s1">source</span><span class="s2">[</span><span class="s1">offset </span><span class="s2">+ </span><span class="s3">3</span><span class="s2">] &gt; </span><span class="s3">127</span><span class="s2">) {</span>
+      <span class="s0">throw new </span><span class="s1">RangeError</span><span class="s2">(</span><span class="s7">`Size cannot be negative at offset: </span><span class="s1">$</span><span class="s2">{</span><span class="s1">offset</span><span class="s2">}</span><span class="s7">`</span><span class="s2">);</span>
+    <span class="s2">}</span>
+    <span class="s0">return </span><span class="s2">(</span>
+      <span class="s1">source</span><span class="s2">[</span><span class="s1">offset</span><span class="s2">] |</span>
+      <span class="s2">(</span><span class="s1">source</span><span class="s2">[</span><span class="s1">offset </span><span class="s2">+ </span><span class="s3">1</span><span class="s2">] &lt;&lt; </span><span class="s3">8</span><span class="s2">) |</span>
+      <span class="s2">(</span><span class="s1">source</span><span class="s2">[</span><span class="s1">offset </span><span class="s2">+ </span><span class="s3">2</span><span class="s2">] &lt;&lt; </span><span class="s3">16</span><span class="s2">) |</span>
+      <span class="s2">(</span><span class="s1">source</span><span class="s2">[</span><span class="s1">offset </span><span class="s2">+ </span><span class="s3">3</span><span class="s2">] &lt;&lt; </span><span class="s3">24</span><span class="s2">)</span>
+    <span class="s2">);</span>
+  <span class="s2">},</span>
+
+  <span class="s5">/** Reads a little-endian 32-bit integer from source */</span>
+  <span class="s1">getInt32LE</span><span class="s2">(</span><span class="s1">source</span><span class="s2">: </span><span class="s1">Uint8Array</span><span class="s2">, </span><span class="s1">offset</span><span class="s2">: </span><span class="s1">number</span><span class="s2">): </span><span class="s1">number </span><span class="s2">{</span>
+    <span class="s0">return </span><span class="s2">(</span>
+      <span class="s1">source</span><span class="s2">[</span><span class="s1">offset</span><span class="s2">] |</span>
+      <span class="s2">(</span><span class="s1">source</span><span class="s2">[</span><span class="s1">offset </span><span class="s2">+ </span><span class="s3">1</span><span class="s2">] &lt;&lt; </span><span class="s3">8</span><span class="s2">) |</span>
+      <span class="s2">(</span><span class="s1">source</span><span class="s2">[</span><span class="s1">offset </span><span class="s2">+ </span><span class="s3">2</span><span class="s2">] &lt;&lt; </span><span class="s3">16</span><span class="s2">) |</span>
+      <span class="s2">(</span><span class="s1">source</span><span class="s2">[</span><span class="s1">offset </span><span class="s2">+ </span><span class="s3">3</span><span class="s2">] &lt;&lt; </span><span class="s3">24</span><span class="s2">)</span>
+    <span class="s2">);</span>
+  <span class="s2">},</span>
+
+  <span class="s5">/** Reads a little-endian 32-bit unsigned integer from source */</span>
+  <span class="s1">getUint32LE</span><span class="s2">(</span><span class="s1">source</span><span class="s2">: </span><span class="s1">Uint8Array</span><span class="s2">, </span><span class="s1">offset</span><span class="s2">: </span><span class="s1">number</span><span class="s2">): </span><span class="s1">number </span><span class="s2">{</span>
+    <span class="s0">return </span><span class="s2">(</span>
+      <span class="s1">source</span><span class="s2">[</span><span class="s1">offset</span><span class="s2">] +</span>
+      <span class="s1">source</span><span class="s2">[</span><span class="s1">offset </span><span class="s2">+ </span><span class="s3">1</span><span class="s2">] * </span><span class="s3">256 </span><span class="s2">+</span>
+      <span class="s1">source</span><span class="s2">[</span><span class="s1">offset </span><span class="s2">+ </span><span class="s3">2</span><span class="s2">] * </span><span class="s3">65536 </span><span class="s2">+</span>
+      <span class="s1">source</span><span class="s2">[</span><span class="s1">offset </span><span class="s2">+ </span><span class="s3">3</span><span class="s2">] * </span><span class="s3">16777216</span>
+    <span class="s2">);</span>
+  <span class="s2">},</span>
+
+  <span class="s5">/** Reads a big-endian 32-bit integer from source */</span>
+  <span class="s1">getUint32BE</span><span class="s2">(</span><span class="s1">source</span><span class="s2">: </span><span class="s1">Uint8Array</span><span class="s2">, </span><span class="s1">offset</span><span class="s2">: </span><span class="s1">number</span><span class="s2">): </span><span class="s1">number </span><span class="s2">{</span>
+    <span class="s0">return </span><span class="s2">(</span>
+      <span class="s1">source</span><span class="s2">[</span><span class="s1">offset </span><span class="s2">+ </span><span class="s3">3</span><span class="s2">] +</span>
+      <span class="s1">source</span><span class="s2">[</span><span class="s1">offset </span><span class="s2">+ </span><span class="s3">2</span><span class="s2">] * </span><span class="s3">256 </span><span class="s2">+</span>
+      <span class="s1">source</span><span class="s2">[</span><span class="s1">offset </span><span class="s2">+ </span><span class="s3">1</span><span class="s2">] * </span><span class="s3">65536 </span><span class="s2">+</span>
+      <span class="s1">source</span><span class="s2">[</span><span class="s1">offset</span><span class="s2">] * </span><span class="s3">16777216</span>
+    <span class="s2">);</span>
+  <span class="s2">},</span>
+
+  <span class="s5">/** Reads a little-endian 64-bit integer from source */</span>
+  <span class="s1">getBigInt64LE</span><span class="s2">(</span><span class="s1">source</span><span class="s2">: </span><span class="s1">Uint8Array</span><span class="s2">, </span><span class="s1">offset</span><span class="s2">: </span><span class="s1">number</span><span class="s2">): </span><span class="s1">bigint </span><span class="s2">{</span>
+    <span class="s0">const </span><span class="s1">lo </span><span class="s2">= </span><span class="s1">NumberUtils</span><span class="s2">.</span><span class="s1">getUint32LE</span><span class="s2">(</span><span class="s1">source</span><span class="s2">, </span><span class="s1">offset</span><span class="s2">);</span>
+    <span class="s0">const </span><span class="s1">hi </span><span class="s2">= </span><span class="s1">NumberUtils</span><span class="s2">.</span><span class="s1">getUint32LE</span><span class="s2">(</span><span class="s1">source</span><span class="s2">, </span><span class="s1">offset </span><span class="s2">+ </span><span class="s3">4</span><span class="s2">);</span>
+
+    <span class="s4">/* 
+      eslint-disable-next-line no-restricted-globals 
+      -- This is allowed since this helper should not be called unless bigint features are enabled 
+     */</span>
+    <span class="s0">return </span><span class="s2">(</span><span class="s1">BigInt</span><span class="s2">(</span><span class="s1">hi</span><span class="s2">) &lt;&lt; </span><span class="s1">BigInt</span><span class="s2">(</span><span class="s3">32</span><span class="s2">)) + </span><span class="s1">BigInt</span><span class="s2">(</span><span class="s1">lo</span><span class="s2">);</span>
+  <span class="s2">},</span>
+
+  <span class="s5">/** Reads a little-endian 64-bit float from source */</span>
+  <span class="s1">getFloat64LE</span><span class="s2">: </span><span class="s1">isBigEndian</span>
+    <span class="s2">? (</span><span class="s1">source</span><span class="s2">: </span><span class="s1">Uint8Array</span><span class="s2">, </span><span class="s1">offset</span><span class="s2">: </span><span class="s1">number</span><span class="s2">) =&gt; {</span>
+        <span class="s1">FLOAT_BYTES</span><span class="s2">[</span><span class="s3">7</span><span class="s2">] = </span><span class="s1">source</span><span class="s2">[</span><span class="s1">offset</span><span class="s2">];</span>
+        <span class="s1">FLOAT_BYTES</span><span class="s2">[</span><span class="s3">6</span><span class="s2">] = </span><span class="s1">source</span><span class="s2">[</span><span class="s1">offset </span><span class="s2">+ </span><span class="s3">1</span><span class="s2">];</span>
+        <span class="s1">FLOAT_BYTES</span><span class="s2">[</span><span class="s3">5</span><span class="s2">] = </span><span class="s1">source</span><span class="s2">[</span><span class="s1">offset </span><span class="s2">+ </span><span class="s3">2</span><span class="s2">];</span>
+        <span class="s1">FLOAT_BYTES</span><span class="s2">[</span><span class="s3">4</span><span class="s2">] = </span><span class="s1">source</span><span class="s2">[</span><span class="s1">offset </span><span class="s2">+ </span><span class="s3">3</span><span class="s2">];</span>
+        <span class="s1">FLOAT_BYTES</span><span class="s2">[</span><span class="s3">3</span><span class="s2">] = </span><span class="s1">source</span><span class="s2">[</span><span class="s1">offset </span><span class="s2">+ </span><span class="s3">4</span><span class="s2">];</span>
+        <span class="s1">FLOAT_BYTES</span><span class="s2">[</span><span class="s3">2</span><span class="s2">] = </span><span class="s1">source</span><span class="s2">[</span><span class="s1">offset </span><span class="s2">+ </span><span class="s3">5</span><span class="s2">];</span>
+        <span class="s1">FLOAT_BYTES</span><span class="s2">[</span><span class="s3">1</span><span class="s2">] = </span><span class="s1">source</span><span class="s2">[</span><span class="s1">offset </span><span class="s2">+ </span><span class="s3">6</span><span class="s2">];</span>
+        <span class="s1">FLOAT_BYTES</span><span class="s2">[</span><span class="s3">0</span><span class="s2">] = </span><span class="s1">source</span><span class="s2">[</span><span class="s1">offset </span><span class="s2">+ </span><span class="s3">7</span><span class="s2">];</span>
+        <span class="s0">return </span><span class="s1">FLOAT</span><span class="s2">[</span><span class="s3">0</span><span class="s2">];</span>
+      <span class="s2">}</span>
+    <span class="s2">: (</span><span class="s1">source</span><span class="s2">: </span><span class="s1">Uint8Array</span><span class="s2">, </span><span class="s1">offset</span><span class="s2">: </span><span class="s1">number</span><span class="s2">) =&gt; {</span>
+        <span class="s1">FLOAT_BYTES</span><span class="s2">[</span><span class="s3">0</span><span class="s2">] = </span><span class="s1">source</span><span class="s2">[</span><span class="s1">offset</span><span class="s2">];</span>
+        <span class="s1">FLOAT_BYTES</span><span class="s2">[</span><span class="s3">1</span><span class="s2">] = </span><span class="s1">source</span><span class="s2">[</span><span class="s1">offset </span><span class="s2">+ </span><span class="s3">1</span><span class="s2">];</span>
+        <span class="s1">FLOAT_BYTES</span><span class="s2">[</span><span class="s3">2</span><span class="s2">] = </span><span class="s1">source</span><span class="s2">[</span><span class="s1">offset </span><span class="s2">+ </span><span class="s3">2</span><span class="s2">];</span>
+        <span class="s1">FLOAT_BYTES</span><span class="s2">[</span><span class="s3">3</span><span class="s2">] = </span><span class="s1">source</span><span class="s2">[</span><span class="s1">offset </span><span class="s2">+ </span><span class="s3">3</span><span class="s2">];</span>
+        <span class="s1">FLOAT_BYTES</span><span class="s2">[</span><span class="s3">4</span><span class="s2">] = </span><span class="s1">source</span><span class="s2">[</span><span class="s1">offset </span><span class="s2">+ </span><span class="s3">4</span><span class="s2">];</span>
+        <span class="s1">FLOAT_BYTES</span><span class="s2">[</span><span class="s3">5</span><span class="s2">] = </span><span class="s1">source</span><span class="s2">[</span><span class="s1">offset </span><span class="s2">+ </span><span class="s3">5</span><span class="s2">];</span>
+        <span class="s1">FLOAT_BYTES</span><span class="s2">[</span><span class="s3">6</span><span class="s2">] = </span><span class="s1">source</span><span class="s2">[</span><span class="s1">offset </span><span class="s2">+ </span><span class="s3">6</span><span class="s2">];</span>
+        <span class="s1">FLOAT_BYTES</span><span class="s2">[</span><span class="s3">7</span><span class="s2">] = </span><span class="s1">source</span><span class="s2">[</span><span class="s1">offset </span><span class="s2">+ </span><span class="s3">7</span><span class="s2">];</span>
+        <span class="s0">return </span><span class="s1">FLOAT</span><span class="s2">[</span><span class="s3">0</span><span class="s2">];</span>
+      <span class="s2">},</span>
+
+  <span class="s5">/** Writes a big-endian 32-bit integer to destination, can be signed or unsigned */</span>
+  <span class="s1">setInt32BE</span><span class="s2">(</span><span class="s1">destination</span><span class="s2">: </span><span class="s1">Uint8Array</span><span class="s2">, </span><span class="s1">offset</span><span class="s2">: </span><span class="s1">number</span><span class="s2">, </span><span class="s1">value</span><span class="s2">: </span><span class="s1">number</span><span class="s2">): </span><span class="s3">4 </span><span class="s2">{</span>
+    <span class="s1">destination</span><span class="s2">[</span><span class="s1">offset </span><span class="s2">+ </span><span class="s3">3</span><span class="s2">] = </span><span class="s1">value</span><span class="s2">;</span>
+    <span class="s1">value </span><span class="s2">&gt;&gt;&gt;= </span><span class="s3">8</span><span class="s2">;</span>
+    <span class="s1">destination</span><span class="s2">[</span><span class="s1">offset </span><span class="s2">+ </span><span class="s3">2</span><span class="s2">] = </span><span class="s1">value</span><span class="s2">;</span>
+    <span class="s1">value </span><span class="s2">&gt;&gt;&gt;= </span><span class="s3">8</span><span class="s2">;</span>
+    <span class="s1">destination</span><span class="s2">[</span><span class="s1">offset </span><span class="s2">+ </span><span class="s3">1</span><span class="s2">] = </span><span class="s1">value</span><span class="s2">;</span>
+    <span class="s1">value </span><span class="s2">&gt;&gt;&gt;= </span><span class="s3">8</span><span class="s2">;</span>
+    <span class="s1">destination</span><span class="s2">[</span><span class="s1">offset</span><span class="s2">] = </span><span class="s1">value</span><span class="s2">;</span>
+    <span class="s0">return </span><span class="s3">4</span><span class="s2">;</span>
+  <span class="s2">},</span>
+
+  <span class="s5">/** Writes a little-endian 32-bit integer to destination, can be signed or unsigned */</span>
+  <span class="s1">setInt32LE</span><span class="s2">(</span><span class="s1">destination</span><span class="s2">: </span><span class="s1">Uint8Array</span><span class="s2">, </span><span class="s1">offset</span><span class="s2">: </span><span class="s1">number</span><span class="s2">, </span><span class="s1">value</span><span class="s2">: </span><span class="s1">number</span><span class="s2">): </span><span class="s3">4 </span><span class="s2">{</span>
+    <span class="s1">destination</span><span class="s2">[</span><span class="s1">offset</span><span class="s2">] = </span><span class="s1">value</span><span class="s2">;</span>
+    <span class="s1">value </span><span class="s2">&gt;&gt;&gt;= </span><span class="s3">8</span><span class="s2">;</span>
+    <span class="s1">destination</span><span class="s2">[</span><span class="s1">offset </span><span class="s2">+ </span><span class="s3">1</span><span class="s2">] = </span><span class="s1">value</span><span class="s2">;</span>
+    <span class="s1">value </span><span class="s2">&gt;&gt;&gt;= </span><span class="s3">8</span><span class="s2">;</span>
+    <span class="s1">destination</span><span class="s2">[</span><span class="s1">offset </span><span class="s2">+ </span><span class="s3">2</span><span class="s2">] = </span><span class="s1">value</span><span class="s2">;</span>
+    <span class="s1">value </span><span class="s2">&gt;&gt;&gt;= </span><span class="s3">8</span><span class="s2">;</span>
+    <span class="s1">destination</span><span class="s2">[</span><span class="s1">offset </span><span class="s2">+ </span><span class="s3">3</span><span class="s2">] = </span><span class="s1">value</span><span class="s2">;</span>
+    <span class="s0">return </span><span class="s3">4</span><span class="s2">;</span>
+  <span class="s2">},</span>
+
+  <span class="s5">/** Write a little-endian 64-bit integer to source */</span>
+  <span class="s1">setBigInt64LE</span><span class="s2">(</span><span class="s1">destination</span><span class="s2">: </span><span class="s1">Uint8Array</span><span class="s2">, </span><span class="s1">offset</span><span class="s2">: </span><span class="s1">number</span><span class="s2">, </span><span class="s1">value</span><span class="s2">: </span><span class="s1">bigint</span><span class="s2">): </span><span class="s3">8 </span><span class="s2">{</span>
+    <span class="s4">/* eslint-disable-next-line no-restricted-globals -- This is allowed here as useBigInt64=true */</span>
+    <span class="s0">const </span><span class="s1">mask32bits </span><span class="s2">= </span><span class="s1">BigInt</span><span class="s2">(</span><span class="s3">0xffff_ffff</span><span class="s2">);</span>
+
+    <span class="s5">/** lower 32 bits */</span>
+    <span class="s0">let </span><span class="s1">lo </span><span class="s2">= </span><span class="s1">Number</span><span class="s2">(</span><span class="s1">value </span><span class="s2">&amp; </span><span class="s1">mask32bits</span><span class="s2">);</span>
+    <span class="s1">destination</span><span class="s2">[</span><span class="s1">offset</span><span class="s2">] = </span><span class="s1">lo</span><span class="s2">;</span>
+    <span class="s1">lo </span><span class="s2">&gt;&gt;= </span><span class="s3">8</span><span class="s2">;</span>
+    <span class="s1">destination</span><span class="s2">[</span><span class="s1">offset </span><span class="s2">+ </span><span class="s3">1</span><span class="s2">] = </span><span class="s1">lo</span><span class="s2">;</span>
+    <span class="s1">lo </span><span class="s2">&gt;&gt;= </span><span class="s3">8</span><span class="s2">;</span>
+    <span class="s1">destination</span><span class="s2">[</span><span class="s1">offset </span><span class="s2">+ </span><span class="s3">2</span><span class="s2">] = </span><span class="s1">lo</span><span class="s2">;</span>
+    <span class="s1">lo </span><span class="s2">&gt;&gt;= </span><span class="s3">8</span><span class="s2">;</span>
+    <span class="s1">destination</span><span class="s2">[</span><span class="s1">offset </span><span class="s2">+ </span><span class="s3">3</span><span class="s2">] = </span><span class="s1">lo</span><span class="s2">;</span>
+
+    <span class="s4">/* 
+       eslint-disable-next-line no-restricted-globals 
+       -- This is allowed here as useBigInt64=true 
+ 
+       upper 32 bits 
+     */</span>
+    <span class="s0">let </span><span class="s1">hi </span><span class="s2">= </span><span class="s1">Number</span><span class="s2">((</span><span class="s1">value </span><span class="s2">&gt;&gt; </span><span class="s1">BigInt</span><span class="s2">(</span><span class="s3">32</span><span class="s2">)) &amp; </span><span class="s1">mask32bits</span><span class="s2">);</span>
+    <span class="s1">destination</span><span class="s2">[</span><span class="s1">offset </span><span class="s2">+ </span><span class="s3">4</span><span class="s2">] = </span><span class="s1">hi</span><span class="s2">;</span>
+    <span class="s1">hi </span><span class="s2">&gt;&gt;= </span><span class="s3">8</span><span class="s2">;</span>
+    <span class="s1">destination</span><span class="s2">[</span><span class="s1">offset </span><span class="s2">+ </span><span class="s3">5</span><span class="s2">] = </span><span class="s1">hi</span><span class="s2">;</span>
+    <span class="s1">hi </span><span class="s2">&gt;&gt;= </span><span class="s3">8</span><span class="s2">;</span>
+    <span class="s1">destination</span><span class="s2">[</span><span class="s1">offset </span><span class="s2">+ </span><span class="s3">6</span><span class="s2">] = </span><span class="s1">hi</span><span class="s2">;</span>
+    <span class="s1">hi </span><span class="s2">&gt;&gt;= </span><span class="s3">8</span><span class="s2">;</span>
+    <span class="s1">destination</span><span class="s2">[</span><span class="s1">offset </span><span class="s2">+ </span><span class="s3">7</span><span class="s2">] = </span><span class="s1">hi</span><span class="s2">;</span>
+
+    <span class="s0">return </span><span class="s3">8</span><span class="s2">;</span>
+  <span class="s2">},</span>
+
+  <span class="s5">/** Writes a little-endian 64-bit float to destination */</span>
+  <span class="s1">setFloat64LE</span><span class="s2">: </span><span class="s1">isBigEndian</span>
+    <span class="s2">? (</span><span class="s1">destination</span><span class="s2">: </span><span class="s1">Uint8Array</span><span class="s2">, </span><span class="s1">offset</span><span class="s2">: </span><span class="s1">number</span><span class="s2">, </span><span class="s1">value</span><span class="s2">: </span><span class="s1">number</span><span class="s2">) =&gt; {</span>
+        <span class="s1">FLOAT</span><span class="s2">[</span><span class="s3">0</span><span class="s2">] = </span><span class="s1">value</span><span class="s2">;</span>
+        <span class="s1">destination</span><span class="s2">[</span><span class="s1">offset</span><span class="s2">] = </span><span class="s1">FLOAT_BYTES</span><span class="s2">[</span><span class="s3">7</span><span class="s2">];</span>
+        <span class="s1">destination</span><span class="s2">[</span><span class="s1">offset </span><span class="s2">+ </span><span class="s3">1</span><span class="s2">] = </span><span class="s1">FLOAT_BYTES</span><span class="s2">[</span><span class="s3">6</span><span class="s2">];</span>
+        <span class="s1">destination</span><span class="s2">[</span><span class="s1">offset </span><span class="s2">+ </span><span class="s3">2</span><span class="s2">] = </span><span class="s1">FLOAT_BYTES</span><span class="s2">[</span><span class="s3">5</span><span class="s2">];</span>
+        <span class="s1">destination</span><span class="s2">[</span><span class="s1">offset </span><span class="s2">+ </span><span class="s3">3</span><span class="s2">] = </span><span class="s1">FLOAT_BYTES</span><span class="s2">[</span><span class="s3">4</span><span class="s2">];</span>
+        <span class="s1">destination</span><span class="s2">[</span><span class="s1">offset </span><span class="s2">+ </span><span class="s3">4</span><span class="s2">] = </span><span class="s1">FLOAT_BYTES</span><span class="s2">[</span><span class="s3">3</span><span class="s2">];</span>
+        <span class="s1">destination</span><span class="s2">[</span><span class="s1">offset </span><span class="s2">+ </span><span class="s3">5</span><span class="s2">] = </span><span class="s1">FLOAT_BYTES</span><span class="s2">[</span><span class="s3">2</span><span class="s2">];</span>
+        <span class="s1">destination</span><span class="s2">[</span><span class="s1">offset </span><span class="s2">+ </span><span class="s3">6</span><span class="s2">] = </span><span class="s1">FLOAT_BYTES</span><span class="s2">[</span><span class="s3">1</span><span class="s2">];</span>
+        <span class="s1">destination</span><span class="s2">[</span><span class="s1">offset </span><span class="s2">+ </span><span class="s3">7</span><span class="s2">] = </span><span class="s1">FLOAT_BYTES</span><span class="s2">[</span><span class="s3">0</span><span class="s2">];</span>
+        <span class="s0">return </span><span class="s3">8</span><span class="s2">;</span>
+      <span class="s2">}</span>
+    <span class="s2">: (</span><span class="s1">destination</span><span class="s2">: </span><span class="s1">Uint8Array</span><span class="s2">, </span><span class="s1">offset</span><span class="s2">: </span><span class="s1">number</span><span class="s2">, </span><span class="s1">value</span><span class="s2">: </span><span class="s1">number</span><span class="s2">) =&gt; {</span>
+        <span class="s1">FLOAT</span><span class="s2">[</span><span class="s3">0</span><span class="s2">] = </span><span class="s1">value</span><span class="s2">;</span>
+        <span class="s1">destination</span><span class="s2">[</span><span class="s1">offset</span><span class="s2">] = </span><span class="s1">FLOAT_BYTES</span><span class="s2">[</span><span class="s3">0</span><span class="s2">];</span>
+        <span class="s1">destination</span><span class="s2">[</span><span class="s1">offset </span><span class="s2">+ </span><span class="s3">1</span><span class="s2">] = </span><span class="s1">FLOAT_BYTES</span><span class="s2">[</span><span class="s3">1</span><span class="s2">];</span>
+        <span class="s1">destination</span><span class="s2">[</span><span class="s1">offset </span><span class="s2">+ </span><span class="s3">2</span><span class="s2">] = </span><span class="s1">FLOAT_BYTES</span><span class="s2">[</span><span class="s3">2</span><span class="s2">];</span>
+        <span class="s1">destination</span><span class="s2">[</span><span class="s1">offset </span><span class="s2">+ </span><span class="s3">3</span><span class="s2">] = </span><span class="s1">FLOAT_BYTES</span><span class="s2">[</span><span class="s3">3</span><span class="s2">];</span>
+        <span class="s1">destination</span><span class="s2">[</span><span class="s1">offset </span><span class="s2">+ </span><span class="s3">4</span><span class="s2">] = </span><span class="s1">FLOAT_BYTES</span><span class="s2">[</span><span class="s3">4</span><span class="s2">];</span>
+        <span class="s1">destination</span><span class="s2">[</span><span class="s1">offset </span><span class="s2">+ </span><span class="s3">5</span><span class="s2">] = </span><span class="s1">FLOAT_BYTES</span><span class="s2">[</span><span class="s3">5</span><span class="s2">];</span>
+        <span class="s1">destination</span><span class="s2">[</span><span class="s1">offset </span><span class="s2">+ </span><span class="s3">6</span><span class="s2">] = </span><span class="s1">FLOAT_BYTES</span><span class="s2">[</span><span class="s3">6</span><span class="s2">];</span>
+        <span class="s1">destination</span><span class="s2">[</span><span class="s1">offset </span><span class="s2">+ </span><span class="s3">7</span><span class="s2">] = </span><span class="s1">FLOAT_BYTES</span><span class="s2">[</span><span class="s3">7</span><span class="s2">];</span>
+        <span class="s0">return </span><span class="s3">8</span><span class="s2">;</span>
+      <span class="s2">}</span>
+<span class="s2">};</span>
+</pre>
+</body>
+</html>

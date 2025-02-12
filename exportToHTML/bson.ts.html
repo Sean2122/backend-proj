@@ -1,0 +1,272 @@
+<html>
+<head>
+<title>bson.ts</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+<style type="text/css">
+.s0 { color: #cf8e6d;}
+.s1 { color: #bcbec4;}
+.s2 { color: #bcbec4;}
+.s3 { color: #6aab73;}
+.s4 { color: #7a7e85;}
+.s5 { color: #5f826b; font-style: italic;}
+.s6 { color: #67a37c; font-style: italic;}
+.s7 { color: #2aacb8;}
+</style>
+</head>
+<body bgcolor="#1e1f22">
+<table CELLSPACING=0 CELLPADDING=5 COLS=1 WIDTH="100%" BGCOLOR="#606060" >
+<tr><td><center>
+<font face="Arial, Helvetica" color="#000000">
+bson.ts</font>
+</center></td></tr></table>
+<pre><span class="s0">import </span><span class="s2">{ </span><span class="s1">Binary</span><span class="s2">, </span><span class="s1">UUID </span><span class="s2">} </span><span class="s1">from </span><span class="s3">'./binary'</span><span class="s2">;</span>
+<span class="s0">import </span><span class="s2">{ </span><span class="s1">Code </span><span class="s2">} </span><span class="s1">from </span><span class="s3">'./code'</span><span class="s2">;</span>
+<span class="s0">import </span><span class="s2">{ </span><span class="s1">DBRef </span><span class="s2">} </span><span class="s1">from </span><span class="s3">'./db_ref'</span><span class="s2">;</span>
+<span class="s0">import </span><span class="s2">{ </span><span class="s1">Decimal128 </span><span class="s2">} </span><span class="s1">from </span><span class="s3">'./decimal128'</span><span class="s2">;</span>
+<span class="s0">import </span><span class="s2">{ </span><span class="s1">Double </span><span class="s2">} </span><span class="s1">from </span><span class="s3">'./double'</span><span class="s2">;</span>
+<span class="s0">import </span><span class="s2">{ </span><span class="s1">Int32 </span><span class="s2">} </span><span class="s1">from </span><span class="s3">'./int_32'</span><span class="s2">;</span>
+<span class="s0">import </span><span class="s2">{ </span><span class="s1">Long </span><span class="s2">} </span><span class="s1">from </span><span class="s3">'./long'</span><span class="s2">;</span>
+<span class="s0">import </span><span class="s2">{ </span><span class="s1">MaxKey </span><span class="s2">} </span><span class="s1">from </span><span class="s3">'./max_key'</span><span class="s2">;</span>
+<span class="s0">import </span><span class="s2">{ </span><span class="s1">MinKey </span><span class="s2">} </span><span class="s1">from </span><span class="s3">'./min_key'</span><span class="s2">;</span>
+<span class="s0">import </span><span class="s2">{ </span><span class="s1">ObjectId </span><span class="s2">} </span><span class="s1">from </span><span class="s3">'./objectid'</span><span class="s2">;</span>
+<span class="s0">import </span><span class="s2">{ </span><span class="s1">internalCalculateObjectSize </span><span class="s2">} </span><span class="s1">from </span><span class="s3">'./parser/calculate_size'</span><span class="s2">;</span>
+<span class="s4">// Parts of the parser</span>
+<span class="s0">import </span><span class="s2">{ </span><span class="s1">internalDeserialize</span><span class="s2">, </span><span class="s1">type DeserializeOptions </span><span class="s2">} </span><span class="s1">from </span><span class="s3">'./parser/deserializer'</span><span class="s2">;</span>
+<span class="s0">import </span><span class="s2">{ </span><span class="s1">serializeInto</span><span class="s2">, </span><span class="s1">type SerializeOptions </span><span class="s2">} </span><span class="s1">from </span><span class="s3">'./parser/serializer'</span><span class="s2">;</span>
+<span class="s0">import </span><span class="s2">{ </span><span class="s1">BSONRegExp </span><span class="s2">} </span><span class="s1">from </span><span class="s3">'./regexp'</span><span class="s2">;</span>
+<span class="s0">import </span><span class="s2">{ </span><span class="s1">BSONSymbol </span><span class="s2">} </span><span class="s1">from </span><span class="s3">'./symbol'</span><span class="s2">;</span>
+<span class="s0">import </span><span class="s2">{ </span><span class="s1">Timestamp </span><span class="s2">} </span><span class="s1">from </span><span class="s3">'./timestamp'</span><span class="s2">;</span>
+<span class="s0">import </span><span class="s2">{ </span><span class="s1">ByteUtils </span><span class="s2">} </span><span class="s1">from </span><span class="s3">'./utils/byte_utils'</span><span class="s2">;</span>
+<span class="s0">import </span><span class="s2">{ </span><span class="s1">NumberUtils </span><span class="s2">} </span><span class="s1">from </span><span class="s3">'./utils/number_utils'</span><span class="s2">;</span>
+<span class="s0">export </span><span class="s1">type </span><span class="s2">{ </span><span class="s1">UUIDExtended</span><span class="s2">, </span><span class="s1">BinaryExtended</span><span class="s2">, </span><span class="s1">BinaryExtendedLegacy</span><span class="s2">, </span><span class="s1">BinarySequence </span><span class="s2">} </span><span class="s1">from </span><span class="s3">'./binary'</span><span class="s2">;</span>
+<span class="s0">export </span><span class="s1">type </span><span class="s2">{ </span><span class="s1">CodeExtended </span><span class="s2">} </span><span class="s1">from </span><span class="s3">'./code'</span><span class="s2">;</span>
+<span class="s0">export </span><span class="s1">type </span><span class="s2">{ </span><span class="s1">DBRefLike </span><span class="s2">} </span><span class="s1">from </span><span class="s3">'./db_ref'</span><span class="s2">;</span>
+<span class="s0">export </span><span class="s1">type </span><span class="s2">{ </span><span class="s1">Decimal128Extended </span><span class="s2">} </span><span class="s1">from </span><span class="s3">'./decimal128'</span><span class="s2">;</span>
+<span class="s0">export </span><span class="s1">type </span><span class="s2">{ </span><span class="s1">DoubleExtended </span><span class="s2">} </span><span class="s1">from </span><span class="s3">'./double'</span><span class="s2">;</span>
+<span class="s0">export </span><span class="s1">type </span><span class="s2">{ </span><span class="s1">EJSONOptions </span><span class="s2">} </span><span class="s1">from </span><span class="s3">'./extended_json'</span><span class="s2">;</span>
+<span class="s0">export </span><span class="s1">type </span><span class="s2">{ </span><span class="s1">Int32Extended </span><span class="s2">} </span><span class="s1">from </span><span class="s3">'./int_32'</span><span class="s2">;</span>
+<span class="s0">export </span><span class="s1">type </span><span class="s2">{ </span><span class="s1">LongExtended </span><span class="s2">} </span><span class="s1">from </span><span class="s3">'./long'</span><span class="s2">;</span>
+<span class="s0">export </span><span class="s1">type </span><span class="s2">{ </span><span class="s1">MaxKeyExtended </span><span class="s2">} </span><span class="s1">from </span><span class="s3">'./max_key'</span><span class="s2">;</span>
+<span class="s0">export </span><span class="s1">type </span><span class="s2">{ </span><span class="s1">MinKeyExtended </span><span class="s2">} </span><span class="s1">from </span><span class="s3">'./min_key'</span><span class="s2">;</span>
+<span class="s0">export </span><span class="s1">type </span><span class="s2">{ </span><span class="s1">ObjectIdExtended</span><span class="s2">, </span><span class="s1">ObjectIdLike </span><span class="s2">} </span><span class="s1">from </span><span class="s3">'./objectid'</span><span class="s2">;</span>
+<span class="s0">export </span><span class="s1">type </span><span class="s2">{ </span><span class="s1">BSONRegExpExtended</span><span class="s2">, </span><span class="s1">BSONRegExpExtendedLegacy </span><span class="s2">} </span><span class="s1">from </span><span class="s3">'./regexp'</span><span class="s2">;</span>
+<span class="s0">export </span><span class="s1">type </span><span class="s2">{ </span><span class="s1">BSONSymbolExtended </span><span class="s2">} </span><span class="s1">from </span><span class="s3">'./symbol'</span><span class="s2">;</span>
+<span class="s0">export </span><span class="s1">type </span><span class="s2">{ </span><span class="s1">LongWithoutOverrides</span><span class="s2">, </span><span class="s1">TimestampExtended</span><span class="s2">, </span><span class="s1">TimestampOverrides </span><span class="s2">} </span><span class="s1">from </span><span class="s3">'./timestamp'</span><span class="s2">;</span>
+<span class="s0">export </span><span class="s1">type </span><span class="s2">{ </span><span class="s1">LongWithoutOverridesClass </span><span class="s2">} </span><span class="s1">from </span><span class="s3">'./timestamp'</span><span class="s2">;</span>
+<span class="s0">export </span><span class="s1">type </span><span class="s2">{ </span><span class="s1">SerializeOptions</span><span class="s2">, </span><span class="s1">DeserializeOptions </span><span class="s2">};</span>
+
+<span class="s0">export </span><span class="s2">{</span>
+  <span class="s1">Code</span><span class="s2">,</span>
+  <span class="s1">BSONSymbol</span><span class="s2">,</span>
+  <span class="s1">DBRef</span><span class="s2">,</span>
+  <span class="s1">Binary</span><span class="s2">,</span>
+  <span class="s1">ObjectId</span><span class="s2">,</span>
+  <span class="s1">UUID</span><span class="s2">,</span>
+  <span class="s1">Long</span><span class="s2">,</span>
+  <span class="s1">Timestamp</span><span class="s2">,</span>
+  <span class="s1">Double</span><span class="s2">,</span>
+  <span class="s1">Int32</span><span class="s2">,</span>
+  <span class="s1">MinKey</span><span class="s2">,</span>
+  <span class="s1">MaxKey</span><span class="s2">,</span>
+  <span class="s1">BSONRegExp</span><span class="s2">,</span>
+  <span class="s1">Decimal128</span>
+<span class="s2">};</span>
+<span class="s0">export </span><span class="s2">{ </span><span class="s1">BSONValue </span><span class="s2">} </span><span class="s1">from </span><span class="s3">'./bson_value'</span><span class="s2">;</span>
+<span class="s0">export </span><span class="s2">{ </span><span class="s1">BSONError</span><span class="s2">, </span><span class="s1">BSONVersionError</span><span class="s2">, </span><span class="s1">BSONRuntimeError</span><span class="s2">, </span><span class="s1">BSONOffsetError </span><span class="s2">} </span><span class="s1">from </span><span class="s3">'./error'</span><span class="s2">;</span>
+<span class="s0">export </span><span class="s2">{ </span><span class="s1">BSONType </span><span class="s2">} </span><span class="s1">from </span><span class="s3">'./constants'</span><span class="s2">;</span>
+<span class="s0">export </span><span class="s2">{ </span><span class="s1">EJSON </span><span class="s2">} </span><span class="s1">from </span><span class="s3">'./extended_json'</span><span class="s2">;</span>
+<span class="s0">export </span><span class="s2">{ </span><span class="s1">onDemand</span><span class="s2">, </span><span class="s1">type OnDemand </span><span class="s2">} </span><span class="s1">from </span><span class="s3">'./parser/on_demand/index'</span><span class="s2">;</span>
+
+<span class="s5">/** </span><span class="s6">@public </span><span class="s5">*/</span>
+<span class="s0">export interface </span><span class="s1">Document </span><span class="s2">{</span>
+  <span class="s4">// eslint-disable-next-line @typescript-eslint/no-explicit-any</span>
+  <span class="s2">[</span><span class="s1">key</span><span class="s2">: </span><span class="s1">string</span><span class="s2">]: </span><span class="s1">any</span><span class="s2">;</span>
+<span class="s2">}</span>
+
+<span class="s5">/** </span><span class="s6">@internal </span><span class="s5">*/</span>
+<span class="s4">// Default Max Size</span>
+<span class="s0">const </span><span class="s1">MAXSIZE </span><span class="s2">= </span><span class="s7">1024 </span><span class="s2">* </span><span class="s7">1024 </span><span class="s2">* </span><span class="s7">17</span><span class="s2">;</span>
+
+<span class="s4">// Current Internal Temporary Serialization Buffer</span>
+<span class="s0">let </span><span class="s1">buffer </span><span class="s2">= </span><span class="s1">ByteUtils</span><span class="s2">.</span><span class="s1">allocate</span><span class="s2">(</span><span class="s1">MAXSIZE</span><span class="s2">);</span>
+
+<span class="s5">/**</span>
+ <span class="s5">* Sets the size of the internal serialization buffer.</span>
+ <span class="s5">*</span>
+ <span class="s5">* </span><span class="s6">@param </span><span class="s5">size - The desired size for the internal serialization buffer in bytes</span>
+ <span class="s5">* </span><span class="s6">@public</span>
+ <span class="s5">*/</span>
+<span class="s0">export function </span><span class="s1">setInternalBufferSize</span><span class="s2">(</span><span class="s1">size</span><span class="s2">: </span><span class="s1">number</span><span class="s2">): </span><span class="s0">void </span><span class="s2">{</span>
+  <span class="s4">// Resize the internal serialization buffer if needed</span>
+  <span class="s0">if </span><span class="s2">(</span><span class="s1">buffer</span><span class="s2">.</span><span class="s1">length </span><span class="s2">&lt; </span><span class="s1">size</span><span class="s2">) {</span>
+    <span class="s1">buffer </span><span class="s2">= </span><span class="s1">ByteUtils</span><span class="s2">.</span><span class="s1">allocate</span><span class="s2">(</span><span class="s1">size</span><span class="s2">);</span>
+  <span class="s2">}</span>
+<span class="s2">}</span>
+
+<span class="s5">/**</span>
+ <span class="s5">* Serialize a Javascript object.</span>
+ <span class="s5">*</span>
+ <span class="s5">* </span><span class="s6">@param </span><span class="s5">object - the Javascript object to serialize.</span>
+ <span class="s5">* </span><span class="s6">@returns </span><span class="s5">Buffer object containing the serialized object.</span>
+ <span class="s5">* </span><span class="s6">@public</span>
+ <span class="s5">*/</span>
+<span class="s0">export function </span><span class="s1">serialize</span><span class="s2">(</span><span class="s1">object</span><span class="s2">: </span><span class="s1">Document</span><span class="s2">, </span><span class="s1">options</span><span class="s2">: </span><span class="s1">SerializeOptions </span><span class="s2">= {}): </span><span class="s1">Uint8Array </span><span class="s2">{</span>
+  <span class="s4">// Unpack the options</span>
+  <span class="s0">const </span><span class="s1">checkKeys </span><span class="s2">= </span><span class="s0">typeof </span><span class="s1">options</span><span class="s2">.</span><span class="s1">checkKeys </span><span class="s2">=== </span><span class="s3">'boolean' </span><span class="s2">? </span><span class="s1">options</span><span class="s2">.</span><span class="s1">checkKeys </span><span class="s2">: </span><span class="s0">false</span><span class="s2">;</span>
+  <span class="s0">const </span><span class="s1">serializeFunctions </span><span class="s2">=</span>
+    <span class="s0">typeof </span><span class="s1">options</span><span class="s2">.</span><span class="s1">serializeFunctions </span><span class="s2">=== </span><span class="s3">'boolean' </span><span class="s2">? </span><span class="s1">options</span><span class="s2">.</span><span class="s1">serializeFunctions </span><span class="s2">: </span><span class="s0">false</span><span class="s2">;</span>
+  <span class="s0">const </span><span class="s1">ignoreUndefined </span><span class="s2">=</span>
+    <span class="s0">typeof </span><span class="s1">options</span><span class="s2">.</span><span class="s1">ignoreUndefined </span><span class="s2">=== </span><span class="s3">'boolean' </span><span class="s2">? </span><span class="s1">options</span><span class="s2">.</span><span class="s1">ignoreUndefined </span><span class="s2">: </span><span class="s0">true</span><span class="s2">;</span>
+  <span class="s0">const </span><span class="s1">minInternalBufferSize </span><span class="s2">=</span>
+    <span class="s0">typeof </span><span class="s1">options</span><span class="s2">.</span><span class="s1">minInternalBufferSize </span><span class="s2">=== </span><span class="s3">'number' </span><span class="s2">? </span><span class="s1">options</span><span class="s2">.</span><span class="s1">minInternalBufferSize </span><span class="s2">: </span><span class="s1">MAXSIZE</span><span class="s2">;</span>
+
+  <span class="s4">// Resize the internal serialization buffer if needed</span>
+  <span class="s0">if </span><span class="s2">(</span><span class="s1">buffer</span><span class="s2">.</span><span class="s1">length </span><span class="s2">&lt; </span><span class="s1">minInternalBufferSize</span><span class="s2">) {</span>
+    <span class="s1">buffer </span><span class="s2">= </span><span class="s1">ByteUtils</span><span class="s2">.</span><span class="s1">allocate</span><span class="s2">(</span><span class="s1">minInternalBufferSize</span><span class="s2">);</span>
+  <span class="s2">}</span>
+
+  <span class="s4">// Attempt to serialize</span>
+  <span class="s0">const </span><span class="s1">serializationIndex </span><span class="s2">= </span><span class="s1">serializeInto</span><span class="s2">(</span>
+    <span class="s1">buffer</span><span class="s2">,</span>
+    <span class="s1">object</span><span class="s2">,</span>
+    <span class="s1">checkKeys</span><span class="s2">,</span>
+    <span class="s7">0</span><span class="s2">,</span>
+    <span class="s7">0</span><span class="s2">,</span>
+    <span class="s1">serializeFunctions</span><span class="s2">,</span>
+    <span class="s1">ignoreUndefined</span><span class="s2">,</span>
+    <span class="s0">null</span>
+  <span class="s2">);</span>
+
+  <span class="s4">// Create the final buffer</span>
+  <span class="s0">const </span><span class="s1">finishedBuffer </span><span class="s2">= </span><span class="s1">ByteUtils</span><span class="s2">.</span><span class="s1">allocateUnsafe</span><span class="s2">(</span><span class="s1">serializationIndex</span><span class="s2">);</span>
+
+  <span class="s4">// Copy into the finished buffer</span>
+  <span class="s1">finishedBuffer</span><span class="s2">.</span><span class="s1">set</span><span class="s2">(</span><span class="s1">buffer</span><span class="s2">.</span><span class="s1">subarray</span><span class="s2">(</span><span class="s7">0</span><span class="s2">, </span><span class="s1">serializationIndex</span><span class="s2">), </span><span class="s7">0</span><span class="s2">);</span>
+
+  <span class="s4">// Return the buffer</span>
+  <span class="s0">return </span><span class="s1">finishedBuffer</span><span class="s2">;</span>
+<span class="s2">}</span>
+
+<span class="s5">/**</span>
+ <span class="s5">* Serialize a Javascript object using a predefined Buffer and index into the buffer,</span>
+ <span class="s5">* useful when pre-allocating the space for serialization.</span>
+ <span class="s5">*</span>
+ <span class="s5">* </span><span class="s6">@param </span><span class="s5">object - the Javascript object to serialize.</span>
+ <span class="s5">* </span><span class="s6">@param </span><span class="s5">finalBuffer - the Buffer you pre-allocated to store the serialized BSON object.</span>
+ <span class="s5">* </span><span class="s6">@returns </span><span class="s5">the index pointing to the last written byte in the buffer.</span>
+ <span class="s5">* </span><span class="s6">@public</span>
+ <span class="s5">*/</span>
+<span class="s0">export function </span><span class="s1">serializeWithBufferAndIndex</span><span class="s2">(</span>
+  <span class="s1">object</span><span class="s2">: </span><span class="s1">Document</span><span class="s2">,</span>
+  <span class="s1">finalBuffer</span><span class="s2">: </span><span class="s1">Uint8Array</span><span class="s2">,</span>
+  <span class="s1">options</span><span class="s2">: </span><span class="s1">SerializeOptions </span><span class="s2">= {}</span>
+<span class="s2">): </span><span class="s1">number </span><span class="s2">{</span>
+  <span class="s4">// Unpack the options</span>
+  <span class="s0">const </span><span class="s1">checkKeys </span><span class="s2">= </span><span class="s0">typeof </span><span class="s1">options</span><span class="s2">.</span><span class="s1">checkKeys </span><span class="s2">=== </span><span class="s3">'boolean' </span><span class="s2">? </span><span class="s1">options</span><span class="s2">.</span><span class="s1">checkKeys </span><span class="s2">: </span><span class="s0">false</span><span class="s2">;</span>
+  <span class="s0">const </span><span class="s1">serializeFunctions </span><span class="s2">=</span>
+    <span class="s0">typeof </span><span class="s1">options</span><span class="s2">.</span><span class="s1">serializeFunctions </span><span class="s2">=== </span><span class="s3">'boolean' </span><span class="s2">? </span><span class="s1">options</span><span class="s2">.</span><span class="s1">serializeFunctions </span><span class="s2">: </span><span class="s0">false</span><span class="s2">;</span>
+  <span class="s0">const </span><span class="s1">ignoreUndefined </span><span class="s2">=</span>
+    <span class="s0">typeof </span><span class="s1">options</span><span class="s2">.</span><span class="s1">ignoreUndefined </span><span class="s2">=== </span><span class="s3">'boolean' </span><span class="s2">? </span><span class="s1">options</span><span class="s2">.</span><span class="s1">ignoreUndefined </span><span class="s2">: </span><span class="s0">true</span><span class="s2">;</span>
+  <span class="s0">const </span><span class="s1">startIndex </span><span class="s2">= </span><span class="s0">typeof </span><span class="s1">options</span><span class="s2">.</span><span class="s1">index </span><span class="s2">=== </span><span class="s3">'number' </span><span class="s2">? </span><span class="s1">options</span><span class="s2">.</span><span class="s1">index </span><span class="s2">: </span><span class="s7">0</span><span class="s2">;</span>
+
+  <span class="s4">// Attempt to serialize</span>
+  <span class="s0">const </span><span class="s1">serializationIndex </span><span class="s2">= </span><span class="s1">serializeInto</span><span class="s2">(</span>
+    <span class="s1">buffer</span><span class="s2">,</span>
+    <span class="s1">object</span><span class="s2">,</span>
+    <span class="s1">checkKeys</span><span class="s2">,</span>
+    <span class="s7">0</span><span class="s2">,</span>
+    <span class="s7">0</span><span class="s2">,</span>
+    <span class="s1">serializeFunctions</span><span class="s2">,</span>
+    <span class="s1">ignoreUndefined</span><span class="s2">,</span>
+    <span class="s0">null</span>
+  <span class="s2">);</span>
+
+  <span class="s1">finalBuffer</span><span class="s2">.</span><span class="s1">set</span><span class="s2">(</span><span class="s1">buffer</span><span class="s2">.</span><span class="s1">subarray</span><span class="s2">(</span><span class="s7">0</span><span class="s2">, </span><span class="s1">serializationIndex</span><span class="s2">), </span><span class="s1">startIndex</span><span class="s2">);</span>
+
+  <span class="s4">// Return the index</span>
+  <span class="s0">return </span><span class="s1">startIndex </span><span class="s2">+ </span><span class="s1">serializationIndex </span><span class="s2">- </span><span class="s7">1</span><span class="s2">;</span>
+<span class="s2">}</span>
+
+<span class="s5">/**</span>
+ <span class="s5">* Deserialize data as BSON.</span>
+ <span class="s5">*</span>
+ <span class="s5">* </span><span class="s6">@param </span><span class="s5">buffer - the buffer containing the serialized set of BSON documents.</span>
+ <span class="s5">* </span><span class="s6">@returns </span><span class="s5">returns the deserialized Javascript Object.</span>
+ <span class="s5">* </span><span class="s6">@public</span>
+ <span class="s5">*/</span>
+<span class="s0">export function </span><span class="s1">deserialize</span><span class="s2">(</span><span class="s1">buffer</span><span class="s2">: </span><span class="s1">Uint8Array</span><span class="s2">, </span><span class="s1">options</span><span class="s2">: </span><span class="s1">DeserializeOptions </span><span class="s2">= {}): </span><span class="s1">Document </span><span class="s2">{</span>
+  <span class="s0">return </span><span class="s1">internalDeserialize</span><span class="s2">(</span><span class="s1">ByteUtils</span><span class="s2">.</span><span class="s1">toLocalBufferType</span><span class="s2">(</span><span class="s1">buffer</span><span class="s2">), </span><span class="s1">options</span><span class="s2">);</span>
+<span class="s2">}</span>
+
+<span class="s5">/** </span><span class="s6">@public </span><span class="s5">*/</span>
+<span class="s0">export </span><span class="s1">type CalculateObjectSizeOptions </span><span class="s2">= </span><span class="s1">Pick</span><span class="s2">&lt;</span>
+  <span class="s1">SerializeOptions</span><span class="s2">,</span>
+  <span class="s3">'serializeFunctions' </span><span class="s2">| </span><span class="s3">'ignoreUndefined'</span>
+<span class="s2">&gt;;</span>
+
+<span class="s5">/**</span>
+ <span class="s5">* Calculate the bson size for a passed in Javascript object.</span>
+ <span class="s5">*</span>
+ <span class="s5">* </span><span class="s6">@param </span><span class="s5">object - the Javascript object to calculate the BSON byte size for</span>
+ <span class="s5">* </span><span class="s6">@returns </span><span class="s5">size of BSON object in bytes</span>
+ <span class="s5">* </span><span class="s6">@public</span>
+ <span class="s5">*/</span>
+<span class="s0">export function </span><span class="s1">calculateObjectSize</span><span class="s2">(</span>
+  <span class="s1">object</span><span class="s2">: </span><span class="s1">Document</span><span class="s2">,</span>
+  <span class="s1">options</span><span class="s2">: </span><span class="s1">CalculateObjectSizeOptions </span><span class="s2">= {}</span>
+<span class="s2">): </span><span class="s1">number </span><span class="s2">{</span>
+  <span class="s1">options </span><span class="s2">= </span><span class="s1">options </span><span class="s2">|| {};</span>
+
+  <span class="s0">const </span><span class="s1">serializeFunctions </span><span class="s2">=</span>
+    <span class="s0">typeof </span><span class="s1">options</span><span class="s2">.</span><span class="s1">serializeFunctions </span><span class="s2">=== </span><span class="s3">'boolean' </span><span class="s2">? </span><span class="s1">options</span><span class="s2">.</span><span class="s1">serializeFunctions </span><span class="s2">: </span><span class="s0">false</span><span class="s2">;</span>
+  <span class="s0">const </span><span class="s1">ignoreUndefined </span><span class="s2">=</span>
+    <span class="s0">typeof </span><span class="s1">options</span><span class="s2">.</span><span class="s1">ignoreUndefined </span><span class="s2">=== </span><span class="s3">'boolean' </span><span class="s2">? </span><span class="s1">options</span><span class="s2">.</span><span class="s1">ignoreUndefined </span><span class="s2">: </span><span class="s0">true</span><span class="s2">;</span>
+
+  <span class="s0">return </span><span class="s1">internalCalculateObjectSize</span><span class="s2">(</span><span class="s1">object</span><span class="s2">, </span><span class="s1">serializeFunctions</span><span class="s2">, </span><span class="s1">ignoreUndefined</span><span class="s2">);</span>
+<span class="s2">}</span>
+
+<span class="s5">/**</span>
+ <span class="s5">* Deserialize stream data as BSON documents.</span>
+ <span class="s5">*</span>
+ <span class="s5">* </span><span class="s6">@param </span><span class="s5">data - the buffer containing the serialized set of BSON documents.</span>
+ <span class="s5">* </span><span class="s6">@param </span><span class="s5">startIndex - the start index in the data Buffer where the deserialization is to start.</span>
+ <span class="s5">* </span><span class="s6">@param </span><span class="s5">numberOfDocuments - number of documents to deserialize.</span>
+ <span class="s5">* </span><span class="s6">@param </span><span class="s5">documents - an array where to store the deserialized documents.</span>
+ <span class="s5">* </span><span class="s6">@param </span><span class="s5">docStartIndex - the index in the documents array from where to start inserting documents.</span>
+ <span class="s5">* </span><span class="s6">@param </span><span class="s5">options - additional options used for the deserialization.</span>
+ <span class="s5">* </span><span class="s6">@returns </span><span class="s5">next index in the buffer after deserialization **x** numbers of documents.</span>
+ <span class="s5">* </span><span class="s6">@public</span>
+ <span class="s5">*/</span>
+<span class="s0">export function </span><span class="s1">deserializeStream</span><span class="s2">(</span>
+  <span class="s1">data</span><span class="s2">: </span><span class="s1">Uint8Array </span><span class="s2">| </span><span class="s1">ArrayBuffer</span><span class="s2">,</span>
+  <span class="s1">startIndex</span><span class="s2">: </span><span class="s1">number</span><span class="s2">,</span>
+  <span class="s1">numberOfDocuments</span><span class="s2">: </span><span class="s1">number</span><span class="s2">,</span>
+  <span class="s1">documents</span><span class="s2">: </span><span class="s1">Document</span><span class="s2">[],</span>
+  <span class="s1">docStartIndex</span><span class="s2">: </span><span class="s1">number</span><span class="s2">,</span>
+  <span class="s1">options</span><span class="s2">: </span><span class="s1">DeserializeOptions</span>
+<span class="s2">): </span><span class="s1">number </span><span class="s2">{</span>
+  <span class="s0">const </span><span class="s1">internalOptions </span><span class="s2">= </span><span class="s1">Object</span><span class="s2">.</span><span class="s1">assign</span><span class="s2">(</span>
+    <span class="s2">{ </span><span class="s1">allowObjectSmallerThanBufferSize</span><span class="s2">: </span><span class="s0">true</span><span class="s2">, </span><span class="s1">index</span><span class="s2">: </span><span class="s7">0 </span><span class="s2">},</span>
+    <span class="s1">options</span>
+  <span class="s2">);</span>
+  <span class="s0">const </span><span class="s1">bufferData </span><span class="s2">= </span><span class="s1">ByteUtils</span><span class="s2">.</span><span class="s1">toLocalBufferType</span><span class="s2">(</span><span class="s1">data</span><span class="s2">);</span>
+
+  <span class="s0">let </span><span class="s1">index </span><span class="s2">= </span><span class="s1">startIndex</span><span class="s2">;</span>
+  <span class="s4">// Loop over all documents</span>
+  <span class="s0">for </span><span class="s2">(</span><span class="s0">let </span><span class="s1">i </span><span class="s2">= </span><span class="s7">0</span><span class="s2">; </span><span class="s1">i </span><span class="s2">&lt; </span><span class="s1">numberOfDocuments</span><span class="s2">; </span><span class="s1">i</span><span class="s2">++) {</span>
+    <span class="s4">// Find size of the document</span>
+    <span class="s0">const </span><span class="s1">size </span><span class="s2">= </span><span class="s1">NumberUtils</span><span class="s2">.</span><span class="s1">getInt32LE</span><span class="s2">(</span><span class="s1">bufferData</span><span class="s2">, </span><span class="s1">index</span><span class="s2">);</span>
+    <span class="s4">// Update options with index</span>
+    <span class="s1">internalOptions</span><span class="s2">.</span><span class="s1">index </span><span class="s2">= </span><span class="s1">index</span><span class="s2">;</span>
+    <span class="s4">// Parse the document at this point</span>
+    <span class="s1">documents</span><span class="s2">[</span><span class="s1">docStartIndex </span><span class="s2">+ </span><span class="s1">i</span><span class="s2">] = </span><span class="s1">internalDeserialize</span><span class="s2">(</span><span class="s1">bufferData</span><span class="s2">, </span><span class="s1">internalOptions</span><span class="s2">);</span>
+    <span class="s4">// Adjust index by the document size</span>
+    <span class="s1">index </span><span class="s2">= </span><span class="s1">index </span><span class="s2">+ </span><span class="s1">size</span><span class="s2">;</span>
+  <span class="s2">}</span>
+
+  <span class="s4">// Return object containing end index of parsing and list of documents</span>
+  <span class="s0">return </span><span class="s1">index</span><span class="s2">;</span>
+<span class="s2">}</span>
+</pre>
+</body>
+</html>

@@ -1,0 +1,42 @@
+<html>
+<head>
+<title>app.js</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+<style type="text/css">
+.s0 { color: #cf8e6d;}
+.s1 { color: #bcbec4;}
+.s2 { color: #bcbec4;}
+.s3 { color: #6aab73;}
+.s4 { color: #7a7e85;}
+</style>
+</head>
+<body bgcolor="#1e1f22">
+<table CELLSPACING=0 CELLPADDING=5 COLS=1 WIDTH="100%" BGCOLOR="#606060" >
+<tr><td><center>
+<font face="Arial, Helvetica" color="#000000">
+app.js</font>
+</center></td></tr></table>
+<pre><span class="s0">const </span><span class="s1">express </span><span class="s2">= </span><span class="s1">require</span><span class="s2">(</span><span class="s3">'express'</span><span class="s2">);</span>
+<span class="s0">const </span><span class="s1">dotenv </span><span class="s2">= </span><span class="s1">require</span><span class="s2">(</span><span class="s3">'dotenv'</span><span class="s2">);</span>
+<span class="s0">const </span><span class="s1">cors </span><span class="s2">= </span><span class="s1">require</span><span class="s2">(</span><span class="s3">'cors'</span><span class="s2">);</span>
+<span class="s0">const </span><span class="s1">connectDB </span><span class="s2">= </span><span class="s1">require</span><span class="s2">(</span><span class="s3">'./config/db'</span><span class="s2">);</span>
+
+<span class="s1">dotenv</span><span class="s2">.</span><span class="s1">config</span><span class="s2">();</span>
+<span class="s1">connectDB</span><span class="s2">();</span>
+
+<span class="s0">const </span><span class="s1">app </span><span class="s2">= </span><span class="s1">express</span><span class="s2">();</span>
+
+<span class="s4">// Middleware to parse JSON (important)</span>
+<span class="s1">app</span><span class="s2">.</span><span class="s1">use</span><span class="s2">(</span><span class="s1">express</span><span class="s2">.</span><span class="s1">json</span><span class="s2">());</span>
+<span class="s1">app</span><span class="s2">.</span><span class="s1">use</span><span class="s2">(</span><span class="s1">cors</span><span class="s2">());</span>
+
+<span class="s4">// Define Routes</span>
+<span class="s1">app</span><span class="s2">.</span><span class="s1">use</span><span class="s2">(</span><span class="s3">'/api/users'</span><span class="s2">, </span><span class="s1">require</span><span class="s2">(</span><span class="s3">'./routes/userRoutes'</span><span class="s2">)); </span><span class="s4">// Users route</span>
+<span class="s1">app</span><span class="s2">.</span><span class="s1">use</span><span class="s2">(</span><span class="s3">'/api'</span><span class="s2">, </span><span class="s1">require</span><span class="s2">(</span><span class="s3">'./routes/costRoutes'</span><span class="s2">)); </span><span class="s4">// Costs route (with /add)</span>
+<span class="s1">app</span><span class="s2">.</span><span class="s1">use</span><span class="s2">(</span><span class="s3">'/api'</span><span class="s2">, </span><span class="s1">require</span><span class="s2">(</span><span class="s3">'./routes/reportRoutes'</span><span class="s2">)); </span><span class="s4">// Report route</span>
+<span class="s1">app</span><span class="s2">.</span><span class="s1">use</span><span class="s2">(</span><span class="s3">'/api'</span><span class="s2">, </span><span class="s1">require</span><span class="s2">(</span><span class="s3">'./routes/aboutRoutes'</span><span class="s2">)); </span><span class="s4">// About route (Team Members)</span>
+
+<span class="s1">module</span><span class="s2">.</span><span class="s1">exports </span><span class="s2">= </span><span class="s1">app</span><span class="s2">;</span>
+</pre>
+</body>
+</html>

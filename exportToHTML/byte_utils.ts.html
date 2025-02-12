@@ -1,0 +1,85 @@
+<html>
+<head>
+<title>byte_utils.ts</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+<style type="text/css">
+.s0 { color: #cf8e6d;}
+.s1 { color: #bcbec4;}
+.s2 { color: #bcbec4;}
+.s3 { color: #6aab73;}
+.s4 { color: #5f826b; font-style: italic;}
+.s5 { color: #67a37c; font-style: italic;}
+</style>
+</head>
+<body bgcolor="#1e1f22">
+<table CELLSPACING=0 CELLPADDING=5 COLS=1 WIDTH="100%" BGCOLOR="#606060" >
+<tr><td><center>
+<font face="Arial, Helvetica" color="#000000">
+byte_utils.ts</font>
+</center></td></tr></table>
+<pre><span class="s0">import </span><span class="s2">{ </span><span class="s1">nodeJsByteUtils </span><span class="s2">} </span><span class="s1">from </span><span class="s3">'./node_byte_utils'</span><span class="s2">;</span>
+<span class="s0">import </span><span class="s2">{ </span><span class="s1">webByteUtils </span><span class="s2">} </span><span class="s1">from </span><span class="s3">'./web_byte_utils'</span><span class="s2">;</span>
+
+<span class="s4">/**</span>
+ <span class="s4">* </span><span class="s5">@public</span>
+ <span class="s4">* </span><span class="s5">@experimental</span>
+ <span class="s4">*</span>
+ <span class="s4">* A collection of functions that help work with data in a Uint8Array.</span>
+ <span class="s4">* ByteUtils is configured at load time to use Node.js or Web based APIs for the internal implementations.</span>
+ <span class="s4">*/</span>
+<span class="s0">export </span><span class="s1">type ByteUtils </span><span class="s2">= {</span>
+  <span class="s4">/** Transforms the input to an instance of Buffer if running on node, otherwise Uint8Array */</span>
+  <span class="s1">toLocalBufferType</span><span class="s2">: (</span><span class="s1">buffer</span><span class="s2">: </span><span class="s1">Uint8Array </span><span class="s2">| </span><span class="s1">ArrayBufferView </span><span class="s2">| </span><span class="s1">ArrayBuffer</span><span class="s2">) =&gt; </span><span class="s1">Uint8Array</span><span class="s2">;</span>
+  <span class="s4">/** Create empty space of size */</span>
+  <span class="s1">allocate</span><span class="s2">: (</span><span class="s1">size</span><span class="s2">: </span><span class="s1">number</span><span class="s2">) =&gt; </span><span class="s1">Uint8Array</span><span class="s2">;</span>
+  <span class="s4">/** Create empty space of size, use pooled memory when available */</span>
+  <span class="s1">allocateUnsafe</span><span class="s2">: (</span><span class="s1">size</span><span class="s2">: </span><span class="s1">number</span><span class="s2">) =&gt; </span><span class="s1">Uint8Array</span><span class="s2">;</span>
+  <span class="s4">/** Check if two Uint8Arrays are deep equal */</span>
+  <span class="s1">equals</span><span class="s2">: (</span><span class="s1">a</span><span class="s2">: </span><span class="s1">Uint8Array</span><span class="s2">, </span><span class="s1">b</span><span class="s2">: </span><span class="s1">Uint8Array</span><span class="s2">) =&gt; </span><span class="s1">boolean</span><span class="s2">;</span>
+  <span class="s4">/** Check if two Uint8Arrays are deep equal */</span>
+  <span class="s1">fromNumberArray</span><span class="s2">: (</span><span class="s1">array</span><span class="s2">: </span><span class="s1">number</span><span class="s2">[]) =&gt; </span><span class="s1">Uint8Array</span><span class="s2">;</span>
+  <span class="s4">/** Create a Uint8Array from a base64 string */</span>
+  <span class="s1">fromBase64</span><span class="s2">: (</span><span class="s1">base64</span><span class="s2">: </span><span class="s1">string</span><span class="s2">) =&gt; </span><span class="s1">Uint8Array</span><span class="s2">;</span>
+  <span class="s4">/** Create a base64 string from bytes */</span>
+  <span class="s1">toBase64</span><span class="s2">: (</span><span class="s1">buffer</span><span class="s2">: </span><span class="s1">Uint8Array</span><span class="s2">) =&gt; </span><span class="s1">string</span><span class="s2">;</span>
+  <span class="s4">/** **Legacy** binary strings are an outdated method of data transfer. Do not add public API support for interpreting this format */</span>
+  <span class="s1">fromISO88591</span><span class="s2">: (</span><span class="s1">codePoints</span><span class="s2">: </span><span class="s1">string</span><span class="s2">) =&gt; </span><span class="s1">Uint8Array</span><span class="s2">;</span>
+  <span class="s4">/** **Legacy** binary strings are an outdated method of data transfer. Do not add public API support for interpreting this format */</span>
+  <span class="s1">toISO88591</span><span class="s2">: (</span><span class="s1">buffer</span><span class="s2">: </span><span class="s1">Uint8Array</span><span class="s2">) =&gt; </span><span class="s1">string</span><span class="s2">;</span>
+  <span class="s4">/** Create a Uint8Array from a hex string */</span>
+  <span class="s1">fromHex</span><span class="s2">: (</span><span class="s1">hex</span><span class="s2">: </span><span class="s1">string</span><span class="s2">) =&gt; </span><span class="s1">Uint8Array</span><span class="s2">;</span>
+  <span class="s4">/** Create a lowercase hex string from bytes */</span>
+  <span class="s1">toHex</span><span class="s2">: (</span><span class="s1">buffer</span><span class="s2">: </span><span class="s1">Uint8Array</span><span class="s2">) =&gt; </span><span class="s1">string</span><span class="s2">;</span>
+  <span class="s4">/** Create a string from utf8 code units, fatal=true will throw an error if UTF-8 bytes are invalid, fatal=false will insert replacement characters */</span>
+  <span class="s1">toUTF8</span><span class="s2">: (</span><span class="s1">buffer</span><span class="s2">: </span><span class="s1">Uint8Array</span><span class="s2">, </span><span class="s1">start</span><span class="s2">: </span><span class="s1">number</span><span class="s2">, </span><span class="s1">end</span><span class="s2">: </span><span class="s1">number</span><span class="s2">, </span><span class="s1">fatal</span><span class="s2">: </span><span class="s1">boolean</span><span class="s2">) =&gt; </span><span class="s1">string</span><span class="s2">;</span>
+  <span class="s4">/** Get the utf8 code unit count from a string if it were to be transformed to utf8 */</span>
+  <span class="s1">utf8ByteLength</span><span class="s2">: (</span><span class="s1">input</span><span class="s2">: </span><span class="s1">string</span><span class="s2">) =&gt; </span><span class="s1">number</span><span class="s2">;</span>
+  <span class="s4">/** Encode UTF8 bytes generated from `source` string into `destination` at byteOffset. Returns the number of bytes encoded. */</span>
+  <span class="s1">encodeUTF8Into</span><span class="s2">: (</span><span class="s1">destination</span><span class="s2">: </span><span class="s1">Uint8Array</span><span class="s2">, </span><span class="s1">source</span><span class="s2">: </span><span class="s1">string</span><span class="s2">, </span><span class="s1">byteOffset</span><span class="s2">: </span><span class="s1">number</span><span class="s2">) =&gt; </span><span class="s1">number</span><span class="s2">;</span>
+  <span class="s4">/** Generate a Uint8Array filled with random bytes with byteLength */</span>
+  <span class="s1">randomBytes</span><span class="s2">: (</span><span class="s1">byteLength</span><span class="s2">: </span><span class="s1">number</span><span class="s2">) =&gt; </span><span class="s1">Uint8Array</span><span class="s2">;</span>
+  <span class="s4">/** Interprets `buffer` as an array of 32-bit values and swaps the byte order in-place. */</span>
+  <span class="s1">swap32</span><span class="s2">: (</span><span class="s1">buffer</span><span class="s2">: </span><span class="s1">Uint8Array</span><span class="s2">) =&gt; </span><span class="s1">Uint8Array</span><span class="s2">;</span>
+<span class="s2">};</span>
+
+<span class="s1">declare </span><span class="s0">const </span><span class="s1">Buffer</span><span class="s2">: { </span><span class="s0">new </span><span class="s2">(): </span><span class="s1">unknown</span><span class="s2">; </span><span class="s1">prototype</span><span class="s2">?: { </span><span class="s1">_isBuffer</span><span class="s2">?: </span><span class="s1">boolean </span><span class="s2">} } | </span><span class="s1">undefined</span><span class="s2">;</span>
+
+<span class="s4">/**</span>
+ <span class="s4">* Check that a global Buffer exists that is a function and</span>
+ <span class="s4">* does not have a '_isBuffer' property defined on the prototype</span>
+ <span class="s4">* (this is to prevent using the npm buffer)</span>
+ <span class="s4">*/</span>
+<span class="s0">const </span><span class="s1">hasGlobalBuffer </span><span class="s2">= </span><span class="s0">typeof </span><span class="s1">Buffer </span><span class="s2">=== </span><span class="s3">'function' </span><span class="s2">&amp;&amp; </span><span class="s1">Buffer</span><span class="s2">.</span><span class="s1">prototype</span><span class="s2">?.</span><span class="s1">_isBuffer </span><span class="s2">!== </span><span class="s0">true</span><span class="s2">;</span>
+
+<span class="s4">/**</span>
+ <span class="s4">* This is the only ByteUtils that should be used across the rest of the BSON library.</span>
+ <span class="s4">*</span>
+ <span class="s4">* The type annotation is important here, it asserts that each of the platform specific</span>
+ <span class="s4">* utils implementations are compatible with the common one.</span>
+ <span class="s4">*</span>
+ <span class="s4">* </span><span class="s5">@internal</span>
+ <span class="s4">*/</span>
+<span class="s0">export const </span><span class="s1">ByteUtils</span><span class="s2">: </span><span class="s1">ByteUtils </span><span class="s2">= </span><span class="s1">hasGlobalBuffer </span><span class="s2">? </span><span class="s1">nodeJsByteUtils </span><span class="s2">: </span><span class="s1">webByteUtils</span><span class="s2">;</span>
+</pre>
+</body>
+</html>

@@ -1,0 +1,241 @@
+<html>
+<head>
+<title>web_byte_utils.ts</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+<style type="text/css">
+.s0 { color: #cf8e6d;}
+.s1 { color: #bcbec4;}
+.s2 { color: #bcbec4;}
+.s3 { color: #6aab73;}
+.s4 { color: #7a7e85;}
+.s5 { color: #5f826b; font-style: italic;}
+.s6 { color: #67a37c; font-style: italic;}
+.s7 { color: #2aacb8;}
+.s8 { color: #42c3d4;}
+</style>
+</head>
+<body bgcolor="#1e1f22">
+<table CELLSPACING=0 CELLPADDING=5 COLS=1 WIDTH="100%" BGCOLOR="#606060" >
+<tr><td><center>
+<font face="Arial, Helvetica" color="#000000">
+web_byte_utils.ts</font>
+</center></td></tr></table>
+<pre><span class="s0">import </span><span class="s2">{ </span><span class="s1">BSONError </span><span class="s2">} </span><span class="s1">from </span><span class="s3">'../error'</span><span class="s2">;</span>
+<span class="s0">import </span><span class="s2">{ </span><span class="s1">tryReadBasicLatin </span><span class="s2">} </span><span class="s1">from </span><span class="s3">'./latin'</span><span class="s2">;</span>
+<span class="s0">import </span><span class="s2">{ </span><span class="s1">parseUtf8 </span><span class="s2">} </span><span class="s1">from </span><span class="s3">'../parse_utf8'</span><span class="s2">;</span>
+
+<span class="s1">type TextDecoder </span><span class="s2">= {</span>
+  <span class="s1">readonly encoding</span><span class="s2">: </span><span class="s1">string</span><span class="s2">;</span>
+  <span class="s1">readonly fatal</span><span class="s2">: </span><span class="s1">boolean</span><span class="s2">;</span>
+  <span class="s1">readonly ignoreBOM</span><span class="s2">: </span><span class="s1">boolean</span><span class="s2">;</span>
+  <span class="s1">decode</span><span class="s2">(</span><span class="s1">input</span><span class="s2">?: </span><span class="s1">Uint8Array</span><span class="s2">): </span><span class="s1">string</span><span class="s2">;</span>
+<span class="s2">};</span>
+<span class="s1">type TextDecoderConstructor </span><span class="s2">= {</span>
+  <span class="s0">new </span><span class="s2">(</span><span class="s1">label</span><span class="s2">: </span><span class="s3">'utf8'</span><span class="s2">, </span><span class="s1">options</span><span class="s2">: { </span><span class="s1">fatal</span><span class="s2">: </span><span class="s1">boolean</span><span class="s2">; </span><span class="s1">ignoreBOM</span><span class="s2">?: </span><span class="s1">boolean </span><span class="s2">}): </span><span class="s1">TextDecoder</span><span class="s2">;</span>
+<span class="s2">};</span>
+
+<span class="s1">type TextEncoder </span><span class="s2">= {</span>
+  <span class="s1">readonly encoding</span><span class="s2">: </span><span class="s1">string</span><span class="s2">;</span>
+  <span class="s1">encode</span><span class="s2">(</span><span class="s1">input</span><span class="s2">?: </span><span class="s1">string</span><span class="s2">): </span><span class="s1">Uint8Array</span><span class="s2">;</span>
+<span class="s2">};</span>
+<span class="s1">type TextEncoderConstructor </span><span class="s2">= {</span>
+  <span class="s0">new </span><span class="s2">(): </span><span class="s1">TextEncoder</span><span class="s2">;</span>
+<span class="s2">};</span>
+
+<span class="s4">// Web global</span>
+<span class="s1">declare </span><span class="s0">const </span><span class="s1">TextDecoder</span><span class="s2">: </span><span class="s1">TextDecoderConstructor</span><span class="s2">;</span>
+<span class="s1">declare </span><span class="s0">const </span><span class="s1">TextEncoder</span><span class="s2">: </span><span class="s1">TextEncoderConstructor</span><span class="s2">;</span>
+<span class="s1">declare </span><span class="s0">const </span><span class="s1">atob</span><span class="s2">: (</span><span class="s1">base64</span><span class="s2">: </span><span class="s1">string</span><span class="s2">) =&gt; </span><span class="s1">string</span><span class="s2">;</span>
+<span class="s1">declare </span><span class="s0">const </span><span class="s1">btoa</span><span class="s2">: (</span><span class="s1">binary</span><span class="s2">: </span><span class="s1">string</span><span class="s2">) =&gt; </span><span class="s1">string</span><span class="s2">;</span>
+
+<span class="s1">type ArrayBufferViewWithTag </span><span class="s2">= </span><span class="s1">ArrayBufferView </span><span class="s2">&amp; {</span>
+  <span class="s2">[</span><span class="s1">Symbol</span><span class="s2">.</span><span class="s1">toStringTag</span><span class="s2">]?: </span><span class="s1">string</span><span class="s2">;</span>
+<span class="s2">};</span>
+
+<span class="s0">function </span><span class="s1">isReactNative</span><span class="s2">() {</span>
+  <span class="s0">const </span><span class="s2">{ </span><span class="s1">navigator </span><span class="s2">} = </span><span class="s1">globalThis </span><span class="s2">as { </span><span class="s1">navigator</span><span class="s2">?: { </span><span class="s1">product</span><span class="s2">?: </span><span class="s1">string </span><span class="s2">} };</span>
+  <span class="s0">return typeof </span><span class="s1">navigator </span><span class="s2">=== </span><span class="s3">'object' </span><span class="s2">&amp;&amp; </span><span class="s1">navigator</span><span class="s2">.</span><span class="s1">product </span><span class="s2">=== </span><span class="s3">'ReactNative'</span><span class="s2">;</span>
+<span class="s2">}</span>
+
+<span class="s5">/** </span><span class="s6">@internal </span><span class="s5">*/</span>
+<span class="s0">export function </span><span class="s1">webMathRandomBytes</span><span class="s2">(</span><span class="s1">byteLength</span><span class="s2">: </span><span class="s1">number</span><span class="s2">) {</span>
+  <span class="s0">if </span><span class="s2">(</span><span class="s1">byteLength </span><span class="s2">&lt; </span><span class="s7">0</span><span class="s2">) {</span>
+    <span class="s0">throw new </span><span class="s1">RangeError</span><span class="s2">(</span><span class="s3">`The argument 'byteLength' is invalid. Received </span><span class="s1">$</span><span class="s2">{</span><span class="s1">byteLength</span><span class="s2">}</span><span class="s3">`</span><span class="s2">);</span>
+  <span class="s2">}</span>
+  <span class="s0">return </span><span class="s1">webByteUtils</span><span class="s2">.</span><span class="s1">fromNumberArray</span><span class="s2">(</span>
+    <span class="s1">Array</span><span class="s2">.</span><span class="s1">from</span><span class="s2">({ </span><span class="s1">length</span><span class="s2">: </span><span class="s1">byteLength </span><span class="s2">}, () =&gt; </span><span class="s1">Math</span><span class="s2">.</span><span class="s1">floor</span><span class="s2">(</span><span class="s1">Math</span><span class="s2">.</span><span class="s1">random</span><span class="s2">() * </span><span class="s7">256</span><span class="s2">))</span>
+  <span class="s2">);</span>
+<span class="s2">}</span>
+
+<span class="s5">/** </span><span class="s6">@internal </span><span class="s5">*/</span>
+<span class="s0">const </span><span class="s1">webRandomBytes</span><span class="s2">: (</span><span class="s1">byteLength</span><span class="s2">: </span><span class="s1">number</span><span class="s2">) =&gt; </span><span class="s1">Uint8Array </span><span class="s2">= (() =&gt; {</span>
+  <span class="s0">const </span><span class="s2">{ </span><span class="s1">crypto </span><span class="s2">} = </span><span class="s1">globalThis </span><span class="s2">as {</span>
+    <span class="s1">crypto</span><span class="s2">?: { </span><span class="s1">getRandomValues</span><span class="s2">?: (</span><span class="s1">space</span><span class="s2">: </span><span class="s1">Uint8Array</span><span class="s2">) =&gt; </span><span class="s1">Uint8Array </span><span class="s2">};</span>
+  <span class="s2">};</span>
+  <span class="s0">if </span><span class="s2">(</span><span class="s1">crypto </span><span class="s2">!= </span><span class="s0">null </span><span class="s2">&amp;&amp; </span><span class="s0">typeof </span><span class="s1">crypto</span><span class="s2">.</span><span class="s1">getRandomValues </span><span class="s2">=== </span><span class="s3">'function'</span><span class="s2">) {</span>
+    <span class="s0">return </span><span class="s2">(</span><span class="s1">byteLength</span><span class="s2">: </span><span class="s1">number</span><span class="s2">) =&gt; {</span>
+      <span class="s4">// @ts-expect-error: crypto.getRandomValues cannot actually be null here</span>
+      <span class="s4">// You cannot separate getRandomValues from crypto (need to have this === crypto)</span>
+      <span class="s0">return </span><span class="s1">crypto</span><span class="s2">.</span><span class="s1">getRandomValues</span><span class="s2">(</span><span class="s1">webByteUtils</span><span class="s2">.</span><span class="s1">allocate</span><span class="s2">(</span><span class="s1">byteLength</span><span class="s2">));</span>
+    <span class="s2">};</span>
+  <span class="s2">} </span><span class="s0">else </span><span class="s2">{</span>
+    <span class="s0">if </span><span class="s2">(</span><span class="s1">isReactNative</span><span class="s2">()) {</span>
+      <span class="s0">const </span><span class="s2">{ </span><span class="s1">console </span><span class="s2">} = </span><span class="s1">globalThis </span><span class="s2">as { </span><span class="s1">console</span><span class="s2">?: { </span><span class="s1">warn</span><span class="s2">?: (</span><span class="s1">message</span><span class="s2">: </span><span class="s1">string</span><span class="s2">) =&gt; </span><span class="s0">void </span><span class="s2">} };</span>
+      <span class="s1">console</span><span class="s2">?.</span><span class="s1">warn</span><span class="s2">?.(</span>
+        <span class="s3">'BSON: For React Native please polyfill crypto.getRandomValues, e.g. using: https://www.npmjs.com/package/react-native-get-random-values.'</span>
+      <span class="s2">);</span>
+    <span class="s2">}</span>
+    <span class="s0">return </span><span class="s1">webMathRandomBytes</span><span class="s2">;</span>
+  <span class="s2">}</span>
+<span class="s2">})();</span>
+
+<span class="s0">const </span><span class="s1">HEX_DIGIT </span><span class="s2">= </span><span class="s8">/(\d|[a-f])/i</span><span class="s2">;</span>
+
+<span class="s5">/** </span><span class="s6">@internal </span><span class="s5">*/</span>
+<span class="s0">export const </span><span class="s1">webByteUtils </span><span class="s2">= {</span>
+  <span class="s1">toLocalBufferType</span><span class="s2">(</span>
+    <span class="s1">potentialUint8array</span><span class="s2">: </span><span class="s1">Uint8Array </span><span class="s2">| </span><span class="s1">ArrayBufferViewWithTag </span><span class="s2">| </span><span class="s1">ArrayBuffer</span>
+  <span class="s2">): </span><span class="s1">Uint8Array </span><span class="s2">{</span>
+    <span class="s0">const </span><span class="s1">stringTag </span><span class="s2">=</span>
+      <span class="s1">potentialUint8array</span><span class="s2">?.[</span><span class="s1">Symbol</span><span class="s2">.</span><span class="s1">toStringTag</span><span class="s2">] ??</span>
+      <span class="s1">Object</span><span class="s2">.</span><span class="s1">prototype</span><span class="s2">.</span><span class="s1">toString</span><span class="s2">.</span><span class="s1">call</span><span class="s2">(</span><span class="s1">potentialUint8array</span><span class="s2">);</span>
+
+    <span class="s0">if </span><span class="s2">(</span><span class="s1">stringTag </span><span class="s2">=== </span><span class="s3">'Uint8Array'</span><span class="s2">) {</span>
+      <span class="s0">return </span><span class="s1">potentialUint8array </span><span class="s2">as </span><span class="s1">Uint8Array</span><span class="s2">;</span>
+    <span class="s2">}</span>
+
+    <span class="s0">if </span><span class="s2">(</span><span class="s1">ArrayBuffer</span><span class="s2">.</span><span class="s1">isView</span><span class="s2">(</span><span class="s1">potentialUint8array</span><span class="s2">)) {</span>
+      <span class="s0">return new </span><span class="s1">Uint8Array</span><span class="s2">(</span>
+        <span class="s1">potentialUint8array</span><span class="s2">.</span><span class="s1">buffer</span><span class="s2">.</span><span class="s1">slice</span><span class="s2">(</span>
+          <span class="s1">potentialUint8array</span><span class="s2">.</span><span class="s1">byteOffset</span><span class="s2">,</span>
+          <span class="s1">potentialUint8array</span><span class="s2">.</span><span class="s1">byteOffset </span><span class="s2">+ </span><span class="s1">potentialUint8array</span><span class="s2">.</span><span class="s1">byteLength</span>
+        <span class="s2">)</span>
+      <span class="s2">);</span>
+    <span class="s2">}</span>
+
+    <span class="s0">if </span><span class="s2">(</span>
+      <span class="s1">stringTag </span><span class="s2">=== </span><span class="s3">'ArrayBuffer' </span><span class="s2">||</span>
+      <span class="s1">stringTag </span><span class="s2">=== </span><span class="s3">'SharedArrayBuffer' </span><span class="s2">||</span>
+      <span class="s1">stringTag </span><span class="s2">=== </span><span class="s3">'[object ArrayBuffer]' </span><span class="s2">||</span>
+      <span class="s1">stringTag </span><span class="s2">=== </span><span class="s3">'[object SharedArrayBuffer]'</span>
+    <span class="s2">) {</span>
+      <span class="s0">return new </span><span class="s1">Uint8Array</span><span class="s2">(</span><span class="s1">potentialUint8array</span><span class="s2">);</span>
+    <span class="s2">}</span>
+
+    <span class="s0">throw new </span><span class="s1">BSONError</span><span class="s2">(</span><span class="s3">`Cannot make a Uint8Array from passed potentialBuffer.`</span><span class="s2">);</span>
+  <span class="s2">},</span>
+
+  <span class="s1">allocate</span><span class="s2">(</span><span class="s1">size</span><span class="s2">: </span><span class="s1">number</span><span class="s2">): </span><span class="s1">Uint8Array </span><span class="s2">{</span>
+    <span class="s0">if </span><span class="s2">(</span><span class="s0">typeof </span><span class="s1">size </span><span class="s2">!== </span><span class="s3">'number'</span><span class="s2">) {</span>
+      <span class="s0">throw new </span><span class="s1">TypeError</span><span class="s2">(</span><span class="s3">`The &quot;size&quot; argument must be of type number. Received </span><span class="s1">$</span><span class="s2">{</span><span class="s1">String</span><span class="s2">(</span><span class="s1">size</span><span class="s2">)}</span><span class="s3">`</span><span class="s2">);</span>
+    <span class="s2">}</span>
+    <span class="s0">return new </span><span class="s1">Uint8Array</span><span class="s2">(</span><span class="s1">size</span><span class="s2">);</span>
+  <span class="s2">},</span>
+
+  <span class="s1">allocateUnsafe</span><span class="s2">(</span><span class="s1">size</span><span class="s2">: </span><span class="s1">number</span><span class="s2">): </span><span class="s1">Uint8Array </span><span class="s2">{</span>
+    <span class="s0">return </span><span class="s1">webByteUtils</span><span class="s2">.</span><span class="s1">allocate</span><span class="s2">(</span><span class="s1">size</span><span class="s2">);</span>
+  <span class="s2">},</span>
+
+  <span class="s1">equals</span><span class="s2">(</span><span class="s1">a</span><span class="s2">: </span><span class="s1">Uint8Array</span><span class="s2">, </span><span class="s1">b</span><span class="s2">: </span><span class="s1">Uint8Array</span><span class="s2">): </span><span class="s1">boolean </span><span class="s2">{</span>
+    <span class="s0">if </span><span class="s2">(</span><span class="s1">a</span><span class="s2">.</span><span class="s1">byteLength </span><span class="s2">!== </span><span class="s1">b</span><span class="s2">.</span><span class="s1">byteLength</span><span class="s2">) {</span>
+      <span class="s0">return false</span><span class="s2">;</span>
+    <span class="s2">}</span>
+    <span class="s0">for </span><span class="s2">(</span><span class="s0">let </span><span class="s1">i </span><span class="s2">= </span><span class="s7">0</span><span class="s2">; </span><span class="s1">i </span><span class="s2">&lt; </span><span class="s1">a</span><span class="s2">.</span><span class="s1">byteLength</span><span class="s2">; </span><span class="s1">i</span><span class="s2">++) {</span>
+      <span class="s0">if </span><span class="s2">(</span><span class="s1">a</span><span class="s2">[</span><span class="s1">i</span><span class="s2">] !== </span><span class="s1">b</span><span class="s2">[</span><span class="s1">i</span><span class="s2">]) {</span>
+        <span class="s0">return false</span><span class="s2">;</span>
+      <span class="s2">}</span>
+    <span class="s2">}</span>
+    <span class="s0">return true</span><span class="s2">;</span>
+  <span class="s2">},</span>
+
+  <span class="s1">fromNumberArray</span><span class="s2">(</span><span class="s1">array</span><span class="s2">: </span><span class="s1">number</span><span class="s2">[]): </span><span class="s1">Uint8Array </span><span class="s2">{</span>
+    <span class="s0">return </span><span class="s1">Uint8Array</span><span class="s2">.</span><span class="s1">from</span><span class="s2">(</span><span class="s1">array</span><span class="s2">);</span>
+  <span class="s2">},</span>
+
+  <span class="s1">fromBase64</span><span class="s2">(</span><span class="s1">base64</span><span class="s2">: </span><span class="s1">string</span><span class="s2">): </span><span class="s1">Uint8Array </span><span class="s2">{</span>
+    <span class="s0">return </span><span class="s1">Uint8Array</span><span class="s2">.</span><span class="s1">from</span><span class="s2">(</span><span class="s1">atob</span><span class="s2">(</span><span class="s1">base64</span><span class="s2">), </span><span class="s1">c </span><span class="s2">=&gt; </span><span class="s1">c</span><span class="s2">.</span><span class="s1">charCodeAt</span><span class="s2">(</span><span class="s7">0</span><span class="s2">));</span>
+  <span class="s2">},</span>
+
+  <span class="s1">toBase64</span><span class="s2">(</span><span class="s1">uint8array</span><span class="s2">: </span><span class="s1">Uint8Array</span><span class="s2">): </span><span class="s1">string </span><span class="s2">{</span>
+    <span class="s0">return </span><span class="s1">btoa</span><span class="s2">(</span><span class="s1">webByteUtils</span><span class="s2">.</span><span class="s1">toISO88591</span><span class="s2">(</span><span class="s1">uint8array</span><span class="s2">));</span>
+  <span class="s2">},</span>
+
+  <span class="s5">/** **Legacy** binary strings are an outdated method of data transfer. Do not add public API support for interpreting this format */</span>
+  <span class="s1">fromISO88591</span><span class="s2">(</span><span class="s1">codePoints</span><span class="s2">: </span><span class="s1">string</span><span class="s2">): </span><span class="s1">Uint8Array </span><span class="s2">{</span>
+    <span class="s0">return </span><span class="s1">Uint8Array</span><span class="s2">.</span><span class="s1">from</span><span class="s2">(</span><span class="s1">codePoints</span><span class="s2">, </span><span class="s1">c </span><span class="s2">=&gt; </span><span class="s1">c</span><span class="s2">.</span><span class="s1">charCodeAt</span><span class="s2">(</span><span class="s7">0</span><span class="s2">) &amp; </span><span class="s7">0xff</span><span class="s2">);</span>
+  <span class="s2">},</span>
+
+  <span class="s5">/** **Legacy** binary strings are an outdated method of data transfer. Do not add public API support for interpreting this format */</span>
+  <span class="s1">toISO88591</span><span class="s2">(</span><span class="s1">uint8array</span><span class="s2">: </span><span class="s1">Uint8Array</span><span class="s2">): </span><span class="s1">string </span><span class="s2">{</span>
+    <span class="s0">return </span><span class="s1">Array</span><span class="s2">.</span><span class="s1">from</span><span class="s2">(</span><span class="s1">Uint16Array</span><span class="s2">.</span><span class="s1">from</span><span class="s2">(</span><span class="s1">uint8array</span><span class="s2">), </span><span class="s1">b </span><span class="s2">=&gt; </span><span class="s1">String</span><span class="s2">.</span><span class="s1">fromCharCode</span><span class="s2">(</span><span class="s1">b</span><span class="s2">)).</span><span class="s1">join</span><span class="s2">(</span><span class="s3">''</span><span class="s2">);</span>
+  <span class="s2">},</span>
+
+  <span class="s1">fromHex</span><span class="s2">(</span><span class="s1">hex</span><span class="s2">: </span><span class="s1">string</span><span class="s2">): </span><span class="s1">Uint8Array </span><span class="s2">{</span>
+    <span class="s0">const </span><span class="s1">evenLengthHex </span><span class="s2">= </span><span class="s1">hex</span><span class="s2">.</span><span class="s1">length </span><span class="s2">% </span><span class="s7">2 </span><span class="s2">=== </span><span class="s7">0 </span><span class="s2">? </span><span class="s1">hex </span><span class="s2">: </span><span class="s1">hex</span><span class="s2">.</span><span class="s1">slice</span><span class="s2">(</span><span class="s7">0</span><span class="s2">, </span><span class="s1">hex</span><span class="s2">.</span><span class="s1">length </span><span class="s2">- </span><span class="s7">1</span><span class="s2">);</span>
+    <span class="s0">const </span><span class="s1">buffer </span><span class="s2">= [];</span>
+
+    <span class="s0">for </span><span class="s2">(</span><span class="s0">let </span><span class="s1">i </span><span class="s2">= </span><span class="s7">0</span><span class="s2">; </span><span class="s1">i </span><span class="s2">&lt; </span><span class="s1">evenLengthHex</span><span class="s2">.</span><span class="s1">length</span><span class="s2">; </span><span class="s1">i </span><span class="s2">+= </span><span class="s7">2</span><span class="s2">) {</span>
+      <span class="s0">const </span><span class="s1">firstDigit </span><span class="s2">= </span><span class="s1">evenLengthHex</span><span class="s2">[</span><span class="s1">i</span><span class="s2">];</span>
+      <span class="s0">const </span><span class="s1">secondDigit </span><span class="s2">= </span><span class="s1">evenLengthHex</span><span class="s2">[</span><span class="s1">i </span><span class="s2">+ </span><span class="s7">1</span><span class="s2">];</span>
+
+      <span class="s0">if </span><span class="s2">(!</span><span class="s1">HEX_DIGIT</span><span class="s2">.</span><span class="s1">test</span><span class="s2">(</span><span class="s1">firstDigit</span><span class="s2">)) {</span>
+        <span class="s0">break</span><span class="s2">;</span>
+      <span class="s2">}</span>
+      <span class="s0">if </span><span class="s2">(!</span><span class="s1">HEX_DIGIT</span><span class="s2">.</span><span class="s1">test</span><span class="s2">(</span><span class="s1">secondDigit</span><span class="s2">)) {</span>
+        <span class="s0">break</span><span class="s2">;</span>
+      <span class="s2">}</span>
+
+      <span class="s0">const </span><span class="s1">hexDigit </span><span class="s2">= </span><span class="s1">Number</span><span class="s2">.</span><span class="s1">parseInt</span><span class="s2">(</span><span class="s3">`</span><span class="s1">$</span><span class="s2">{</span><span class="s1">firstDigit</span><span class="s2">}</span><span class="s1">$</span><span class="s2">{</span><span class="s1">secondDigit</span><span class="s2">}</span><span class="s3">`</span><span class="s2">, </span><span class="s7">16</span><span class="s2">);</span>
+      <span class="s1">buffer</span><span class="s2">.</span><span class="s1">push</span><span class="s2">(</span><span class="s1">hexDigit</span><span class="s2">);</span>
+    <span class="s2">}</span>
+
+    <span class="s0">return </span><span class="s1">Uint8Array</span><span class="s2">.</span><span class="s1">from</span><span class="s2">(</span><span class="s1">buffer</span><span class="s2">);</span>
+  <span class="s2">},</span>
+
+  <span class="s1">toHex</span><span class="s2">(</span><span class="s1">uint8array</span><span class="s2">: </span><span class="s1">Uint8Array</span><span class="s2">): </span><span class="s1">string </span><span class="s2">{</span>
+    <span class="s0">return </span><span class="s1">Array</span><span class="s2">.</span><span class="s1">from</span><span class="s2">(</span><span class="s1">uint8array</span><span class="s2">, </span><span class="s1">byte </span><span class="s2">=&gt; </span><span class="s1">byte</span><span class="s2">.</span><span class="s1">toString</span><span class="s2">(</span><span class="s7">16</span><span class="s2">).</span><span class="s1">padStart</span><span class="s2">(</span><span class="s7">2</span><span class="s2">, </span><span class="s3">'0'</span><span class="s2">)).</span><span class="s1">join</span><span class="s2">(</span><span class="s3">''</span><span class="s2">);</span>
+  <span class="s2">},</span>
+
+  <span class="s1">toUTF8</span><span class="s2">(</span><span class="s1">uint8array</span><span class="s2">: </span><span class="s1">Uint8Array</span><span class="s2">, </span><span class="s1">start</span><span class="s2">: </span><span class="s1">number</span><span class="s2">, </span><span class="s1">end</span><span class="s2">: </span><span class="s1">number</span><span class="s2">, </span><span class="s1">fatal</span><span class="s2">: </span><span class="s1">boolean</span><span class="s2">): </span><span class="s1">string </span><span class="s2">{</span>
+    <span class="s0">const </span><span class="s1">basicLatin </span><span class="s2">= </span><span class="s1">end </span><span class="s2">- </span><span class="s1">start </span><span class="s2">&lt;= </span><span class="s7">20 </span><span class="s2">? </span><span class="s1">tryReadBasicLatin</span><span class="s2">(</span><span class="s1">uint8array</span><span class="s2">, </span><span class="s1">start</span><span class="s2">, </span><span class="s1">end</span><span class="s2">) : </span><span class="s0">null</span><span class="s2">;</span>
+    <span class="s0">if </span><span class="s2">(</span><span class="s1">basicLatin </span><span class="s2">!= </span><span class="s0">null</span><span class="s2">) {</span>
+      <span class="s0">return </span><span class="s1">basicLatin</span><span class="s2">;</span>
+    <span class="s2">}</span>
+
+    <span class="s0">return </span><span class="s1">parseUtf8</span><span class="s2">(</span><span class="s1">uint8array</span><span class="s2">, </span><span class="s1">start</span><span class="s2">, </span><span class="s1">end</span><span class="s2">, </span><span class="s1">fatal</span><span class="s2">);</span>
+  <span class="s2">},</span>
+
+  <span class="s1">utf8ByteLength</span><span class="s2">(</span><span class="s1">input</span><span class="s2">: </span><span class="s1">string</span><span class="s2">): </span><span class="s1">number </span><span class="s2">{</span>
+    <span class="s0">return new </span><span class="s1">TextEncoder</span><span class="s2">().</span><span class="s1">encode</span><span class="s2">(</span><span class="s1">input</span><span class="s2">).</span><span class="s1">byteLength</span><span class="s2">;</span>
+  <span class="s2">},</span>
+
+  <span class="s1">encodeUTF8Into</span><span class="s2">(</span><span class="s1">uint8array</span><span class="s2">: </span><span class="s1">Uint8Array</span><span class="s2">, </span><span class="s1">source</span><span class="s2">: </span><span class="s1">string</span><span class="s2">, </span><span class="s1">byteOffset</span><span class="s2">: </span><span class="s1">number</span><span class="s2">): </span><span class="s1">number </span><span class="s2">{</span>
+    <span class="s0">const </span><span class="s1">bytes </span><span class="s2">= </span><span class="s0">new </span><span class="s1">TextEncoder</span><span class="s2">().</span><span class="s1">encode</span><span class="s2">(</span><span class="s1">source</span><span class="s2">);</span>
+    <span class="s1">uint8array</span><span class="s2">.</span><span class="s1">set</span><span class="s2">(</span><span class="s1">bytes</span><span class="s2">, </span><span class="s1">byteOffset</span><span class="s2">);</span>
+    <span class="s0">return </span><span class="s1">bytes</span><span class="s2">.</span><span class="s1">byteLength</span><span class="s2">;</span>
+  <span class="s2">},</span>
+
+  <span class="s1">randomBytes</span><span class="s2">: </span><span class="s1">webRandomBytes</span><span class="s2">,</span>
+
+  <span class="s1">swap32</span><span class="s2">(</span><span class="s1">buffer</span><span class="s2">: </span><span class="s1">Uint8Array</span><span class="s2">): </span><span class="s1">Uint8Array </span><span class="s2">{</span>
+    <span class="s0">if </span><span class="s2">(</span><span class="s1">buffer</span><span class="s2">.</span><span class="s1">length </span><span class="s2">% </span><span class="s7">4 </span><span class="s2">!== </span><span class="s7">0</span><span class="s2">) {</span>
+      <span class="s0">throw new </span><span class="s1">RangeError</span><span class="s2">(</span><span class="s3">'Buffer size must be a multiple of 32-bits'</span><span class="s2">);</span>
+    <span class="s2">}</span>
+
+    <span class="s0">for </span><span class="s2">(</span><span class="s0">let </span><span class="s1">i </span><span class="s2">= </span><span class="s7">0</span><span class="s2">; </span><span class="s1">i </span><span class="s2">&lt; </span><span class="s1">buffer</span><span class="s2">.</span><span class="s1">length</span><span class="s2">; </span><span class="s1">i </span><span class="s2">+= </span><span class="s7">4</span><span class="s2">) {</span>
+      <span class="s0">const </span><span class="s1">byte0 </span><span class="s2">= </span><span class="s1">buffer</span><span class="s2">[</span><span class="s1">i</span><span class="s2">];</span>
+      <span class="s0">const </span><span class="s1">byte1 </span><span class="s2">= </span><span class="s1">buffer</span><span class="s2">[</span><span class="s1">i </span><span class="s2">+ </span><span class="s7">1</span><span class="s2">];</span>
+      <span class="s0">const </span><span class="s1">byte2 </span><span class="s2">= </span><span class="s1">buffer</span><span class="s2">[</span><span class="s1">i </span><span class="s2">+ </span><span class="s7">2</span><span class="s2">];</span>
+      <span class="s0">const </span><span class="s1">byte3 </span><span class="s2">= </span><span class="s1">buffer</span><span class="s2">[</span><span class="s1">i </span><span class="s2">+ </span><span class="s7">3</span><span class="s2">];</span>
+      <span class="s1">buffer</span><span class="s2">[</span><span class="s1">i</span><span class="s2">] = </span><span class="s1">byte3</span><span class="s2">;</span>
+      <span class="s1">buffer</span><span class="s2">[</span><span class="s1">i </span><span class="s2">+ </span><span class="s7">1</span><span class="s2">] = </span><span class="s1">byte2</span><span class="s2">;</span>
+      <span class="s1">buffer</span><span class="s2">[</span><span class="s1">i </span><span class="s2">+ </span><span class="s7">2</span><span class="s2">] = </span><span class="s1">byte1</span><span class="s2">;</span>
+      <span class="s1">buffer</span><span class="s2">[</span><span class="s1">i </span><span class="s2">+ </span><span class="s7">3</span><span class="s2">] = </span><span class="s1">byte0</span><span class="s2">;</span>
+    <span class="s2">}</span>
+
+    <span class="s0">return </span><span class="s1">buffer</span><span class="s2">;</span>
+  <span class="s2">}</span>
+<span class="s2">};</span>
+</pre>
+</body>
+</html>

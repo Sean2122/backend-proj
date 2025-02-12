@@ -1,0 +1,753 @@
+<html>
+<head>
+<title>binary.ts</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+<style type="text/css">
+.s0 { color: #cf8e6d;}
+.s1 { color: #bcbec4;}
+.s2 { color: #bcbec4;}
+.s3 { color: #6aab73;}
+.s4 { color: #5f826b; font-style: italic;}
+.s5 { color: #67a37c; font-style: italic;}
+.s6 { color: #2aacb8;}
+.s7 { color: #7a7e85;}
+.s8 { color: #42c3d4;}
+</style>
+</head>
+<body bgcolor="#1e1f22">
+<table CELLSPACING=0 CELLPADDING=5 COLS=1 WIDTH="100%" BGCOLOR="#606060" >
+<tr><td><center>
+<font face="Arial, Helvetica" color="#000000">
+binary.ts</font>
+</center></td></tr></table>
+<pre><span class="s0">import </span><span class="s2">{ </span><span class="s1">type InspectFn</span><span class="s2">, </span><span class="s1">defaultInspect</span><span class="s2">, </span><span class="s1">isAnyArrayBuffer</span><span class="s2">, </span><span class="s1">isUint8Array </span><span class="s2">} </span><span class="s1">from </span><span class="s3">'./parser/utils'</span><span class="s2">;</span>
+<span class="s0">import </span><span class="s1">type </span><span class="s2">{ </span><span class="s1">EJSONOptions </span><span class="s2">} </span><span class="s1">from </span><span class="s3">'./extended_json'</span><span class="s2">;</span>
+<span class="s0">import </span><span class="s2">{ </span><span class="s1">BSONError </span><span class="s2">} </span><span class="s1">from </span><span class="s3">'./error'</span><span class="s2">;</span>
+<span class="s0">import </span><span class="s2">{ </span><span class="s1">BSON_BINARY_SUBTYPE_UUID_NEW </span><span class="s2">} </span><span class="s1">from </span><span class="s3">'./constants'</span><span class="s2">;</span>
+<span class="s0">import </span><span class="s2">{ </span><span class="s1">ByteUtils </span><span class="s2">} </span><span class="s1">from </span><span class="s3">'./utils/byte_utils'</span><span class="s2">;</span>
+<span class="s0">import </span><span class="s2">{ </span><span class="s1">BSONValue </span><span class="s2">} </span><span class="s1">from </span><span class="s3">'./bson_value'</span><span class="s2">;</span>
+<span class="s0">import </span><span class="s2">{ </span><span class="s1">NumberUtils </span><span class="s2">} </span><span class="s1">from </span><span class="s3">'./utils/number_utils'</span><span class="s2">;</span>
+
+<span class="s4">/** </span><span class="s5">@public </span><span class="s4">*/</span>
+<span class="s0">export </span><span class="s1">type BinarySequence </span><span class="s2">= </span><span class="s1">Uint8Array </span><span class="s2">| </span><span class="s1">number</span><span class="s2">[];</span>
+
+<span class="s4">/** </span><span class="s5">@public </span><span class="s4">*/</span>
+<span class="s0">export interface </span><span class="s1">BinaryExtendedLegacy </span><span class="s2">{</span>
+  <span class="s1">$type</span><span class="s2">: </span><span class="s1">string</span><span class="s2">;</span>
+  <span class="s1">$binary</span><span class="s2">: </span><span class="s1">string</span><span class="s2">;</span>
+<span class="s2">}</span>
+
+<span class="s4">/** </span><span class="s5">@public </span><span class="s4">*/</span>
+<span class="s0">export interface </span><span class="s1">BinaryExtended </span><span class="s2">{</span>
+  <span class="s1">$binary</span><span class="s2">: {</span>
+    <span class="s1">subType</span><span class="s2">: </span><span class="s1">string</span><span class="s2">;</span>
+    <span class="s1">base64</span><span class="s2">: </span><span class="s1">string</span><span class="s2">;</span>
+  <span class="s2">};</span>
+<span class="s2">}</span>
+
+<span class="s4">/**</span>
+ <span class="s4">* A class representation of the BSON Binary type.</span>
+ <span class="s4">* </span><span class="s5">@public</span>
+ <span class="s4">* </span><span class="s5">@category </span><span class="s4">BSONType</span>
+ <span class="s4">*/</span>
+<span class="s0">export class </span><span class="s1">Binary </span><span class="s0">extends </span><span class="s1">BSONValue </span><span class="s2">{</span>
+  <span class="s1">get _bsontype</span><span class="s2">(): </span><span class="s3">'Binary' </span><span class="s2">{</span>
+    <span class="s0">return </span><span class="s3">'Binary'</span><span class="s2">;</span>
+  <span class="s2">}</span>
+
+  <span class="s4">/**</span>
+   <span class="s4">* Binary default subtype</span>
+   <span class="s4">* </span><span class="s5">@internal</span>
+   <span class="s4">*/</span>
+  <span class="s0">private static </span><span class="s1">readonly BSON_BINARY_SUBTYPE_DEFAULT </span><span class="s2">= </span><span class="s6">0</span><span class="s2">;</span>
+
+  <span class="s4">/** Initial buffer default size */</span>
+  <span class="s0">static </span><span class="s1">readonly BUFFER_SIZE </span><span class="s2">= </span><span class="s6">256</span><span class="s2">;</span>
+  <span class="s4">/** Default BSON type */</span>
+  <span class="s0">static </span><span class="s1">readonly SUBTYPE_DEFAULT </span><span class="s2">= </span><span class="s6">0</span><span class="s2">;</span>
+  <span class="s4">/** Function BSON type */</span>
+  <span class="s0">static </span><span class="s1">readonly SUBTYPE_FUNCTION </span><span class="s2">= </span><span class="s6">1</span><span class="s2">;</span>
+  <span class="s4">/** Byte Array BSON type */</span>
+  <span class="s0">static </span><span class="s1">readonly SUBTYPE_BYTE_ARRAY </span><span class="s2">= </span><span class="s6">2</span><span class="s2">;</span>
+  <span class="s4">/** Deprecated UUID BSON type @deprecated Please use SUBTYPE_UUID */</span>
+  <span class="s0">static </span><span class="s1">readonly SUBTYPE_UUID_OLD </span><span class="s2">= </span><span class="s6">3</span><span class="s2">;</span>
+  <span class="s4">/** UUID BSON type */</span>
+  <span class="s0">static </span><span class="s1">readonly SUBTYPE_UUID </span><span class="s2">= </span><span class="s6">4</span><span class="s2">;</span>
+  <span class="s4">/** MD5 BSON type */</span>
+  <span class="s0">static </span><span class="s1">readonly SUBTYPE_MD5 </span><span class="s2">= </span><span class="s6">5</span><span class="s2">;</span>
+  <span class="s4">/** Encrypted BSON type */</span>
+  <span class="s0">static </span><span class="s1">readonly SUBTYPE_ENCRYPTED </span><span class="s2">= </span><span class="s6">6</span><span class="s2">;</span>
+  <span class="s4">/** Column BSON type */</span>
+  <span class="s0">static </span><span class="s1">readonly SUBTYPE_COLUMN </span><span class="s2">= </span><span class="s6">7</span><span class="s2">;</span>
+  <span class="s4">/** Sensitive BSON type */</span>
+  <span class="s0">static </span><span class="s1">readonly SUBTYPE_SENSITIVE </span><span class="s2">= </span><span class="s6">8</span><span class="s2">;</span>
+  <span class="s4">/** Vector BSON type */</span>
+  <span class="s0">static </span><span class="s1">readonly SUBTYPE_VECTOR </span><span class="s2">= </span><span class="s6">9</span><span class="s2">;</span>
+  <span class="s4">/** User BSON type */</span>
+  <span class="s0">static </span><span class="s1">readonly SUBTYPE_USER_DEFINED </span><span class="s2">= </span><span class="s6">128</span><span class="s2">;</span>
+
+  <span class="s4">/** datatype of a Binary Vector (subtype: 9) */</span>
+  <span class="s0">static </span><span class="s1">readonly VECTOR_TYPE </span><span class="s2">= </span><span class="s1">Object</span><span class="s2">.</span><span class="s1">freeze</span><span class="s2">({</span>
+    <span class="s1">Int8</span><span class="s2">: </span><span class="s6">0x03</span><span class="s2">,</span>
+    <span class="s1">Float32</span><span class="s2">: </span><span class="s6">0x27</span><span class="s2">,</span>
+    <span class="s1">PackedBit</span><span class="s2">: </span><span class="s6">0x10</span>
+  <span class="s2">} as </span><span class="s0">const</span><span class="s2">);</span>
+
+  <span class="s4">/**</span>
+   <span class="s4">* The bytes of the Binary value.</span>
+   <span class="s4">*</span>
+   <span class="s4">* The format of a Binary value in BSON is defined as:</span>
+   <span class="s4">* ```txt</span>
+   <span class="s4">* binary ::= int32 subtype (byte*)</span>
+   <span class="s4">* ```</span>
+   <span class="s4">*</span>
+   <span class="s4">* This `buffer` is the &quot;(byte*)&quot; segment.</span>
+   <span class="s4">*</span>
+   <span class="s4">* Unless the value is subtype 2, then deserialize will read the first 4 bytes as an int32 and set this to the remaining bytes.</span>
+   <span class="s4">*</span>
+   <span class="s4">* ```txt</span>
+   <span class="s4">* binary ::= int32 unsigned_byte(2) int32 (byte*)</span>
+   <span class="s4">* ```</span>
+   <span class="s4">*</span>
+   <span class="s4">* </span><span class="s5">@see </span><span class="s4">https://bsonspec.org/spec.html</span>
+   <span class="s4">*/</span>
+  <span class="s0">public </span><span class="s1">buffer</span><span class="s2">: </span><span class="s1">Uint8Array</span><span class="s2">;</span>
+  <span class="s4">/**</span>
+   <span class="s4">* The binary subtype.</span>
+   <span class="s4">*</span>
+   <span class="s4">* Current defined values are:</span>
+   <span class="s4">*</span>
+   <span class="s4">* - `unsigned_byte(0)` Generic binary subtype</span>
+   <span class="s4">* - `unsigned_byte(1)` Function</span>
+   <span class="s4">* - `unsigned_byte(2)` Binary (Deprecated)</span>
+   <span class="s4">* - `unsigned_byte(3)` UUID (Deprecated)</span>
+   <span class="s4">* - `unsigned_byte(4)` UUID</span>
+   <span class="s4">* - `unsigned_byte(5)` MD5</span>
+   <span class="s4">* - `unsigned_byte(6)` Encrypted BSON value</span>
+   <span class="s4">* - `unsigned_byte(7)` Compressed BSON column</span>
+   <span class="s4">* - `unsigned_byte(8)` Sensitive</span>
+   <span class="s4">* - `unsigned_byte(9)` Vector</span>
+   <span class="s4">* - `unsigned_byte(128)` - `unsigned_byte(255)` User defined</span>
+   <span class="s4">*/</span>
+  <span class="s0">public </span><span class="s1">sub_type</span><span class="s2">: </span><span class="s1">number</span><span class="s2">;</span>
+  <span class="s4">/**</span>
+   <span class="s4">* The Binary's `buffer` can be larger than the Binary's content.</span>
+   <span class="s4">* This property is used to determine where the content ends in the buffer.</span>
+   <span class="s4">*/</span>
+  <span class="s0">public </span><span class="s1">position</span><span class="s2">: </span><span class="s1">number</span><span class="s2">;</span>
+
+  <span class="s4">/**</span>
+   <span class="s4">* Create a new Binary instance.</span>
+   <span class="s4">* </span><span class="s5">@param </span><span class="s4">buffer - a buffer object containing the binary data.</span>
+   <span class="s4">* </span><span class="s5">@param </span><span class="s4">subType - the option binary type.</span>
+   <span class="s4">*/</span>
+  <span class="s1">constructor</span><span class="s2">(</span><span class="s1">buffer</span><span class="s2">?: </span><span class="s1">BinarySequence</span><span class="s2">, </span><span class="s1">subType</span><span class="s2">?: </span><span class="s1">number</span><span class="s2">) {</span>
+    <span class="s0">super</span><span class="s2">();</span>
+    <span class="s0">if </span><span class="s2">(</span>
+      <span class="s2">!(</span><span class="s1">buffer </span><span class="s2">== </span><span class="s0">null</span><span class="s2">) &amp;&amp;</span>
+      <span class="s0">typeof </span><span class="s1">buffer </span><span class="s2">=== </span><span class="s3">'string' </span><span class="s2">&amp;&amp;</span>
+      <span class="s2">!</span><span class="s1">ArrayBuffer</span><span class="s2">.</span><span class="s1">isView</span><span class="s2">(</span><span class="s1">buffer</span><span class="s2">) &amp;&amp;</span>
+      <span class="s2">!</span><span class="s1">isAnyArrayBuffer</span><span class="s2">(</span><span class="s1">buffer</span><span class="s2">) &amp;&amp;</span>
+      <span class="s2">!</span><span class="s1">Array</span><span class="s2">.</span><span class="s1">isArray</span><span class="s2">(</span><span class="s1">buffer</span><span class="s2">)</span>
+    <span class="s2">) {</span>
+      <span class="s0">throw new </span><span class="s1">BSONError</span><span class="s2">(</span><span class="s3">'Binary can only be constructed from Uint8Array or number[]'</span><span class="s2">);</span>
+    <span class="s2">}</span>
+
+    <span class="s0">this</span><span class="s2">.</span><span class="s1">sub_type </span><span class="s2">= </span><span class="s1">subType </span><span class="s2">?? </span><span class="s1">Binary</span><span class="s2">.</span><span class="s1">BSON_BINARY_SUBTYPE_DEFAULT</span><span class="s2">;</span>
+
+    <span class="s0">if </span><span class="s2">(</span><span class="s1">buffer </span><span class="s2">== </span><span class="s0">null</span><span class="s2">) {</span>
+      <span class="s7">// create an empty binary buffer</span>
+      <span class="s0">this</span><span class="s2">.</span><span class="s1">buffer </span><span class="s2">= </span><span class="s1">ByteUtils</span><span class="s2">.</span><span class="s1">allocate</span><span class="s2">(</span><span class="s1">Binary</span><span class="s2">.</span><span class="s1">BUFFER_SIZE</span><span class="s2">);</span>
+      <span class="s0">this</span><span class="s2">.</span><span class="s1">position </span><span class="s2">= </span><span class="s6">0</span><span class="s2">;</span>
+    <span class="s2">} </span><span class="s0">else </span><span class="s2">{</span>
+      <span class="s0">this</span><span class="s2">.</span><span class="s1">buffer </span><span class="s2">= </span><span class="s1">Array</span><span class="s2">.</span><span class="s1">isArray</span><span class="s2">(</span><span class="s1">buffer</span><span class="s2">)</span>
+        <span class="s2">? </span><span class="s1">ByteUtils</span><span class="s2">.</span><span class="s1">fromNumberArray</span><span class="s2">(</span><span class="s1">buffer</span><span class="s2">)</span>
+        <span class="s2">: </span><span class="s1">ByteUtils</span><span class="s2">.</span><span class="s1">toLocalBufferType</span><span class="s2">(</span><span class="s1">buffer</span><span class="s2">);</span>
+      <span class="s0">this</span><span class="s2">.</span><span class="s1">position </span><span class="s2">= </span><span class="s0">this</span><span class="s2">.</span><span class="s1">buffer</span><span class="s2">.</span><span class="s1">byteLength</span><span class="s2">;</span>
+    <span class="s2">}</span>
+  <span class="s2">}</span>
+
+  <span class="s4">/**</span>
+   <span class="s4">* Updates this binary with byte_value.</span>
+   <span class="s4">*</span>
+   <span class="s4">* </span><span class="s5">@param </span><span class="s4">byteValue - a single byte we wish to write.</span>
+   <span class="s4">*/</span>
+  <span class="s1">put</span><span class="s2">(</span><span class="s1">byteValue</span><span class="s2">: </span><span class="s1">string </span><span class="s2">| </span><span class="s1">number </span><span class="s2">| </span><span class="s1">Uint8Array </span><span class="s2">| </span><span class="s1">number</span><span class="s2">[]): </span><span class="s0">void </span><span class="s2">{</span>
+    <span class="s7">// If it's a string and a has more than one character throw an error</span>
+    <span class="s0">if </span><span class="s2">(</span><span class="s0">typeof </span><span class="s1">byteValue </span><span class="s2">=== </span><span class="s3">'string' </span><span class="s2">&amp;&amp; </span><span class="s1">byteValue</span><span class="s2">.</span><span class="s1">length </span><span class="s2">!== </span><span class="s6">1</span><span class="s2">) {</span>
+      <span class="s0">throw new </span><span class="s1">BSONError</span><span class="s2">(</span><span class="s3">'only accepts single character String'</span><span class="s2">);</span>
+    <span class="s2">} </span><span class="s0">else if </span><span class="s2">(</span><span class="s0">typeof </span><span class="s1">byteValue </span><span class="s2">!== </span><span class="s3">'number' </span><span class="s2">&amp;&amp; </span><span class="s1">byteValue</span><span class="s2">.</span><span class="s1">length </span><span class="s2">!== </span><span class="s6">1</span><span class="s2">)</span>
+      <span class="s0">throw new </span><span class="s1">BSONError</span><span class="s2">(</span><span class="s3">'only accepts single character Uint8Array or Array'</span><span class="s2">);</span>
+
+    <span class="s7">// Decode the byte value once</span>
+    <span class="s0">let </span><span class="s1">decodedByte</span><span class="s2">: </span><span class="s1">number</span><span class="s2">;</span>
+    <span class="s0">if </span><span class="s2">(</span><span class="s0">typeof </span><span class="s1">byteValue </span><span class="s2">=== </span><span class="s3">'string'</span><span class="s2">) {</span>
+      <span class="s1">decodedByte </span><span class="s2">= </span><span class="s1">byteValue</span><span class="s2">.</span><span class="s1">charCodeAt</span><span class="s2">(</span><span class="s6">0</span><span class="s2">);</span>
+    <span class="s2">} </span><span class="s0">else if </span><span class="s2">(</span><span class="s0">typeof </span><span class="s1">byteValue </span><span class="s2">=== </span><span class="s3">'number'</span><span class="s2">) {</span>
+      <span class="s1">decodedByte </span><span class="s2">= </span><span class="s1">byteValue</span><span class="s2">;</span>
+    <span class="s2">} </span><span class="s0">else </span><span class="s2">{</span>
+      <span class="s1">decodedByte </span><span class="s2">= </span><span class="s1">byteValue</span><span class="s2">[</span><span class="s6">0</span><span class="s2">];</span>
+    <span class="s2">}</span>
+
+    <span class="s0">if </span><span class="s2">(</span><span class="s1">decodedByte </span><span class="s2">&lt; </span><span class="s6">0 </span><span class="s2">|| </span><span class="s1">decodedByte </span><span class="s2">&gt; </span><span class="s6">255</span><span class="s2">) {</span>
+      <span class="s0">throw new </span><span class="s1">BSONError</span><span class="s2">(</span><span class="s3">'only accepts number in a valid unsigned byte range 0-255'</span><span class="s2">);</span>
+    <span class="s2">}</span>
+
+    <span class="s0">if </span><span class="s2">(</span><span class="s0">this</span><span class="s2">.</span><span class="s1">buffer</span><span class="s2">.</span><span class="s1">byteLength </span><span class="s2">&gt; </span><span class="s0">this</span><span class="s2">.</span><span class="s1">position</span><span class="s2">) {</span>
+      <span class="s0">this</span><span class="s2">.</span><span class="s1">buffer</span><span class="s2">[</span><span class="s0">this</span><span class="s2">.</span><span class="s1">position</span><span class="s2">++] = </span><span class="s1">decodedByte</span><span class="s2">;</span>
+    <span class="s2">} </span><span class="s0">else </span><span class="s2">{</span>
+      <span class="s0">const </span><span class="s1">newSpace </span><span class="s2">= </span><span class="s1">ByteUtils</span><span class="s2">.</span><span class="s1">allocate</span><span class="s2">(</span><span class="s1">Binary</span><span class="s2">.</span><span class="s1">BUFFER_SIZE </span><span class="s2">+ </span><span class="s0">this</span><span class="s2">.</span><span class="s1">buffer</span><span class="s2">.</span><span class="s1">length</span><span class="s2">);</span>
+      <span class="s1">newSpace</span><span class="s2">.</span><span class="s1">set</span><span class="s2">(</span><span class="s0">this</span><span class="s2">.</span><span class="s1">buffer</span><span class="s2">, </span><span class="s6">0</span><span class="s2">);</span>
+      <span class="s0">this</span><span class="s2">.</span><span class="s1">buffer </span><span class="s2">= </span><span class="s1">newSpace</span><span class="s2">;</span>
+      <span class="s0">this</span><span class="s2">.</span><span class="s1">buffer</span><span class="s2">[</span><span class="s0">this</span><span class="s2">.</span><span class="s1">position</span><span class="s2">++] = </span><span class="s1">decodedByte</span><span class="s2">;</span>
+    <span class="s2">}</span>
+  <span class="s2">}</span>
+
+  <span class="s4">/**</span>
+   <span class="s4">* Writes a buffer to the binary.</span>
+   <span class="s4">*</span>
+   <span class="s4">* </span><span class="s5">@param </span><span class="s4">sequence - a string or buffer to be written to the Binary BSON object.</span>
+   <span class="s4">* </span><span class="s5">@param </span><span class="s4">offset - specify the binary of where to write the content.</span>
+   <span class="s4">*/</span>
+  <span class="s1">write</span><span class="s2">(</span><span class="s1">sequence</span><span class="s2">: </span><span class="s1">BinarySequence</span><span class="s2">, </span><span class="s1">offset</span><span class="s2">: </span><span class="s1">number</span><span class="s2">): </span><span class="s0">void </span><span class="s2">{</span>
+    <span class="s1">offset </span><span class="s2">= </span><span class="s0">typeof </span><span class="s1">offset </span><span class="s2">=== </span><span class="s3">'number' </span><span class="s2">? </span><span class="s1">offset </span><span class="s2">: </span><span class="s0">this</span><span class="s2">.</span><span class="s1">position</span><span class="s2">;</span>
+
+    <span class="s7">// If the buffer is to small let's extend the buffer</span>
+    <span class="s0">if </span><span class="s2">(</span><span class="s0">this</span><span class="s2">.</span><span class="s1">buffer</span><span class="s2">.</span><span class="s1">byteLength </span><span class="s2">&lt; </span><span class="s1">offset </span><span class="s2">+ </span><span class="s1">sequence</span><span class="s2">.</span><span class="s1">length</span><span class="s2">) {</span>
+      <span class="s0">const </span><span class="s1">newSpace </span><span class="s2">= </span><span class="s1">ByteUtils</span><span class="s2">.</span><span class="s1">allocate</span><span class="s2">(</span><span class="s0">this</span><span class="s2">.</span><span class="s1">buffer</span><span class="s2">.</span><span class="s1">byteLength </span><span class="s2">+ </span><span class="s1">sequence</span><span class="s2">.</span><span class="s1">length</span><span class="s2">);</span>
+      <span class="s1">newSpace</span><span class="s2">.</span><span class="s1">set</span><span class="s2">(</span><span class="s0">this</span><span class="s2">.</span><span class="s1">buffer</span><span class="s2">, </span><span class="s6">0</span><span class="s2">);</span>
+
+      <span class="s7">// Assign the new buffer</span>
+      <span class="s0">this</span><span class="s2">.</span><span class="s1">buffer </span><span class="s2">= </span><span class="s1">newSpace</span><span class="s2">;</span>
+    <span class="s2">}</span>
+
+    <span class="s0">if </span><span class="s2">(</span><span class="s1">ArrayBuffer</span><span class="s2">.</span><span class="s1">isView</span><span class="s2">(</span><span class="s1">sequence</span><span class="s2">)) {</span>
+      <span class="s0">this</span><span class="s2">.</span><span class="s1">buffer</span><span class="s2">.</span><span class="s1">set</span><span class="s2">(</span><span class="s1">ByteUtils</span><span class="s2">.</span><span class="s1">toLocalBufferType</span><span class="s2">(</span><span class="s1">sequence</span><span class="s2">), </span><span class="s1">offset</span><span class="s2">);</span>
+      <span class="s0">this</span><span class="s2">.</span><span class="s1">position </span><span class="s2">=</span>
+        <span class="s1">offset </span><span class="s2">+ </span><span class="s1">sequence</span><span class="s2">.</span><span class="s1">byteLength </span><span class="s2">&gt; </span><span class="s0">this</span><span class="s2">.</span><span class="s1">position </span><span class="s2">? </span><span class="s1">offset </span><span class="s2">+ </span><span class="s1">sequence</span><span class="s2">.</span><span class="s1">length </span><span class="s2">: </span><span class="s0">this</span><span class="s2">.</span><span class="s1">position</span><span class="s2">;</span>
+    <span class="s2">} </span><span class="s0">else if </span><span class="s2">(</span><span class="s0">typeof </span><span class="s1">sequence </span><span class="s2">=== </span><span class="s3">'string'</span><span class="s2">) {</span>
+      <span class="s0">throw new </span><span class="s1">BSONError</span><span class="s2">(</span><span class="s3">'input cannot be string'</span><span class="s2">);</span>
+    <span class="s2">}</span>
+  <span class="s2">}</span>
+
+  <span class="s4">/**</span>
+   <span class="s4">* Returns a view of **length** bytes starting at **position**.</span>
+   <span class="s4">*</span>
+   <span class="s4">* </span><span class="s5">@param </span><span class="s4">position - read from the given position in the Binary.</span>
+   <span class="s4">* </span><span class="s5">@param </span><span class="s4">length - the number of bytes to read.</span>
+   <span class="s4">*/</span>
+  <span class="s1">read</span><span class="s2">(</span><span class="s1">position</span><span class="s2">: </span><span class="s1">number</span><span class="s2">, </span><span class="s1">length</span><span class="s2">: </span><span class="s1">number</span><span class="s2">): </span><span class="s1">Uint8Array </span><span class="s2">{</span>
+    <span class="s1">length </span><span class="s2">= </span><span class="s1">length </span><span class="s2">&amp;&amp; </span><span class="s1">length </span><span class="s2">&gt; </span><span class="s6">0 </span><span class="s2">? </span><span class="s1">length </span><span class="s2">: </span><span class="s0">this</span><span class="s2">.</span><span class="s1">position</span><span class="s2">;</span>
+    <span class="s0">const </span><span class="s1">end </span><span class="s2">= </span><span class="s1">position </span><span class="s2">+ </span><span class="s1">length</span><span class="s2">;</span>
+    <span class="s0">return this</span><span class="s2">.</span><span class="s1">buffer</span><span class="s2">.</span><span class="s1">subarray</span><span class="s2">(</span><span class="s1">position</span><span class="s2">, </span><span class="s1">end </span><span class="s2">&gt; </span><span class="s0">this</span><span class="s2">.</span><span class="s1">position </span><span class="s2">? </span><span class="s0">this</span><span class="s2">.</span><span class="s1">position </span><span class="s2">: </span><span class="s1">end</span><span class="s2">);</span>
+  <span class="s2">}</span>
+
+  <span class="s4">/** returns a view of the binary value as a Uint8Array */</span>
+  <span class="s1">value</span><span class="s2">(): </span><span class="s1">Uint8Array </span><span class="s2">{</span>
+    <span class="s7">// Optimize to serialize for the situation where the data == size of buffer</span>
+    <span class="s0">return this</span><span class="s2">.</span><span class="s1">buffer</span><span class="s2">.</span><span class="s1">length </span><span class="s2">=== </span><span class="s0">this</span><span class="s2">.</span><span class="s1">position</span>
+      <span class="s2">? </span><span class="s0">this</span><span class="s2">.</span><span class="s1">buffer</span>
+      <span class="s2">: </span><span class="s0">this</span><span class="s2">.</span><span class="s1">buffer</span><span class="s2">.</span><span class="s1">subarray</span><span class="s2">(</span><span class="s6">0</span><span class="s2">, </span><span class="s0">this</span><span class="s2">.</span><span class="s1">position</span><span class="s2">);</span>
+  <span class="s2">}</span>
+
+  <span class="s4">/** the length of the binary sequence */</span>
+  <span class="s1">length</span><span class="s2">(): </span><span class="s1">number </span><span class="s2">{</span>
+    <span class="s0">return this</span><span class="s2">.</span><span class="s1">position</span><span class="s2">;</span>
+  <span class="s2">}</span>
+
+  <span class="s1">toJSON</span><span class="s2">(): </span><span class="s1">string </span><span class="s2">{</span>
+    <span class="s0">return </span><span class="s1">ByteUtils</span><span class="s2">.</span><span class="s1">toBase64</span><span class="s2">(</span><span class="s0">this</span><span class="s2">.</span><span class="s1">buffer</span><span class="s2">.</span><span class="s1">subarray</span><span class="s2">(</span><span class="s6">0</span><span class="s2">, </span><span class="s0">this</span><span class="s2">.</span><span class="s1">position</span><span class="s2">));</span>
+  <span class="s2">}</span>
+
+  <span class="s1">toString</span><span class="s2">(</span><span class="s1">encoding</span><span class="s2">?: </span><span class="s3">'hex' </span><span class="s2">| </span><span class="s3">'base64' </span><span class="s2">| </span><span class="s3">'utf8' </span><span class="s2">| </span><span class="s3">'utf-8'</span><span class="s2">): </span><span class="s1">string </span><span class="s2">{</span>
+    <span class="s0">if </span><span class="s2">(</span><span class="s1">encoding </span><span class="s2">=== </span><span class="s3">'hex'</span><span class="s2">) </span><span class="s0">return </span><span class="s1">ByteUtils</span><span class="s2">.</span><span class="s1">toHex</span><span class="s2">(</span><span class="s0">this</span><span class="s2">.</span><span class="s1">buffer</span><span class="s2">.</span><span class="s1">subarray</span><span class="s2">(</span><span class="s6">0</span><span class="s2">, </span><span class="s0">this</span><span class="s2">.</span><span class="s1">position</span><span class="s2">));</span>
+    <span class="s0">if </span><span class="s2">(</span><span class="s1">encoding </span><span class="s2">=== </span><span class="s3">'base64'</span><span class="s2">) </span><span class="s0">return </span><span class="s1">ByteUtils</span><span class="s2">.</span><span class="s1">toBase64</span><span class="s2">(</span><span class="s0">this</span><span class="s2">.</span><span class="s1">buffer</span><span class="s2">.</span><span class="s1">subarray</span><span class="s2">(</span><span class="s6">0</span><span class="s2">, </span><span class="s0">this</span><span class="s2">.</span><span class="s1">position</span><span class="s2">));</span>
+    <span class="s0">if </span><span class="s2">(</span><span class="s1">encoding </span><span class="s2">=== </span><span class="s3">'utf8' </span><span class="s2">|| </span><span class="s1">encoding </span><span class="s2">=== </span><span class="s3">'utf-8'</span><span class="s2">)</span>
+      <span class="s0">return </span><span class="s1">ByteUtils</span><span class="s2">.</span><span class="s1">toUTF8</span><span class="s2">(</span><span class="s0">this</span><span class="s2">.</span><span class="s1">buffer</span><span class="s2">, </span><span class="s6">0</span><span class="s2">, </span><span class="s0">this</span><span class="s2">.</span><span class="s1">position</span><span class="s2">, </span><span class="s0">false</span><span class="s2">);</span>
+    <span class="s0">return </span><span class="s1">ByteUtils</span><span class="s2">.</span><span class="s1">toUTF8</span><span class="s2">(</span><span class="s0">this</span><span class="s2">.</span><span class="s1">buffer</span><span class="s2">, </span><span class="s6">0</span><span class="s2">, </span><span class="s0">this</span><span class="s2">.</span><span class="s1">position</span><span class="s2">, </span><span class="s0">false</span><span class="s2">);</span>
+  <span class="s2">}</span>
+
+  <span class="s4">/** </span><span class="s5">@internal </span><span class="s4">*/</span>
+  <span class="s1">toExtendedJSON</span><span class="s2">(</span><span class="s1">options</span><span class="s2">?: </span><span class="s1">EJSONOptions</span><span class="s2">): </span><span class="s1">BinaryExtendedLegacy </span><span class="s2">| </span><span class="s1">BinaryExtended </span><span class="s2">{</span>
+    <span class="s1">options </span><span class="s2">= </span><span class="s1">options </span><span class="s2">|| {};</span>
+
+    <span class="s0">if </span><span class="s2">(</span><span class="s0">this</span><span class="s2">.</span><span class="s1">sub_type </span><span class="s2">=== </span><span class="s1">Binary</span><span class="s2">.</span><span class="s1">SUBTYPE_VECTOR</span><span class="s2">) {</span>
+      <span class="s1">validateBinaryVector</span><span class="s2">(</span><span class="s0">this</span><span class="s2">);</span>
+    <span class="s2">}</span>
+
+    <span class="s0">const </span><span class="s1">base64String </span><span class="s2">= </span><span class="s1">ByteUtils</span><span class="s2">.</span><span class="s1">toBase64</span><span class="s2">(</span><span class="s0">this</span><span class="s2">.</span><span class="s1">buffer</span><span class="s2">);</span>
+
+    <span class="s0">const </span><span class="s1">subType </span><span class="s2">= </span><span class="s1">Number</span><span class="s2">(</span><span class="s0">this</span><span class="s2">.</span><span class="s1">sub_type</span><span class="s2">).</span><span class="s1">toString</span><span class="s2">(</span><span class="s6">16</span><span class="s2">);</span>
+    <span class="s0">if </span><span class="s2">(</span><span class="s1">options</span><span class="s2">.</span><span class="s1">legacy</span><span class="s2">) {</span>
+      <span class="s0">return </span><span class="s2">{</span>
+        <span class="s1">$binary</span><span class="s2">: </span><span class="s1">base64String</span><span class="s2">,</span>
+        <span class="s1">$type</span><span class="s2">: </span><span class="s1">subType</span><span class="s2">.</span><span class="s1">length </span><span class="s2">=== </span><span class="s6">1 </span><span class="s2">? </span><span class="s3">'0' </span><span class="s2">+ </span><span class="s1">subType </span><span class="s2">: </span><span class="s1">subType</span>
+      <span class="s2">};</span>
+    <span class="s2">}</span>
+    <span class="s0">return </span><span class="s2">{</span>
+      <span class="s1">$binary</span><span class="s2">: {</span>
+        <span class="s1">base64</span><span class="s2">: </span><span class="s1">base64String</span><span class="s2">,</span>
+        <span class="s1">subType</span><span class="s2">: </span><span class="s1">subType</span><span class="s2">.</span><span class="s1">length </span><span class="s2">=== </span><span class="s6">1 </span><span class="s2">? </span><span class="s3">'0' </span><span class="s2">+ </span><span class="s1">subType </span><span class="s2">: </span><span class="s1">subType</span>
+      <span class="s2">}</span>
+    <span class="s2">};</span>
+  <span class="s2">}</span>
+
+  <span class="s1">toUUID</span><span class="s2">(): </span><span class="s1">UUID </span><span class="s2">{</span>
+    <span class="s0">if </span><span class="s2">(</span><span class="s0">this</span><span class="s2">.</span><span class="s1">sub_type </span><span class="s2">=== </span><span class="s1">Binary</span><span class="s2">.</span><span class="s1">SUBTYPE_UUID</span><span class="s2">) {</span>
+      <span class="s0">return new </span><span class="s1">UUID</span><span class="s2">(</span><span class="s0">this</span><span class="s2">.</span><span class="s1">buffer</span><span class="s2">.</span><span class="s1">subarray</span><span class="s2">(</span><span class="s6">0</span><span class="s2">, </span><span class="s0">this</span><span class="s2">.</span><span class="s1">position</span><span class="s2">));</span>
+    <span class="s2">}</span>
+
+    <span class="s0">throw new </span><span class="s1">BSONError</span><span class="s2">(</span>
+      <span class="s3">`Binary sub_type &quot;</span><span class="s1">$</span><span class="s2">{</span><span class="s0">this</span><span class="s2">.</span><span class="s1">sub_type</span><span class="s2">}</span><span class="s3">&quot; is not supported for converting to UUID. Only &quot;</span><span class="s1">$</span><span class="s2">{</span><span class="s1">Binary</span><span class="s2">.</span><span class="s1">SUBTYPE_UUID</span><span class="s2">}</span><span class="s3">&quot; is currently supported.`</span>
+    <span class="s2">);</span>
+  <span class="s2">}</span>
+
+  <span class="s4">/** Creates an Binary instance from a hex digit string */</span>
+  <span class="s0">static </span><span class="s1">createFromHexString</span><span class="s2">(</span><span class="s1">hex</span><span class="s2">: </span><span class="s1">string</span><span class="s2">, </span><span class="s1">subType</span><span class="s2">?: </span><span class="s1">number</span><span class="s2">): </span><span class="s1">Binary </span><span class="s2">{</span>
+    <span class="s0">return new </span><span class="s1">Binary</span><span class="s2">(</span><span class="s1">ByteUtils</span><span class="s2">.</span><span class="s1">fromHex</span><span class="s2">(</span><span class="s1">hex</span><span class="s2">), </span><span class="s1">subType</span><span class="s2">);</span>
+  <span class="s2">}</span>
+
+  <span class="s4">/** Creates an Binary instance from a base64 string */</span>
+  <span class="s0">static </span><span class="s1">createFromBase64</span><span class="s2">(</span><span class="s1">base64</span><span class="s2">: </span><span class="s1">string</span><span class="s2">, </span><span class="s1">subType</span><span class="s2">?: </span><span class="s1">number</span><span class="s2">): </span><span class="s1">Binary </span><span class="s2">{</span>
+    <span class="s0">return new </span><span class="s1">Binary</span><span class="s2">(</span><span class="s1">ByteUtils</span><span class="s2">.</span><span class="s1">fromBase64</span><span class="s2">(</span><span class="s1">base64</span><span class="s2">), </span><span class="s1">subType</span><span class="s2">);</span>
+  <span class="s2">}</span>
+
+  <span class="s4">/** </span><span class="s5">@internal </span><span class="s4">*/</span>
+  <span class="s0">static </span><span class="s1">fromExtendedJSON</span><span class="s2">(</span>
+    <span class="s1">doc</span><span class="s2">: </span><span class="s1">BinaryExtendedLegacy </span><span class="s2">| </span><span class="s1">BinaryExtended </span><span class="s2">| </span><span class="s1">UUIDExtended</span><span class="s2">,</span>
+    <span class="s1">options</span><span class="s2">?: </span><span class="s1">EJSONOptions</span>
+  <span class="s2">): </span><span class="s1">Binary </span><span class="s2">{</span>
+    <span class="s1">options </span><span class="s2">= </span><span class="s1">options </span><span class="s2">|| {};</span>
+    <span class="s0">let </span><span class="s1">data</span><span class="s2">: </span><span class="s1">Uint8Array </span><span class="s2">| </span><span class="s1">undefined</span><span class="s2">;</span>
+    <span class="s0">let </span><span class="s1">type</span><span class="s2">;</span>
+    <span class="s0">if </span><span class="s2">(</span><span class="s3">'$binary' </span><span class="s0">in </span><span class="s1">doc</span><span class="s2">) {</span>
+      <span class="s0">if </span><span class="s2">(</span><span class="s1">options</span><span class="s2">.</span><span class="s1">legacy </span><span class="s2">&amp;&amp; </span><span class="s0">typeof </span><span class="s1">doc</span><span class="s2">.</span><span class="s1">$binary </span><span class="s2">=== </span><span class="s3">'string' </span><span class="s2">&amp;&amp; </span><span class="s3">'$type' </span><span class="s0">in </span><span class="s1">doc</span><span class="s2">) {</span>
+        <span class="s1">type </span><span class="s2">= </span><span class="s1">doc</span><span class="s2">.</span><span class="s1">$type </span><span class="s2">? </span><span class="s1">parseInt</span><span class="s2">(</span><span class="s1">doc</span><span class="s2">.</span><span class="s1">$type</span><span class="s2">, </span><span class="s6">16</span><span class="s2">) : </span><span class="s6">0</span><span class="s2">;</span>
+        <span class="s1">data </span><span class="s2">= </span><span class="s1">ByteUtils</span><span class="s2">.</span><span class="s1">fromBase64</span><span class="s2">(</span><span class="s1">doc</span><span class="s2">.</span><span class="s1">$binary</span><span class="s2">);</span>
+      <span class="s2">} </span><span class="s0">else </span><span class="s2">{</span>
+        <span class="s0">if </span><span class="s2">(</span><span class="s0">typeof </span><span class="s1">doc</span><span class="s2">.</span><span class="s1">$binary </span><span class="s2">!== </span><span class="s3">'string'</span><span class="s2">) {</span>
+          <span class="s1">type </span><span class="s2">= </span><span class="s1">doc</span><span class="s2">.</span><span class="s1">$binary</span><span class="s2">.</span><span class="s1">subType </span><span class="s2">? </span><span class="s1">parseInt</span><span class="s2">(</span><span class="s1">doc</span><span class="s2">.</span><span class="s1">$binary</span><span class="s2">.</span><span class="s1">subType</span><span class="s2">, </span><span class="s6">16</span><span class="s2">) : </span><span class="s6">0</span><span class="s2">;</span>
+          <span class="s1">data </span><span class="s2">= </span><span class="s1">ByteUtils</span><span class="s2">.</span><span class="s1">fromBase64</span><span class="s2">(</span><span class="s1">doc</span><span class="s2">.</span><span class="s1">$binary</span><span class="s2">.</span><span class="s1">base64</span><span class="s2">);</span>
+        <span class="s2">}</span>
+      <span class="s2">}</span>
+    <span class="s2">} </span><span class="s0">else if </span><span class="s2">(</span><span class="s3">'$uuid' </span><span class="s0">in </span><span class="s1">doc</span><span class="s2">) {</span>
+      <span class="s1">type </span><span class="s2">= </span><span class="s6">4</span><span class="s2">;</span>
+      <span class="s1">data </span><span class="s2">= </span><span class="s1">UUID</span><span class="s2">.</span><span class="s1">bytesFromString</span><span class="s2">(</span><span class="s1">doc</span><span class="s2">.</span><span class="s1">$uuid</span><span class="s2">);</span>
+    <span class="s2">}</span>
+    <span class="s0">if </span><span class="s2">(!</span><span class="s1">data</span><span class="s2">) {</span>
+      <span class="s0">throw new </span><span class="s1">BSONError</span><span class="s2">(</span><span class="s3">`Unexpected Binary Extended JSON format </span><span class="s1">$</span><span class="s2">{</span><span class="s1">JSON</span><span class="s2">.</span><span class="s1">stringify</span><span class="s2">(</span><span class="s1">doc</span><span class="s2">)}</span><span class="s3">`</span><span class="s2">);</span>
+    <span class="s2">}</span>
+    <span class="s0">return </span><span class="s1">type </span><span class="s2">=== </span><span class="s1">BSON_BINARY_SUBTYPE_UUID_NEW </span><span class="s2">? </span><span class="s0">new </span><span class="s1">UUID</span><span class="s2">(</span><span class="s1">data</span><span class="s2">) : </span><span class="s0">new </span><span class="s1">Binary</span><span class="s2">(</span><span class="s1">data</span><span class="s2">, </span><span class="s1">type</span><span class="s2">);</span>
+  <span class="s2">}</span>
+
+  <span class="s1">inspect</span><span class="s2">(</span><span class="s1">depth</span><span class="s2">?: </span><span class="s1">number</span><span class="s2">, </span><span class="s1">options</span><span class="s2">?: </span><span class="s1">unknown</span><span class="s2">, </span><span class="s1">inspect</span><span class="s2">?: </span><span class="s1">InspectFn</span><span class="s2">): </span><span class="s1">string </span><span class="s2">{</span>
+    <span class="s1">inspect </span><span class="s2">??= </span><span class="s1">defaultInspect</span><span class="s2">;</span>
+    <span class="s0">const </span><span class="s1">base64 </span><span class="s2">= </span><span class="s1">ByteUtils</span><span class="s2">.</span><span class="s1">toBase64</span><span class="s2">(</span><span class="s0">this</span><span class="s2">.</span><span class="s1">buffer</span><span class="s2">.</span><span class="s1">subarray</span><span class="s2">(</span><span class="s6">0</span><span class="s2">, </span><span class="s0">this</span><span class="s2">.</span><span class="s1">position</span><span class="s2">));</span>
+    <span class="s0">const </span><span class="s1">base64Arg </span><span class="s2">= </span><span class="s1">inspect</span><span class="s2">(</span><span class="s1">base64</span><span class="s2">, </span><span class="s1">options</span><span class="s2">);</span>
+    <span class="s0">const </span><span class="s1">subTypeArg </span><span class="s2">= </span><span class="s1">inspect</span><span class="s2">(</span><span class="s0">this</span><span class="s2">.</span><span class="s1">sub_type</span><span class="s2">, </span><span class="s1">options</span><span class="s2">);</span>
+    <span class="s0">return </span><span class="s3">`Binary.createFromBase64(</span><span class="s1">$</span><span class="s2">{</span><span class="s1">base64Arg</span><span class="s2">}</span><span class="s3">, </span><span class="s1">$</span><span class="s2">{</span><span class="s1">subTypeArg</span><span class="s2">}</span><span class="s3">)`</span><span class="s2">;</span>
+  <span class="s2">}</span>
+
+  <span class="s4">/**</span>
+   <span class="s4">* If this Binary represents a Int8 Vector (`binary.buffer[0] === Binary.VECTOR_TYPE.Int8`),</span>
+   <span class="s4">* returns a copy of the bytes in a new Int8Array.</span>
+   <span class="s4">*</span>
+   <span class="s4">* If the Binary is not a Vector, or the datatype is not Int8, an error is thrown.</span>
+   <span class="s4">*/</span>
+  <span class="s0">public </span><span class="s1">toInt8Array</span><span class="s2">(): </span><span class="s1">Int8Array </span><span class="s2">{</span>
+    <span class="s0">if </span><span class="s2">(</span><span class="s0">this</span><span class="s2">.</span><span class="s1">sub_type </span><span class="s2">!== </span><span class="s1">Binary</span><span class="s2">.</span><span class="s1">SUBTYPE_VECTOR</span><span class="s2">) {</span>
+      <span class="s0">throw new </span><span class="s1">BSONError</span><span class="s2">(</span><span class="s3">'Binary sub_type is not Vector'</span><span class="s2">);</span>
+    <span class="s2">}</span>
+
+    <span class="s0">if </span><span class="s2">(</span><span class="s0">this</span><span class="s2">.</span><span class="s1">buffer</span><span class="s2">[</span><span class="s6">0</span><span class="s2">] !== </span><span class="s1">Binary</span><span class="s2">.</span><span class="s1">VECTOR_TYPE</span><span class="s2">.</span><span class="s1">Int8</span><span class="s2">) {</span>
+      <span class="s0">throw new </span><span class="s1">BSONError</span><span class="s2">(</span><span class="s3">'Binary datatype field is not Int8'</span><span class="s2">);</span>
+    <span class="s2">}</span>
+
+    <span class="s0">return new </span><span class="s1">Int8Array</span><span class="s2">(</span>
+      <span class="s0">this</span><span class="s2">.</span><span class="s1">buffer</span><span class="s2">.</span><span class="s1">buffer</span><span class="s2">.</span><span class="s1">slice</span><span class="s2">(</span><span class="s0">this</span><span class="s2">.</span><span class="s1">buffer</span><span class="s2">.</span><span class="s1">byteOffset </span><span class="s2">+ </span><span class="s6">2</span><span class="s2">, </span><span class="s0">this</span><span class="s2">.</span><span class="s1">buffer</span><span class="s2">.</span><span class="s1">byteOffset </span><span class="s2">+ </span><span class="s0">this</span><span class="s2">.</span><span class="s1">position</span><span class="s2">)</span>
+    <span class="s2">);</span>
+  <span class="s2">}</span>
+
+  <span class="s4">/**</span>
+   <span class="s4">* If this Binary represents a Float32 Vector (`binary.buffer[0] === Binary.VECTOR_TYPE.Float32`),</span>
+   <span class="s4">* returns a copy of the bytes in a new Float32Array.</span>
+   <span class="s4">*</span>
+   <span class="s4">* If the Binary is not a Vector, or the datatype is not Float32, an error is thrown.</span>
+   <span class="s4">*/</span>
+  <span class="s0">public </span><span class="s1">toFloat32Array</span><span class="s2">(): </span><span class="s1">Float32Array </span><span class="s2">{</span>
+    <span class="s0">if </span><span class="s2">(</span><span class="s0">this</span><span class="s2">.</span><span class="s1">sub_type </span><span class="s2">!== </span><span class="s1">Binary</span><span class="s2">.</span><span class="s1">SUBTYPE_VECTOR</span><span class="s2">) {</span>
+      <span class="s0">throw new </span><span class="s1">BSONError</span><span class="s2">(</span><span class="s3">'Binary sub_type is not Vector'</span><span class="s2">);</span>
+    <span class="s2">}</span>
+
+    <span class="s0">if </span><span class="s2">(</span><span class="s0">this</span><span class="s2">.</span><span class="s1">buffer</span><span class="s2">[</span><span class="s6">0</span><span class="s2">] !== </span><span class="s1">Binary</span><span class="s2">.</span><span class="s1">VECTOR_TYPE</span><span class="s2">.</span><span class="s1">Float32</span><span class="s2">) {</span>
+      <span class="s0">throw new </span><span class="s1">BSONError</span><span class="s2">(</span><span class="s3">'Binary datatype field is not Float32'</span><span class="s2">);</span>
+    <span class="s2">}</span>
+
+    <span class="s0">const </span><span class="s1">floatBytes </span><span class="s2">= </span><span class="s0">new </span><span class="s1">Uint8Array</span><span class="s2">(</span>
+      <span class="s0">this</span><span class="s2">.</span><span class="s1">buffer</span><span class="s2">.</span><span class="s1">buffer</span><span class="s2">.</span><span class="s1">slice</span><span class="s2">(</span><span class="s0">this</span><span class="s2">.</span><span class="s1">buffer</span><span class="s2">.</span><span class="s1">byteOffset </span><span class="s2">+ </span><span class="s6">2</span><span class="s2">, </span><span class="s0">this</span><span class="s2">.</span><span class="s1">buffer</span><span class="s2">.</span><span class="s1">byteOffset </span><span class="s2">+ </span><span class="s0">this</span><span class="s2">.</span><span class="s1">position</span><span class="s2">)</span>
+    <span class="s2">);</span>
+
+    <span class="s0">if </span><span class="s2">(</span><span class="s1">NumberUtils</span><span class="s2">.</span><span class="s1">isBigEndian</span><span class="s2">) </span><span class="s1">ByteUtils</span><span class="s2">.</span><span class="s1">swap32</span><span class="s2">(</span><span class="s1">floatBytes</span><span class="s2">);</span>
+
+    <span class="s0">return new </span><span class="s1">Float32Array</span><span class="s2">(</span><span class="s1">floatBytes</span><span class="s2">.</span><span class="s1">buffer</span><span class="s2">);</span>
+  <span class="s2">}</span>
+
+  <span class="s4">/**</span>
+   <span class="s4">* If this Binary represents packed bit Vector (`binary.buffer[0] === Binary.VECTOR_TYPE.PackedBit`),</span>
+   <span class="s4">* returns a copy of the bytes that are packed bits.</span>
+   <span class="s4">*</span>
+   <span class="s4">* Use `toBits` to get the unpacked bits.</span>
+   <span class="s4">*</span>
+   <span class="s4">* If the Binary is not a Vector, or the datatype is not PackedBit, an error is thrown.</span>
+   <span class="s4">*/</span>
+  <span class="s0">public </span><span class="s1">toPackedBits</span><span class="s2">(): </span><span class="s1">Uint8Array </span><span class="s2">{</span>
+    <span class="s0">if </span><span class="s2">(</span><span class="s0">this</span><span class="s2">.</span><span class="s1">sub_type </span><span class="s2">!== </span><span class="s1">Binary</span><span class="s2">.</span><span class="s1">SUBTYPE_VECTOR</span><span class="s2">) {</span>
+      <span class="s0">throw new </span><span class="s1">BSONError</span><span class="s2">(</span><span class="s3">'Binary sub_type is not Vector'</span><span class="s2">);</span>
+    <span class="s2">}</span>
+
+    <span class="s0">if </span><span class="s2">(</span><span class="s0">this</span><span class="s2">.</span><span class="s1">buffer</span><span class="s2">[</span><span class="s6">0</span><span class="s2">] !== </span><span class="s1">Binary</span><span class="s2">.</span><span class="s1">VECTOR_TYPE</span><span class="s2">.</span><span class="s1">PackedBit</span><span class="s2">) {</span>
+      <span class="s0">throw new </span><span class="s1">BSONError</span><span class="s2">(</span><span class="s3">'Binary datatype field is not packed bit'</span><span class="s2">);</span>
+    <span class="s2">}</span>
+
+    <span class="s0">return new </span><span class="s1">Uint8Array</span><span class="s2">(</span>
+      <span class="s0">this</span><span class="s2">.</span><span class="s1">buffer</span><span class="s2">.</span><span class="s1">buffer</span><span class="s2">.</span><span class="s1">slice</span><span class="s2">(</span><span class="s0">this</span><span class="s2">.</span><span class="s1">buffer</span><span class="s2">.</span><span class="s1">byteOffset </span><span class="s2">+ </span><span class="s6">2</span><span class="s2">, </span><span class="s0">this</span><span class="s2">.</span><span class="s1">buffer</span><span class="s2">.</span><span class="s1">byteOffset </span><span class="s2">+ </span><span class="s0">this</span><span class="s2">.</span><span class="s1">position</span><span class="s2">)</span>
+    <span class="s2">);</span>
+  <span class="s2">}</span>
+
+  <span class="s4">/**</span>
+   <span class="s4">* If this Binary represents a Packed bit Vector (`binary.buffer[0] === Binary.VECTOR_TYPE.PackedBit`),</span>
+   <span class="s4">* returns a copy of the bit unpacked into a new Int8Array.</span>
+   <span class="s4">*</span>
+   <span class="s4">* Use `toPackedBits` to get the bits still in packed form.</span>
+   <span class="s4">*</span>
+   <span class="s4">* If the Binary is not a Vector, or the datatype is not PackedBit, an error is thrown.</span>
+   <span class="s4">*/</span>
+  <span class="s0">public </span><span class="s1">toBits</span><span class="s2">(): </span><span class="s1">Int8Array </span><span class="s2">{</span>
+    <span class="s0">if </span><span class="s2">(</span><span class="s0">this</span><span class="s2">.</span><span class="s1">sub_type </span><span class="s2">!== </span><span class="s1">Binary</span><span class="s2">.</span><span class="s1">SUBTYPE_VECTOR</span><span class="s2">) {</span>
+      <span class="s0">throw new </span><span class="s1">BSONError</span><span class="s2">(</span><span class="s3">'Binary sub_type is not Vector'</span><span class="s2">);</span>
+    <span class="s2">}</span>
+
+    <span class="s0">if </span><span class="s2">(</span><span class="s0">this</span><span class="s2">.</span><span class="s1">buffer</span><span class="s2">[</span><span class="s6">0</span><span class="s2">] !== </span><span class="s1">Binary</span><span class="s2">.</span><span class="s1">VECTOR_TYPE</span><span class="s2">.</span><span class="s1">PackedBit</span><span class="s2">) {</span>
+      <span class="s0">throw new </span><span class="s1">BSONError</span><span class="s2">(</span><span class="s3">'Binary datatype field is not packed bit'</span><span class="s2">);</span>
+    <span class="s2">}</span>
+
+    <span class="s0">const </span><span class="s1">byteCount </span><span class="s2">= </span><span class="s0">this</span><span class="s2">.</span><span class="s1">length</span><span class="s2">() - </span><span class="s6">2</span><span class="s2">;</span>
+    <span class="s0">const </span><span class="s1">bitCount </span><span class="s2">= </span><span class="s1">byteCount </span><span class="s2">* </span><span class="s6">8 </span><span class="s2">- </span><span class="s0">this</span><span class="s2">.</span><span class="s1">buffer</span><span class="s2">[</span><span class="s6">1</span><span class="s2">];</span>
+    <span class="s0">const </span><span class="s1">bits </span><span class="s2">= </span><span class="s0">new </span><span class="s1">Int8Array</span><span class="s2">(</span><span class="s1">bitCount</span><span class="s2">);</span>
+
+    <span class="s0">for </span><span class="s2">(</span><span class="s0">let </span><span class="s1">bitOffset </span><span class="s2">= </span><span class="s6">0</span><span class="s2">; </span><span class="s1">bitOffset </span><span class="s2">&lt; </span><span class="s1">bits</span><span class="s2">.</span><span class="s1">length</span><span class="s2">; </span><span class="s1">bitOffset</span><span class="s2">++) {</span>
+      <span class="s0">const </span><span class="s1">byteOffset </span><span class="s2">= (</span><span class="s1">bitOffset </span><span class="s2">/ </span><span class="s6">8</span><span class="s2">) | </span><span class="s6">0</span><span class="s2">;</span>
+      <span class="s0">const </span><span class="s1">byte </span><span class="s2">= </span><span class="s0">this</span><span class="s2">.</span><span class="s1">buffer</span><span class="s2">[</span><span class="s1">byteOffset </span><span class="s2">+ </span><span class="s6">2</span><span class="s2">];</span>
+      <span class="s0">const </span><span class="s1">shift </span><span class="s2">= </span><span class="s6">7 </span><span class="s2">- (</span><span class="s1">bitOffset </span><span class="s2">% </span><span class="s6">8</span><span class="s2">);</span>
+      <span class="s0">const </span><span class="s1">bit </span><span class="s2">= (</span><span class="s1">byte </span><span class="s2">&gt;&gt; </span><span class="s1">shift</span><span class="s2">) &amp; </span><span class="s6">1</span><span class="s2">;</span>
+      <span class="s1">bits</span><span class="s2">[</span><span class="s1">bitOffset</span><span class="s2">] = </span><span class="s1">bit</span><span class="s2">;</span>
+    <span class="s2">}</span>
+
+    <span class="s0">return </span><span class="s1">bits</span><span class="s2">;</span>
+  <span class="s2">}</span>
+
+  <span class="s4">/**</span>
+   <span class="s4">* Constructs a Binary representing an Int8 Vector.</span>
+   <span class="s4">* </span><span class="s5">@param </span><span class="s4">array - The array to store as a view on the Binary class</span>
+   <span class="s4">*/</span>
+  <span class="s0">public static </span><span class="s1">fromInt8Array</span><span class="s2">(</span><span class="s1">array</span><span class="s2">: </span><span class="s1">Int8Array</span><span class="s2">): </span><span class="s1">Binary </span><span class="s2">{</span>
+    <span class="s0">const </span><span class="s1">buffer </span><span class="s2">= </span><span class="s1">ByteUtils</span><span class="s2">.</span><span class="s1">allocate</span><span class="s2">(</span><span class="s1">array</span><span class="s2">.</span><span class="s1">byteLength </span><span class="s2">+ </span><span class="s6">2</span><span class="s2">);</span>
+    <span class="s1">buffer</span><span class="s2">[</span><span class="s6">0</span><span class="s2">] = </span><span class="s1">Binary</span><span class="s2">.</span><span class="s1">VECTOR_TYPE</span><span class="s2">.</span><span class="s1">Int8</span><span class="s2">;</span>
+    <span class="s1">buffer</span><span class="s2">[</span><span class="s6">1</span><span class="s2">] = </span><span class="s6">0</span><span class="s2">;</span>
+    <span class="s0">const </span><span class="s1">intBytes </span><span class="s2">= </span><span class="s0">new </span><span class="s1">Uint8Array</span><span class="s2">(</span><span class="s1">array</span><span class="s2">.</span><span class="s1">buffer</span><span class="s2">, </span><span class="s1">array</span><span class="s2">.</span><span class="s1">byteOffset</span><span class="s2">, </span><span class="s1">array</span><span class="s2">.</span><span class="s1">byteLength</span><span class="s2">);</span>
+    <span class="s1">buffer</span><span class="s2">.</span><span class="s1">set</span><span class="s2">(</span><span class="s1">intBytes</span><span class="s2">, </span><span class="s6">2</span><span class="s2">);</span>
+    <span class="s0">return new this</span><span class="s2">(</span><span class="s1">buffer</span><span class="s2">, </span><span class="s0">this</span><span class="s2">.</span><span class="s1">SUBTYPE_VECTOR</span><span class="s2">);</span>
+  <span class="s2">}</span>
+
+  <span class="s4">/** Constructs a Binary representing an Float32 Vector. */</span>
+  <span class="s0">public static </span><span class="s1">fromFloat32Array</span><span class="s2">(</span><span class="s1">array</span><span class="s2">: </span><span class="s1">Float32Array</span><span class="s2">): </span><span class="s1">Binary </span><span class="s2">{</span>
+    <span class="s0">const </span><span class="s1">binaryBytes </span><span class="s2">= </span><span class="s1">ByteUtils</span><span class="s2">.</span><span class="s1">allocate</span><span class="s2">(</span><span class="s1">array</span><span class="s2">.</span><span class="s1">byteLength </span><span class="s2">+ </span><span class="s6">2</span><span class="s2">);</span>
+    <span class="s1">binaryBytes</span><span class="s2">[</span><span class="s6">0</span><span class="s2">] = </span><span class="s1">Binary</span><span class="s2">.</span><span class="s1">VECTOR_TYPE</span><span class="s2">.</span><span class="s1">Float32</span><span class="s2">;</span>
+    <span class="s1">binaryBytes</span><span class="s2">[</span><span class="s6">1</span><span class="s2">] = </span><span class="s6">0</span><span class="s2">;</span>
+
+    <span class="s0">const </span><span class="s1">floatBytes </span><span class="s2">= </span><span class="s0">new </span><span class="s1">Uint8Array</span><span class="s2">(</span><span class="s1">array</span><span class="s2">.</span><span class="s1">buffer</span><span class="s2">, </span><span class="s1">array</span><span class="s2">.</span><span class="s1">byteOffset</span><span class="s2">, </span><span class="s1">array</span><span class="s2">.</span><span class="s1">byteLength</span><span class="s2">);</span>
+    <span class="s1">binaryBytes</span><span class="s2">.</span><span class="s1">set</span><span class="s2">(</span><span class="s1">floatBytes</span><span class="s2">, </span><span class="s6">2</span><span class="s2">);</span>
+
+    <span class="s0">if </span><span class="s2">(</span><span class="s1">NumberUtils</span><span class="s2">.</span><span class="s1">isBigEndian</span><span class="s2">) </span><span class="s1">ByteUtils</span><span class="s2">.</span><span class="s1">swap32</span><span class="s2">(</span><span class="s0">new </span><span class="s1">Uint8Array</span><span class="s2">(</span><span class="s1">binaryBytes</span><span class="s2">.</span><span class="s1">buffer</span><span class="s2">, </span><span class="s6">2</span><span class="s2">));</span>
+
+    <span class="s0">return new this</span><span class="s2">(</span><span class="s1">binaryBytes</span><span class="s2">, </span><span class="s0">this</span><span class="s2">.</span><span class="s1">SUBTYPE_VECTOR</span><span class="s2">);</span>
+  <span class="s2">}</span>
+
+  <span class="s4">/**</span>
+   <span class="s4">* Constructs a Binary representing a packed bit Vector.</span>
+   <span class="s4">*</span>
+   <span class="s4">* Use `fromBits` to pack an array of 1s and 0s.</span>
+   <span class="s4">*/</span>
+  <span class="s0">public static </span><span class="s1">fromPackedBits</span><span class="s2">(</span><span class="s1">array</span><span class="s2">: </span><span class="s1">Uint8Array</span><span class="s2">, </span><span class="s1">padding </span><span class="s2">= </span><span class="s6">0</span><span class="s2">): </span><span class="s1">Binary </span><span class="s2">{</span>
+    <span class="s0">const </span><span class="s1">buffer </span><span class="s2">= </span><span class="s1">ByteUtils</span><span class="s2">.</span><span class="s1">allocate</span><span class="s2">(</span><span class="s1">array</span><span class="s2">.</span><span class="s1">byteLength </span><span class="s2">+ </span><span class="s6">2</span><span class="s2">);</span>
+    <span class="s1">buffer</span><span class="s2">[</span><span class="s6">0</span><span class="s2">] = </span><span class="s1">Binary</span><span class="s2">.</span><span class="s1">VECTOR_TYPE</span><span class="s2">.</span><span class="s1">PackedBit</span><span class="s2">;</span>
+    <span class="s1">buffer</span><span class="s2">[</span><span class="s6">1</span><span class="s2">] = </span><span class="s1">padding</span><span class="s2">;</span>
+    <span class="s1">buffer</span><span class="s2">.</span><span class="s1">set</span><span class="s2">(</span><span class="s1">array</span><span class="s2">, </span><span class="s6">2</span><span class="s2">);</span>
+    <span class="s0">return new this</span><span class="s2">(</span><span class="s1">buffer</span><span class="s2">, </span><span class="s0">this</span><span class="s2">.</span><span class="s1">SUBTYPE_VECTOR</span><span class="s2">);</span>
+  <span class="s2">}</span>
+
+  <span class="s4">/**</span>
+   <span class="s4">* Constructs a Binary representing an Packed Bit Vector.</span>
+   <span class="s4">* </span><span class="s5">@param </span><span class="s4">array - The array of 1s and 0s to pack into the Binary instance</span>
+   <span class="s4">*/</span>
+  <span class="s0">public static </span><span class="s1">fromBits</span><span class="s2">(</span><span class="s1">bits</span><span class="s2">: </span><span class="s1">ArrayLike</span><span class="s2">&lt;</span><span class="s1">number</span><span class="s2">&gt;): </span><span class="s1">Binary </span><span class="s2">{</span>
+    <span class="s0">const </span><span class="s1">byteLength </span><span class="s2">= (</span><span class="s1">bits</span><span class="s2">.</span><span class="s1">length </span><span class="s2">+ </span><span class="s6">7</span><span class="s2">) &gt;&gt;&gt; </span><span class="s6">3</span><span class="s2">; </span><span class="s7">// ceil(bits.length / 8)</span>
+    <span class="s0">const </span><span class="s1">bytes </span><span class="s2">= </span><span class="s0">new </span><span class="s1">Uint8Array</span><span class="s2">(</span><span class="s1">byteLength </span><span class="s2">+ </span><span class="s6">2</span><span class="s2">);</span>
+    <span class="s1">bytes</span><span class="s2">[</span><span class="s6">0</span><span class="s2">] = </span><span class="s1">Binary</span><span class="s2">.</span><span class="s1">VECTOR_TYPE</span><span class="s2">.</span><span class="s1">PackedBit</span><span class="s2">;</span>
+
+    <span class="s0">const </span><span class="s1">remainder </span><span class="s2">= </span><span class="s1">bits</span><span class="s2">.</span><span class="s1">length </span><span class="s2">% </span><span class="s6">8</span><span class="s2">;</span>
+    <span class="s1">bytes</span><span class="s2">[</span><span class="s6">1</span><span class="s2">] = </span><span class="s1">remainder </span><span class="s2">=== </span><span class="s6">0 </span><span class="s2">? </span><span class="s6">0 </span><span class="s2">: </span><span class="s6">8 </span><span class="s2">- </span><span class="s1">remainder</span><span class="s2">;</span>
+
+    <span class="s0">for </span><span class="s2">(</span><span class="s0">let </span><span class="s1">bitOffset </span><span class="s2">= </span><span class="s6">0</span><span class="s2">; </span><span class="s1">bitOffset </span><span class="s2">&lt; </span><span class="s1">bits</span><span class="s2">.</span><span class="s1">length</span><span class="s2">; </span><span class="s1">bitOffset</span><span class="s2">++) {</span>
+      <span class="s0">const </span><span class="s1">byteOffset </span><span class="s2">= </span><span class="s1">bitOffset </span><span class="s2">&gt;&gt;&gt; </span><span class="s6">3</span><span class="s2">; </span><span class="s7">// floor(bitOffset / 8)</span>
+      <span class="s0">const </span><span class="s1">bit </span><span class="s2">= </span><span class="s1">bits</span><span class="s2">[</span><span class="s1">bitOffset</span><span class="s2">];</span>
+
+      <span class="s0">if </span><span class="s2">(</span><span class="s1">bit </span><span class="s2">!== </span><span class="s6">0 </span><span class="s2">&amp;&amp; </span><span class="s1">bit </span><span class="s2">!== </span><span class="s6">1</span><span class="s2">) {</span>
+        <span class="s0">throw new </span><span class="s1">BSONError</span><span class="s2">(</span>
+          <span class="s3">`Invalid bit value at </span><span class="s1">$</span><span class="s2">{</span><span class="s1">bitOffset</span><span class="s2">}</span><span class="s3">: must be 0 or 1, found </span><span class="s1">$</span><span class="s2">{</span><span class="s1">bits</span><span class="s2">[</span><span class="s1">bitOffset</span><span class="s2">]}</span><span class="s3">`</span>
+        <span class="s2">);</span>
+      <span class="s2">}</span>
+
+      <span class="s0">if </span><span class="s2">(</span><span class="s1">bit </span><span class="s2">=== </span><span class="s6">0</span><span class="s2">) </span><span class="s0">continue</span><span class="s2">;</span>
+
+      <span class="s0">const </span><span class="s1">shift </span><span class="s2">= </span><span class="s6">7 </span><span class="s2">- (</span><span class="s1">bitOffset </span><span class="s2">% </span><span class="s6">8</span><span class="s2">);</span>
+      <span class="s1">bytes</span><span class="s2">[</span><span class="s1">byteOffset </span><span class="s2">+ </span><span class="s6">2</span><span class="s2">] |= </span><span class="s1">bit </span><span class="s2">&lt;&lt; </span><span class="s1">shift</span><span class="s2">;</span>
+    <span class="s2">}</span>
+
+    <span class="s0">return new this</span><span class="s2">(</span><span class="s1">bytes</span><span class="s2">, </span><span class="s1">Binary</span><span class="s2">.</span><span class="s1">SUBTYPE_VECTOR</span><span class="s2">);</span>
+  <span class="s2">}</span>
+<span class="s2">}</span>
+
+<span class="s0">export function </span><span class="s1">validateBinaryVector</span><span class="s2">(</span><span class="s1">vector</span><span class="s2">: </span><span class="s1">Binary</span><span class="s2">): </span><span class="s0">void </span><span class="s2">{</span>
+  <span class="s0">if </span><span class="s2">(</span><span class="s1">vector</span><span class="s2">.</span><span class="s1">sub_type </span><span class="s2">!== </span><span class="s1">Binary</span><span class="s2">.</span><span class="s1">SUBTYPE_VECTOR</span><span class="s2">) </span><span class="s0">return</span><span class="s2">;</span>
+
+  <span class="s0">const </span><span class="s1">size </span><span class="s2">= </span><span class="s1">vector</span><span class="s2">.</span><span class="s1">position</span><span class="s2">;</span>
+
+  <span class="s7">// NOTE: Validation is only applied to **KNOWN** vector types</span>
+  <span class="s7">// If a new datatype is introduced, a future version of the library will need to add validation</span>
+  <span class="s0">const </span><span class="s1">datatype </span><span class="s2">= </span><span class="s1">vector</span><span class="s2">.</span><span class="s1">buffer</span><span class="s2">[</span><span class="s6">0</span><span class="s2">];</span>
+
+  <span class="s7">// NOTE: We do not enable noUncheckedIndexedAccess so TS believes this is always number</span>
+  <span class="s7">// a Binary vector may be empty, in which case the padding is undefined</span>
+  <span class="s7">// this possible value is tolerable for our validation checks</span>
+  <span class="s0">const </span><span class="s1">padding</span><span class="s2">: </span><span class="s1">number </span><span class="s2">| </span><span class="s1">undefined </span><span class="s2">= </span><span class="s1">vector</span><span class="s2">.</span><span class="s1">buffer</span><span class="s2">[</span><span class="s6">1</span><span class="s2">];</span>
+
+  <span class="s0">if </span><span class="s2">(</span>
+    <span class="s2">(</span><span class="s1">datatype </span><span class="s2">=== </span><span class="s1">Binary</span><span class="s2">.</span><span class="s1">VECTOR_TYPE</span><span class="s2">.</span><span class="s1">Float32 </span><span class="s2">|| </span><span class="s1">datatype </span><span class="s2">=== </span><span class="s1">Binary</span><span class="s2">.</span><span class="s1">VECTOR_TYPE</span><span class="s2">.</span><span class="s1">Int8</span><span class="s2">) &amp;&amp;</span>
+    <span class="s1">padding </span><span class="s2">!== </span><span class="s6">0</span>
+  <span class="s2">) {</span>
+    <span class="s0">throw new </span><span class="s1">BSONError</span><span class="s2">(</span><span class="s3">'Invalid Vector: padding must be zero for int8 and float32 vectors'</span><span class="s2">);</span>
+  <span class="s2">}</span>
+
+  <span class="s0">if </span><span class="s2">(</span><span class="s1">datatype </span><span class="s2">=== </span><span class="s1">Binary</span><span class="s2">.</span><span class="s1">VECTOR_TYPE</span><span class="s2">.</span><span class="s1">PackedBit </span><span class="s2">&amp;&amp; </span><span class="s1">padding </span><span class="s2">!== </span><span class="s6">0 </span><span class="s2">&amp;&amp; </span><span class="s1">size </span><span class="s2">=== </span><span class="s6">2</span><span class="s2">) {</span>
+    <span class="s0">throw new </span><span class="s1">BSONError</span><span class="s2">(</span>
+      <span class="s3">'Invalid Vector: padding must be zero for packed bit vectors that are empty'</span>
+    <span class="s2">);</span>
+  <span class="s2">}</span>
+
+  <span class="s0">if </span><span class="s2">(</span><span class="s1">datatype </span><span class="s2">=== </span><span class="s1">Binary</span><span class="s2">.</span><span class="s1">VECTOR_TYPE</span><span class="s2">.</span><span class="s1">PackedBit </span><span class="s2">&amp;&amp; </span><span class="s1">padding </span><span class="s2">&gt; </span><span class="s6">7</span><span class="s2">) {</span>
+    <span class="s0">throw new </span><span class="s1">BSONError</span><span class="s2">(</span>
+      <span class="s3">`Invalid Vector: padding must be a value between 0 and 7. found: </span><span class="s1">$</span><span class="s2">{</span><span class="s1">padding</span><span class="s2">}</span><span class="s3">`</span>
+    <span class="s2">);</span>
+  <span class="s2">}</span>
+<span class="s2">}</span>
+
+<span class="s4">/** </span><span class="s5">@public </span><span class="s4">*/</span>
+<span class="s0">export </span><span class="s1">type UUIDExtended </span><span class="s2">= {</span>
+  <span class="s1">$uuid</span><span class="s2">: </span><span class="s1">string</span><span class="s2">;</span>
+<span class="s2">};</span>
+
+<span class="s0">const </span><span class="s1">UUID_BYTE_LENGTH </span><span class="s2">= </span><span class="s6">16</span><span class="s2">;</span>
+<span class="s0">const </span><span class="s1">UUID_WITHOUT_DASHES </span><span class="s2">= </span><span class="s8">/^[0-9A-F]{32}$/i</span><span class="s2">;</span>
+<span class="s0">const </span><span class="s1">UUID_WITH_DASHES </span><span class="s2">= </span><span class="s8">/^[0-9A-F]{8}-[0-9A-F]{4}-[0-9A-F]{4}-[0-9A-F]{4}-[0-9A-F]{12}$/i</span><span class="s2">;</span>
+
+<span class="s4">/**</span>
+ <span class="s4">* A class representation of the BSON UUID type.</span>
+ <span class="s4">* </span><span class="s5">@public</span>
+ <span class="s4">*/</span>
+<span class="s0">export class </span><span class="s1">UUID </span><span class="s0">extends </span><span class="s1">Binary </span><span class="s2">{</span>
+  <span class="s4">/**</span>
+   <span class="s4">* Create a UUID type</span>
+   <span class="s4">*</span>
+   <span class="s4">* When the argument to the constructor is omitted a random v4 UUID will be generated.</span>
+   <span class="s4">*</span>
+   <span class="s4">* </span><span class="s5">@param </span><span class="s4">input - Can be a 32 or 36 character hex string (dashes excluded/included) or a 16 byte binary Buffer.</span>
+   <span class="s4">*/</span>
+  <span class="s1">constructor</span><span class="s2">(</span><span class="s1">input</span><span class="s2">?: </span><span class="s1">string </span><span class="s2">| </span><span class="s1">Uint8Array </span><span class="s2">| </span><span class="s1">UUID</span><span class="s2">) {</span>
+    <span class="s0">let </span><span class="s1">bytes</span><span class="s2">: </span><span class="s1">Uint8Array</span><span class="s2">;</span>
+    <span class="s0">if </span><span class="s2">(</span><span class="s1">input </span><span class="s2">== </span><span class="s0">null</span><span class="s2">) {</span>
+      <span class="s1">bytes </span><span class="s2">= </span><span class="s1">UUID</span><span class="s2">.</span><span class="s1">generate</span><span class="s2">();</span>
+    <span class="s2">} </span><span class="s0">else if </span><span class="s2">(</span><span class="s1">input </span><span class="s0">instanceof </span><span class="s1">UUID</span><span class="s2">) {</span>
+      <span class="s1">bytes </span><span class="s2">= </span><span class="s1">ByteUtils</span><span class="s2">.</span><span class="s1">toLocalBufferType</span><span class="s2">(</span><span class="s0">new </span><span class="s1">Uint8Array</span><span class="s2">(</span><span class="s1">input</span><span class="s2">.</span><span class="s1">buffer</span><span class="s2">));</span>
+    <span class="s2">} </span><span class="s0">else if </span><span class="s2">(</span><span class="s1">ArrayBuffer</span><span class="s2">.</span><span class="s1">isView</span><span class="s2">(</span><span class="s1">input</span><span class="s2">) &amp;&amp; </span><span class="s1">input</span><span class="s2">.</span><span class="s1">byteLength </span><span class="s2">=== </span><span class="s1">UUID_BYTE_LENGTH</span><span class="s2">) {</span>
+      <span class="s1">bytes </span><span class="s2">= </span><span class="s1">ByteUtils</span><span class="s2">.</span><span class="s1">toLocalBufferType</span><span class="s2">(</span><span class="s1">input</span><span class="s2">);</span>
+    <span class="s2">} </span><span class="s0">else if </span><span class="s2">(</span><span class="s0">typeof </span><span class="s1">input </span><span class="s2">=== </span><span class="s3">'string'</span><span class="s2">) {</span>
+      <span class="s1">bytes </span><span class="s2">= </span><span class="s1">UUID</span><span class="s2">.</span><span class="s1">bytesFromString</span><span class="s2">(</span><span class="s1">input</span><span class="s2">);</span>
+    <span class="s2">} </span><span class="s0">else </span><span class="s2">{</span>
+      <span class="s0">throw new </span><span class="s1">BSONError</span><span class="s2">(</span>
+        <span class="s3">'Argument passed in UUID constructor must be a UUID, a 16 byte Buffer or a 32/36 character hex string (dashes excluded/included, format: xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx).'</span>
+      <span class="s2">);</span>
+    <span class="s2">}</span>
+    <span class="s0">super</span><span class="s2">(</span><span class="s1">bytes</span><span class="s2">, </span><span class="s1">BSON_BINARY_SUBTYPE_UUID_NEW</span><span class="s2">);</span>
+  <span class="s2">}</span>
+
+  <span class="s4">/**</span>
+   <span class="s4">* The UUID bytes</span>
+   <span class="s4">* </span><span class="s5">@readonly</span>
+   <span class="s4">*/</span>
+  <span class="s1">get id</span><span class="s2">(): </span><span class="s1">Uint8Array </span><span class="s2">{</span>
+    <span class="s0">return this</span><span class="s2">.</span><span class="s1">buffer</span><span class="s2">;</span>
+  <span class="s2">}</span>
+
+  <span class="s1">set id</span><span class="s2">(</span><span class="s1">value</span><span class="s2">: </span><span class="s1">Uint8Array</span><span class="s2">) {</span>
+    <span class="s0">this</span><span class="s2">.</span><span class="s1">buffer </span><span class="s2">= </span><span class="s1">value</span><span class="s2">;</span>
+  <span class="s2">}</span>
+
+  <span class="s4">/**</span>
+   <span class="s4">* Returns the UUID id as a 32 or 36 character hex string representation, excluding/including dashes (defaults to 36 character dash separated)</span>
+   <span class="s4">* </span><span class="s5">@param </span><span class="s4">includeDashes - should the string exclude dash-separators.</span>
+   <span class="s4">*/</span>
+  <span class="s1">toHexString</span><span class="s2">(</span><span class="s1">includeDashes </span><span class="s2">= </span><span class="s0">true</span><span class="s2">): </span><span class="s1">string </span><span class="s2">{</span>
+    <span class="s0">if </span><span class="s2">(</span><span class="s1">includeDashes</span><span class="s2">) {</span>
+      <span class="s0">return </span><span class="s2">[</span>
+        <span class="s1">ByteUtils</span><span class="s2">.</span><span class="s1">toHex</span><span class="s2">(</span><span class="s0">this</span><span class="s2">.</span><span class="s1">buffer</span><span class="s2">.</span><span class="s1">subarray</span><span class="s2">(</span><span class="s6">0</span><span class="s2">, </span><span class="s6">4</span><span class="s2">)),</span>
+        <span class="s1">ByteUtils</span><span class="s2">.</span><span class="s1">toHex</span><span class="s2">(</span><span class="s0">this</span><span class="s2">.</span><span class="s1">buffer</span><span class="s2">.</span><span class="s1">subarray</span><span class="s2">(</span><span class="s6">4</span><span class="s2">, </span><span class="s6">6</span><span class="s2">)),</span>
+        <span class="s1">ByteUtils</span><span class="s2">.</span><span class="s1">toHex</span><span class="s2">(</span><span class="s0">this</span><span class="s2">.</span><span class="s1">buffer</span><span class="s2">.</span><span class="s1">subarray</span><span class="s2">(</span><span class="s6">6</span><span class="s2">, </span><span class="s6">8</span><span class="s2">)),</span>
+        <span class="s1">ByteUtils</span><span class="s2">.</span><span class="s1">toHex</span><span class="s2">(</span><span class="s0">this</span><span class="s2">.</span><span class="s1">buffer</span><span class="s2">.</span><span class="s1">subarray</span><span class="s2">(</span><span class="s6">8</span><span class="s2">, </span><span class="s6">10</span><span class="s2">)),</span>
+        <span class="s1">ByteUtils</span><span class="s2">.</span><span class="s1">toHex</span><span class="s2">(</span><span class="s0">this</span><span class="s2">.</span><span class="s1">buffer</span><span class="s2">.</span><span class="s1">subarray</span><span class="s2">(</span><span class="s6">10</span><span class="s2">, </span><span class="s6">16</span><span class="s2">))</span>
+      <span class="s2">].</span><span class="s1">join</span><span class="s2">(</span><span class="s3">'-'</span><span class="s2">);</span>
+    <span class="s2">}</span>
+    <span class="s0">return </span><span class="s1">ByteUtils</span><span class="s2">.</span><span class="s1">toHex</span><span class="s2">(</span><span class="s0">this</span><span class="s2">.</span><span class="s1">buffer</span><span class="s2">);</span>
+  <span class="s2">}</span>
+
+  <span class="s4">/**</span>
+   <span class="s4">* Converts the id into a 36 character (dashes included) hex string, unless a encoding is specified.</span>
+   <span class="s4">*/</span>
+  <span class="s1">toString</span><span class="s2">(</span><span class="s1">encoding</span><span class="s2">?: </span><span class="s3">'hex' </span><span class="s2">| </span><span class="s3">'base64'</span><span class="s2">): </span><span class="s1">string </span><span class="s2">{</span>
+    <span class="s0">if </span><span class="s2">(</span><span class="s1">encoding </span><span class="s2">=== </span><span class="s3">'hex'</span><span class="s2">) </span><span class="s0">return </span><span class="s1">ByteUtils</span><span class="s2">.</span><span class="s1">toHex</span><span class="s2">(</span><span class="s0">this</span><span class="s2">.</span><span class="s1">id</span><span class="s2">);</span>
+    <span class="s0">if </span><span class="s2">(</span><span class="s1">encoding </span><span class="s2">=== </span><span class="s3">'base64'</span><span class="s2">) </span><span class="s0">return </span><span class="s1">ByteUtils</span><span class="s2">.</span><span class="s1">toBase64</span><span class="s2">(</span><span class="s0">this</span><span class="s2">.</span><span class="s1">id</span><span class="s2">);</span>
+    <span class="s0">return this</span><span class="s2">.</span><span class="s1">toHexString</span><span class="s2">();</span>
+  <span class="s2">}</span>
+
+  <span class="s4">/**</span>
+   <span class="s4">* Converts the id into its JSON string representation.</span>
+   <span class="s4">* A 36 character (dashes included) hex string in the format: xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx</span>
+   <span class="s4">*/</span>
+  <span class="s1">toJSON</span><span class="s2">(): </span><span class="s1">string </span><span class="s2">{</span>
+    <span class="s0">return this</span><span class="s2">.</span><span class="s1">toHexString</span><span class="s2">();</span>
+  <span class="s2">}</span>
+
+  <span class="s4">/**</span>
+   <span class="s4">* Compares the equality of this UUID with `otherID`.</span>
+   <span class="s4">*</span>
+   <span class="s4">* </span><span class="s5">@param </span><span class="s4">otherId - UUID instance to compare against.</span>
+   <span class="s4">*/</span>
+  <span class="s1">equals</span><span class="s2">(</span><span class="s1">otherId</span><span class="s2">: </span><span class="s1">string </span><span class="s2">| </span><span class="s1">Uint8Array </span><span class="s2">| </span><span class="s1">UUID</span><span class="s2">): </span><span class="s1">boolean </span><span class="s2">{</span>
+    <span class="s0">if </span><span class="s2">(!</span><span class="s1">otherId</span><span class="s2">) {</span>
+      <span class="s0">return false</span><span class="s2">;</span>
+    <span class="s2">}</span>
+
+    <span class="s0">if </span><span class="s2">(</span><span class="s1">otherId </span><span class="s0">instanceof </span><span class="s1">UUID</span><span class="s2">) {</span>
+      <span class="s0">return </span><span class="s1">ByteUtils</span><span class="s2">.</span><span class="s1">equals</span><span class="s2">(</span><span class="s1">otherId</span><span class="s2">.</span><span class="s1">id</span><span class="s2">, </span><span class="s0">this</span><span class="s2">.</span><span class="s1">id</span><span class="s2">);</span>
+    <span class="s2">}</span>
+
+    <span class="s0">try </span><span class="s2">{</span>
+      <span class="s0">return </span><span class="s1">ByteUtils</span><span class="s2">.</span><span class="s1">equals</span><span class="s2">(</span><span class="s0">new </span><span class="s1">UUID</span><span class="s2">(</span><span class="s1">otherId</span><span class="s2">).</span><span class="s1">id</span><span class="s2">, </span><span class="s0">this</span><span class="s2">.</span><span class="s1">id</span><span class="s2">);</span>
+    <span class="s2">} </span><span class="s0">catch </span><span class="s2">{</span>
+      <span class="s0">return false</span><span class="s2">;</span>
+    <span class="s2">}</span>
+  <span class="s2">}</span>
+
+  <span class="s4">/**</span>
+   <span class="s4">* Creates a Binary instance from the current UUID.</span>
+   <span class="s4">*/</span>
+  <span class="s1">toBinary</span><span class="s2">(): </span><span class="s1">Binary </span><span class="s2">{</span>
+    <span class="s0">return new </span><span class="s1">Binary</span><span class="s2">(</span><span class="s0">this</span><span class="s2">.</span><span class="s1">id</span><span class="s2">, </span><span class="s1">Binary</span><span class="s2">.</span><span class="s1">SUBTYPE_UUID</span><span class="s2">);</span>
+  <span class="s2">}</span>
+
+  <span class="s4">/**</span>
+   <span class="s4">* Generates a populated buffer containing a v4 uuid</span>
+   <span class="s4">*/</span>
+  <span class="s0">static </span><span class="s1">generate</span><span class="s2">(): </span><span class="s1">Uint8Array </span><span class="s2">{</span>
+    <span class="s0">const </span><span class="s1">bytes </span><span class="s2">= </span><span class="s1">ByteUtils</span><span class="s2">.</span><span class="s1">randomBytes</span><span class="s2">(</span><span class="s1">UUID_BYTE_LENGTH</span><span class="s2">);</span>
+
+    <span class="s7">// Per 4.4, set bits for version and `clock_seq_hi_and_reserved`</span>
+    <span class="s7">// Kindly borrowed from https://github.com/uuidjs/uuid/blob/master/src/v4.js</span>
+    <span class="s1">bytes</span><span class="s2">[</span><span class="s6">6</span><span class="s2">] = (</span><span class="s1">bytes</span><span class="s2">[</span><span class="s6">6</span><span class="s2">] &amp; </span><span class="s6">0x0f</span><span class="s2">) | </span><span class="s6">0x40</span><span class="s2">;</span>
+    <span class="s1">bytes</span><span class="s2">[</span><span class="s6">8</span><span class="s2">] = (</span><span class="s1">bytes</span><span class="s2">[</span><span class="s6">8</span><span class="s2">] &amp; </span><span class="s6">0x3f</span><span class="s2">) | </span><span class="s6">0x80</span><span class="s2">;</span>
+
+    <span class="s0">return </span><span class="s1">bytes</span><span class="s2">;</span>
+  <span class="s2">}</span>
+
+  <span class="s4">/**</span>
+   <span class="s4">* Checks if a value is a valid bson UUID</span>
+   <span class="s4">* </span><span class="s5">@param </span><span class="s4">input - UUID, string or Buffer to validate.</span>
+   <span class="s4">*/</span>
+  <span class="s0">static </span><span class="s1">isValid</span><span class="s2">(</span><span class="s1">input</span><span class="s2">: </span><span class="s1">string </span><span class="s2">| </span><span class="s1">Uint8Array </span><span class="s2">| </span><span class="s1">UUID </span><span class="s2">| </span><span class="s1">Binary</span><span class="s2">): </span><span class="s1">boolean </span><span class="s2">{</span>
+    <span class="s0">if </span><span class="s2">(!</span><span class="s1">input</span><span class="s2">) {</span>
+      <span class="s0">return false</span><span class="s2">;</span>
+    <span class="s2">}</span>
+
+    <span class="s0">if </span><span class="s2">(</span><span class="s0">typeof </span><span class="s1">input </span><span class="s2">=== </span><span class="s3">'string'</span><span class="s2">) {</span>
+      <span class="s0">return </span><span class="s1">UUID</span><span class="s2">.</span><span class="s1">isValidUUIDString</span><span class="s2">(</span><span class="s1">input</span><span class="s2">);</span>
+    <span class="s2">}</span>
+
+    <span class="s0">if </span><span class="s2">(</span><span class="s1">isUint8Array</span><span class="s2">(</span><span class="s1">input</span><span class="s2">)) {</span>
+      <span class="s0">return </span><span class="s1">input</span><span class="s2">.</span><span class="s1">byteLength </span><span class="s2">=== </span><span class="s1">UUID_BYTE_LENGTH</span><span class="s2">;</span>
+    <span class="s2">}</span>
+
+    <span class="s0">return </span><span class="s2">(</span>
+      <span class="s1">input</span><span class="s2">.</span><span class="s1">_bsontype </span><span class="s2">=== </span><span class="s3">'Binary' </span><span class="s2">&amp;&amp;</span>
+      <span class="s1">input</span><span class="s2">.</span><span class="s1">sub_type </span><span class="s2">=== </span><span class="s0">this</span><span class="s2">.</span><span class="s1">SUBTYPE_UUID </span><span class="s2">&amp;&amp;</span>
+      <span class="s1">input</span><span class="s2">.</span><span class="s1">buffer</span><span class="s2">.</span><span class="s1">byteLength </span><span class="s2">=== </span><span class="s6">16</span>
+    <span class="s2">);</span>
+  <span class="s2">}</span>
+
+  <span class="s4">/**</span>
+   <span class="s4">* Creates an UUID from a hex string representation of an UUID.</span>
+   <span class="s4">* </span><span class="s5">@param </span><span class="s4">hexString - 32 or 36 character hex string (dashes excluded/included).</span>
+   <span class="s4">*/</span>
+  <span class="s0">static </span><span class="s1">override createFromHexString</span><span class="s2">(</span><span class="s1">hexString</span><span class="s2">: </span><span class="s1">string</span><span class="s2">): </span><span class="s1">UUID </span><span class="s2">{</span>
+    <span class="s0">const </span><span class="s1">buffer </span><span class="s2">= </span><span class="s1">UUID</span><span class="s2">.</span><span class="s1">bytesFromString</span><span class="s2">(</span><span class="s1">hexString</span><span class="s2">);</span>
+    <span class="s0">return new </span><span class="s1">UUID</span><span class="s2">(</span><span class="s1">buffer</span><span class="s2">);</span>
+  <span class="s2">}</span>
+
+  <span class="s4">/** Creates an UUID from a base64 string representation of an UUID. */</span>
+  <span class="s0">static </span><span class="s1">override createFromBase64</span><span class="s2">(</span><span class="s1">base64</span><span class="s2">: </span><span class="s1">string</span><span class="s2">): </span><span class="s1">UUID </span><span class="s2">{</span>
+    <span class="s0">return new </span><span class="s1">UUID</span><span class="s2">(</span><span class="s1">ByteUtils</span><span class="s2">.</span><span class="s1">fromBase64</span><span class="s2">(</span><span class="s1">base64</span><span class="s2">));</span>
+  <span class="s2">}</span>
+
+  <span class="s4">/** </span><span class="s5">@internal </span><span class="s4">*/</span>
+  <span class="s0">static </span><span class="s1">bytesFromString</span><span class="s2">(</span><span class="s1">representation</span><span class="s2">: </span><span class="s1">string</span><span class="s2">) {</span>
+    <span class="s0">if </span><span class="s2">(!</span><span class="s1">UUID</span><span class="s2">.</span><span class="s1">isValidUUIDString</span><span class="s2">(</span><span class="s1">representation</span><span class="s2">)) {</span>
+      <span class="s0">throw new </span><span class="s1">BSONError</span><span class="s2">(</span>
+        <span class="s3">'UUID string representation must be 32 hex digits or canonical hyphenated representation'</span>
+      <span class="s2">);</span>
+    <span class="s2">}</span>
+    <span class="s0">return </span><span class="s1">ByteUtils</span><span class="s2">.</span><span class="s1">fromHex</span><span class="s2">(</span><span class="s1">representation</span><span class="s2">.</span><span class="s1">replace</span><span class="s2">(</span><span class="s8">/-/g</span><span class="s2">, </span><span class="s3">''</span><span class="s2">));</span>
+  <span class="s2">}</span>
+
+  <span class="s4">/**</span>
+   <span class="s4">* </span><span class="s5">@internal</span>
+   <span class="s4">*</span>
+   <span class="s4">* Validates a string to be a hex digit sequence with or without dashes.</span>
+   <span class="s4">* The canonical hyphenated representation of a uuid is hex in 8-4-4-4-12 groups.</span>
+   <span class="s4">*/</span>
+  <span class="s0">static </span><span class="s1">isValidUUIDString</span><span class="s2">(</span><span class="s1">representation</span><span class="s2">: </span><span class="s1">string</span><span class="s2">) {</span>
+    <span class="s0">return </span><span class="s1">UUID_WITHOUT_DASHES</span><span class="s2">.</span><span class="s1">test</span><span class="s2">(</span><span class="s1">representation</span><span class="s2">) || </span><span class="s1">UUID_WITH_DASHES</span><span class="s2">.</span><span class="s1">test</span><span class="s2">(</span><span class="s1">representation</span><span class="s2">);</span>
+  <span class="s2">}</span>
+
+  <span class="s4">/**</span>
+   <span class="s4">* Converts to a string representation of this Id.</span>
+   <span class="s4">*</span>
+   <span class="s4">* </span><span class="s5">@returns </span><span class="s4">return the 36 character hex string representation.</span>
+   <span class="s4">*</span>
+   <span class="s4">*/</span>
+  <span class="s1">inspect</span><span class="s2">(</span><span class="s1">depth</span><span class="s2">?: </span><span class="s1">number</span><span class="s2">, </span><span class="s1">options</span><span class="s2">?: </span><span class="s1">unknown</span><span class="s2">, </span><span class="s1">inspect</span><span class="s2">?: </span><span class="s1">InspectFn</span><span class="s2">): </span><span class="s1">string </span><span class="s2">{</span>
+    <span class="s1">inspect </span><span class="s2">??= </span><span class="s1">defaultInspect</span><span class="s2">;</span>
+    <span class="s0">return </span><span class="s3">`new UUID(</span><span class="s1">$</span><span class="s2">{</span><span class="s1">inspect</span><span class="s2">(</span><span class="s0">this</span><span class="s2">.</span><span class="s1">toHexString</span><span class="s2">(), </span><span class="s1">options</span><span class="s2">)}</span><span class="s3">)`</span><span class="s2">;</span>
+  <span class="s2">}</span>
+<span class="s2">}</span>
+</pre>
+</body>
+</html>

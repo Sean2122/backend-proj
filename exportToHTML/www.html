@@ -1,0 +1,35 @@
+<html>
+<head>
+<title>www</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+<style type="text/css">
+.s0 { color: #7a7e85;}
+.s1 { color: #bcbec4;}
+.s2 { color: #cf8e6d;}
+.s3 { color: #bcbec4;}
+.s4 { color: #6aab73;}
+.s5 { color: #2aacb8;}
+</style>
+</head>
+<body bgcolor="#1e1f22">
+<table CELLSPACING=0 CELLPADDING=5 COLS=1 WIDTH="100%" BGCOLOR="#606060" >
+<tr><td><center>
+<font face="Arial, Helvetica" color="#000000">
+www</font>
+</center></td></tr></table>
+<pre><span class="s0">#!/usr/bin/env node</span>
+
+<span class="s2">const </span><span class="s1">http </span><span class="s3">= </span><span class="s1">require</span><span class="s3">(</span><span class="s4">'http'</span><span class="s3">);</span>
+<span class="s2">const </span><span class="s1">app </span><span class="s3">= </span><span class="s1">require</span><span class="s3">(</span><span class="s4">'../app'</span><span class="s3">); </span><span class="s0">// Ensure correct path</span>
+<span class="s2">const </span><span class="s1">port </span><span class="s3">= </span><span class="s1">process</span><span class="s3">.</span><span class="s1">env</span><span class="s3">.</span><span class="s1">PORT </span><span class="s3">|| </span><span class="s5">5000</span><span class="s3">;</span>
+
+<span class="s1">app</span><span class="s3">.</span><span class="s1">set</span><span class="s3">(</span><span class="s4">'port'</span><span class="s3">, </span><span class="s1">port</span><span class="s3">);</span>
+
+<span class="s2">const </span><span class="s1">server </span><span class="s3">= </span><span class="s1">http</span><span class="s3">.</span><span class="s1">createServer</span><span class="s3">(</span><span class="s1">app</span><span class="s3">);</span>
+
+<span class="s1">server</span><span class="s3">.</span><span class="s1">listen</span><span class="s3">(</span><span class="s1">port</span><span class="s3">, () =&gt; {</span>
+  <span class="s1">console</span><span class="s3">.</span><span class="s1">log</span><span class="s3">(</span><span class="s4">`Server running on port </span><span class="s1">$</span><span class="s3">{</span><span class="s1">port</span><span class="s3">}</span><span class="s4">`</span><span class="s3">);</span>
+<span class="s3">});</span>
+</pre>
+</body>
+</html>

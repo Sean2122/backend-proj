@@ -1,0 +1,413 @@
+<html>
+<head>
+<title>objectid.ts</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+<style type="text/css">
+.s0 { color: #cf8e6d;}
+.s1 { color: #bcbec4;}
+.s2 { color: #bcbec4;}
+.s3 { color: #6aab73;}
+.s4 { color: #7a7e85;}
+.s5 { color: #5f826b; font-style: italic;}
+.s6 { color: #67a37c; font-style: italic;}
+.s7 { color: #2aacb8;}
+</style>
+</head>
+<body bgcolor="#1e1f22">
+<table CELLSPACING=0 CELLPADDING=5 COLS=1 WIDTH="100%" BGCOLOR="#606060" >
+<tr><td><center>
+<font face="Arial, Helvetica" color="#000000">
+objectid.ts</font>
+</center></td></tr></table>
+<pre><span class="s0">import </span><span class="s2">{ </span><span class="s1">BSONValue </span><span class="s2">} </span><span class="s1">from </span><span class="s3">'./bson_value'</span><span class="s2">;</span>
+<span class="s0">import </span><span class="s2">{ </span><span class="s1">BSONError </span><span class="s2">} </span><span class="s1">from </span><span class="s3">'./error'</span><span class="s2">;</span>
+<span class="s0">import </span><span class="s2">{ </span><span class="s1">type InspectFn</span><span class="s2">, </span><span class="s1">defaultInspect </span><span class="s2">} </span><span class="s1">from </span><span class="s3">'./parser/utils'</span><span class="s2">;</span>
+<span class="s0">import </span><span class="s2">{ </span><span class="s1">ByteUtils </span><span class="s2">} </span><span class="s1">from </span><span class="s3">'./utils/byte_utils'</span><span class="s2">;</span>
+<span class="s0">import </span><span class="s2">{ </span><span class="s1">NumberUtils </span><span class="s2">} </span><span class="s1">from </span><span class="s3">'./utils/number_utils'</span><span class="s2">;</span>
+
+<span class="s4">// Unique sequence for the current process (initialized on first use)</span>
+<span class="s0">let </span><span class="s1">PROCESS_UNIQUE</span><span class="s2">: </span><span class="s1">Uint8Array </span><span class="s2">| </span><span class="s0">null </span><span class="s2">= </span><span class="s0">null</span><span class="s2">;</span>
+
+<span class="s5">/** ObjectId hexString cache @internal */</span>
+<span class="s0">const </span><span class="s1">__idCache </span><span class="s2">= </span><span class="s0">new </span><span class="s1">WeakMap</span><span class="s2">(); </span><span class="s4">// TODO(NODE-6549): convert this to #__id private field when target updated to ES2022</span>
+
+<span class="s5">/** </span><span class="s6">@public </span><span class="s5">*/</span>
+<span class="s0">export interface </span><span class="s1">ObjectIdLike </span><span class="s2">{</span>
+  <span class="s1">id</span><span class="s2">: </span><span class="s1">string </span><span class="s2">| </span><span class="s1">Uint8Array</span><span class="s2">;</span>
+  <span class="s1">__id</span><span class="s2">?: </span><span class="s1">string</span><span class="s2">;</span>
+  <span class="s1">toHexString</span><span class="s2">(): </span><span class="s1">string</span><span class="s2">;</span>
+<span class="s2">}</span>
+
+<span class="s5">/** </span><span class="s6">@public </span><span class="s5">*/</span>
+<span class="s0">export interface </span><span class="s1">ObjectIdExtended </span><span class="s2">{</span>
+  <span class="s1">$oid</span><span class="s2">: </span><span class="s1">string</span><span class="s2">;</span>
+<span class="s2">}</span>
+
+<span class="s5">/**</span>
+ <span class="s5">* A class representation of the BSON ObjectId type.</span>
+ <span class="s5">* </span><span class="s6">@public</span>
+ <span class="s5">* </span><span class="s6">@category </span><span class="s5">BSONType</span>
+ <span class="s5">*/</span>
+<span class="s0">export class </span><span class="s1">ObjectId </span><span class="s0">extends </span><span class="s1">BSONValue </span><span class="s2">{</span>
+  <span class="s1">get _bsontype</span><span class="s2">(): </span><span class="s3">'ObjectId' </span><span class="s2">{</span>
+    <span class="s0">return </span><span class="s3">'ObjectId'</span><span class="s2">;</span>
+  <span class="s2">}</span>
+
+  <span class="s5">/** </span><span class="s6">@internal </span><span class="s5">*/</span>
+  <span class="s0">private static </span><span class="s1">index </span><span class="s2">= </span><span class="s1">Math</span><span class="s2">.</span><span class="s1">floor</span><span class="s2">(</span><span class="s1">Math</span><span class="s2">.</span><span class="s1">random</span><span class="s2">() * </span><span class="s7">0xffffff</span><span class="s2">);</span>
+
+  <span class="s0">static </span><span class="s1">cacheHexString</span><span class="s2">: </span><span class="s1">boolean</span><span class="s2">;</span>
+
+  <span class="s5">/** ObjectId Bytes @internal */</span>
+  <span class="s0">private </span><span class="s1">buffer</span><span class="s2">!: </span><span class="s1">Uint8Array</span><span class="s2">;</span>
+
+  <span class="s5">/**</span>
+   <span class="s5">* Create ObjectId from a number.</span>
+   <span class="s5">*</span>
+   <span class="s5">* </span><span class="s6">@param </span><span class="s5">inputId - A number.</span>
+   <span class="s5">* </span><span class="s6">@deprecated </span><span class="s5">Instead, use `static createFromTime()` to set a numeric value for the new ObjectId.</span>
+   <span class="s5">*/</span>
+  <span class="s1">constructor</span><span class="s2">(</span><span class="s1">inputId</span><span class="s2">: </span><span class="s1">number</span><span class="s2">);</span>
+  <span class="s5">/**</span>
+   <span class="s5">* Create ObjectId from a 24 character hex string.</span>
+   <span class="s5">*</span>
+   <span class="s5">* </span><span class="s6">@param </span><span class="s5">inputId - A 24 character hex string.</span>
+   <span class="s5">*/</span>
+  <span class="s1">constructor</span><span class="s2">(</span><span class="s1">inputId</span><span class="s2">: </span><span class="s1">string</span><span class="s2">);</span>
+  <span class="s5">/**</span>
+   <span class="s5">* Create ObjectId from the BSON ObjectId type.</span>
+   <span class="s5">*</span>
+   <span class="s5">* </span><span class="s6">@param </span><span class="s5">inputId - The BSON ObjectId type.</span>
+   <span class="s5">*/</span>
+  <span class="s1">constructor</span><span class="s2">(</span><span class="s1">inputId</span><span class="s2">: </span><span class="s1">ObjectId</span><span class="s2">);</span>
+  <span class="s5">/**</span>
+   <span class="s5">* Create ObjectId from the object type that has the toHexString method.</span>
+   <span class="s5">*</span>
+   <span class="s5">* </span><span class="s6">@param </span><span class="s5">inputId - The ObjectIdLike type.</span>
+   <span class="s5">*/</span>
+  <span class="s1">constructor</span><span class="s2">(</span><span class="s1">inputId</span><span class="s2">: </span><span class="s1">ObjectIdLike</span><span class="s2">);</span>
+  <span class="s5">/**</span>
+   <span class="s5">* Create ObjectId from a 12 byte binary Buffer.</span>
+   <span class="s5">*</span>
+   <span class="s5">* </span><span class="s6">@param </span><span class="s5">inputId - A 12 byte binary Buffer.</span>
+   <span class="s5">*/</span>
+  <span class="s1">constructor</span><span class="s2">(</span><span class="s1">inputId</span><span class="s2">: </span><span class="s1">Uint8Array</span><span class="s2">);</span>
+  <span class="s5">/** To generate a new ObjectId, use ObjectId() with no argument. */</span>
+  <span class="s1">constructor</span><span class="s2">();</span>
+  <span class="s5">/**</span>
+   <span class="s5">* Implementation overload.</span>
+   <span class="s5">*</span>
+   <span class="s5">* </span><span class="s6">@param </span><span class="s5">inputId - All input types that are used in the constructor implementation.</span>
+   <span class="s5">*/</span>
+  <span class="s1">constructor</span><span class="s2">(</span><span class="s1">inputId</span><span class="s2">?: </span><span class="s1">string </span><span class="s2">| </span><span class="s1">number </span><span class="s2">| </span><span class="s1">ObjectId </span><span class="s2">| </span><span class="s1">ObjectIdLike </span><span class="s2">| </span><span class="s1">Uint8Array</span><span class="s2">);</span>
+  <span class="s5">/**</span>
+   <span class="s5">* Create a new ObjectId.</span>
+   <span class="s5">*</span>
+   <span class="s5">* </span><span class="s6">@param </span><span class="s5">inputId - An input value to create a new ObjectId from.</span>
+   <span class="s5">*/</span>
+  <span class="s1">constructor</span><span class="s2">(</span><span class="s1">inputId</span><span class="s2">?: </span><span class="s1">string </span><span class="s2">| </span><span class="s1">number </span><span class="s2">| </span><span class="s1">ObjectId </span><span class="s2">| </span><span class="s1">ObjectIdLike </span><span class="s2">| </span><span class="s1">Uint8Array</span><span class="s2">) {</span>
+    <span class="s0">super</span><span class="s2">();</span>
+    <span class="s4">// workingId is set based on type of input and whether valid id exists for the input</span>
+    <span class="s0">let </span><span class="s1">workingId</span><span class="s2">;</span>
+    <span class="s0">if </span><span class="s2">(</span><span class="s0">typeof </span><span class="s1">inputId </span><span class="s2">=== </span><span class="s3">'object' </span><span class="s2">&amp;&amp; </span><span class="s1">inputId </span><span class="s2">&amp;&amp; </span><span class="s3">'id' </span><span class="s0">in </span><span class="s1">inputId</span><span class="s2">) {</span>
+      <span class="s0">if </span><span class="s2">(</span><span class="s0">typeof </span><span class="s1">inputId</span><span class="s2">.</span><span class="s1">id </span><span class="s2">!== </span><span class="s3">'string' </span><span class="s2">&amp;&amp; !</span><span class="s1">ArrayBuffer</span><span class="s2">.</span><span class="s1">isView</span><span class="s2">(</span><span class="s1">inputId</span><span class="s2">.</span><span class="s1">id</span><span class="s2">)) {</span>
+        <span class="s0">throw new </span><span class="s1">BSONError</span><span class="s2">(</span><span class="s3">'Argument passed in must have an id that is of type string or Buffer'</span><span class="s2">);</span>
+      <span class="s2">}</span>
+      <span class="s0">if </span><span class="s2">(</span><span class="s3">'toHexString' </span><span class="s0">in </span><span class="s1">inputId </span><span class="s2">&amp;&amp; </span><span class="s0">typeof </span><span class="s1">inputId</span><span class="s2">.</span><span class="s1">toHexString </span><span class="s2">=== </span><span class="s3">'function'</span><span class="s2">) {</span>
+        <span class="s1">workingId </span><span class="s2">= </span><span class="s1">ByteUtils</span><span class="s2">.</span><span class="s1">fromHex</span><span class="s2">(</span><span class="s1">inputId</span><span class="s2">.</span><span class="s1">toHexString</span><span class="s2">());</span>
+      <span class="s2">} </span><span class="s0">else </span><span class="s2">{</span>
+        <span class="s1">workingId </span><span class="s2">= </span><span class="s1">inputId</span><span class="s2">.</span><span class="s1">id</span><span class="s2">;</span>
+      <span class="s2">}</span>
+    <span class="s2">} </span><span class="s0">else </span><span class="s2">{</span>
+      <span class="s1">workingId </span><span class="s2">= </span><span class="s1">inputId</span><span class="s2">;</span>
+    <span class="s2">}</span>
+
+    <span class="s4">// The following cases use workingId to construct an ObjectId</span>
+    <span class="s0">if </span><span class="s2">(</span><span class="s1">workingId </span><span class="s2">== </span><span class="s0">null </span><span class="s2">|| </span><span class="s0">typeof </span><span class="s1">workingId </span><span class="s2">=== </span><span class="s3">'number'</span><span class="s2">) {</span>
+      <span class="s4">// The most common use case (blank id, new objectId instance)</span>
+      <span class="s4">// Generate a new id</span>
+      <span class="s0">this</span><span class="s2">.</span><span class="s1">buffer </span><span class="s2">= </span><span class="s1">ObjectId</span><span class="s2">.</span><span class="s1">generate</span><span class="s2">(</span><span class="s0">typeof </span><span class="s1">workingId </span><span class="s2">=== </span><span class="s3">'number' </span><span class="s2">? </span><span class="s1">workingId </span><span class="s2">: </span><span class="s1">undefined</span><span class="s2">);</span>
+    <span class="s2">} </span><span class="s0">else if </span><span class="s2">(</span><span class="s1">ArrayBuffer</span><span class="s2">.</span><span class="s1">isView</span><span class="s2">(</span><span class="s1">workingId</span><span class="s2">) &amp;&amp; </span><span class="s1">workingId</span><span class="s2">.</span><span class="s1">byteLength </span><span class="s2">=== </span><span class="s7">12</span><span class="s2">) {</span>
+      <span class="s4">// If intstanceof matches we can escape calling ensure buffer in Node.js environments</span>
+      <span class="s0">this</span><span class="s2">.</span><span class="s1">buffer </span><span class="s2">= </span><span class="s1">ByteUtils</span><span class="s2">.</span><span class="s1">toLocalBufferType</span><span class="s2">(</span><span class="s1">workingId</span><span class="s2">);</span>
+    <span class="s2">} </span><span class="s0">else if </span><span class="s2">(</span><span class="s0">typeof </span><span class="s1">workingId </span><span class="s2">=== </span><span class="s3">'string'</span><span class="s2">) {</span>
+      <span class="s0">if </span><span class="s2">(</span><span class="s1">ObjectId</span><span class="s2">.</span><span class="s1">validateHexString</span><span class="s2">(</span><span class="s1">workingId</span><span class="s2">)) {</span>
+        <span class="s0">this</span><span class="s2">.</span><span class="s1">buffer </span><span class="s2">= </span><span class="s1">ByteUtils</span><span class="s2">.</span><span class="s1">fromHex</span><span class="s2">(</span><span class="s1">workingId</span><span class="s2">);</span>
+        <span class="s4">// If we are caching the hex string</span>
+        <span class="s0">if </span><span class="s2">(</span><span class="s1">ObjectId</span><span class="s2">.</span><span class="s1">cacheHexString</span><span class="s2">) {</span>
+          <span class="s1">__idCache</span><span class="s2">.</span><span class="s1">set</span><span class="s2">(</span><span class="s0">this</span><span class="s2">, </span><span class="s1">workingId</span><span class="s2">);</span>
+        <span class="s2">}</span>
+      <span class="s2">} </span><span class="s0">else </span><span class="s2">{</span>
+        <span class="s0">throw new </span><span class="s1">BSONError</span><span class="s2">(</span>
+          <span class="s3">'input must be a 24 character hex string, 12 byte Uint8Array, or an integer'</span>
+        <span class="s2">);</span>
+      <span class="s2">}</span>
+    <span class="s2">} </span><span class="s0">else </span><span class="s2">{</span>
+      <span class="s0">throw new </span><span class="s1">BSONError</span><span class="s2">(</span><span class="s3">'Argument passed in does not match the accepted types'</span><span class="s2">);</span>
+    <span class="s2">}</span>
+  <span class="s2">}</span>
+
+  <span class="s5">/**</span>
+   <span class="s5">* The ObjectId bytes</span>
+   <span class="s5">* </span><span class="s6">@readonly</span>
+   <span class="s5">*/</span>
+  <span class="s1">get id</span><span class="s2">(): </span><span class="s1">Uint8Array </span><span class="s2">{</span>
+    <span class="s0">return this</span><span class="s2">.</span><span class="s1">buffer</span><span class="s2">;</span>
+  <span class="s2">}</span>
+
+  <span class="s1">set id</span><span class="s2">(</span><span class="s1">value</span><span class="s2">: </span><span class="s1">Uint8Array</span><span class="s2">) {</span>
+    <span class="s0">this</span><span class="s2">.</span><span class="s1">buffer </span><span class="s2">= </span><span class="s1">value</span><span class="s2">;</span>
+    <span class="s0">if </span><span class="s2">(</span><span class="s1">ObjectId</span><span class="s2">.</span><span class="s1">cacheHexString</span><span class="s2">) {</span>
+      <span class="s1">__idCache</span><span class="s2">.</span><span class="s1">set</span><span class="s2">(</span><span class="s0">this</span><span class="s2">, </span><span class="s1">ByteUtils</span><span class="s2">.</span><span class="s1">toHex</span><span class="s2">(</span><span class="s1">value</span><span class="s2">));</span>
+    <span class="s2">}</span>
+  <span class="s2">}</span>
+
+  <span class="s5">/**</span>
+   <span class="s5">* </span><span class="s6">@internal</span>
+   <span class="s5">* Validates the input string is a valid hex representation of an ObjectId.</span>
+   <span class="s5">*/</span>
+  <span class="s0">private static </span><span class="s1">validateHexString</span><span class="s2">(</span><span class="s1">string</span><span class="s2">: </span><span class="s1">string</span><span class="s2">): </span><span class="s1">boolean </span><span class="s2">{</span>
+    <span class="s0">if </span><span class="s2">(</span><span class="s1">string</span><span class="s2">?.</span><span class="s1">length </span><span class="s2">!== </span><span class="s7">24</span><span class="s2">) </span><span class="s0">return false</span><span class="s2">;</span>
+    <span class="s0">for </span><span class="s2">(</span><span class="s0">let </span><span class="s1">i </span><span class="s2">= </span><span class="s7">0</span><span class="s2">; </span><span class="s1">i </span><span class="s2">&lt; </span><span class="s7">24</span><span class="s2">; </span><span class="s1">i</span><span class="s2">++) {</span>
+      <span class="s0">const </span><span class="s1">char </span><span class="s2">= </span><span class="s1">string</span><span class="s2">.</span><span class="s1">charCodeAt</span><span class="s2">(</span><span class="s1">i</span><span class="s2">);</span>
+      <span class="s0">if </span><span class="s2">(</span>
+        <span class="s4">// Check for ASCII 0-9</span>
+        <span class="s2">(</span><span class="s1">char </span><span class="s2">&gt;= </span><span class="s7">48 </span><span class="s2">&amp;&amp; </span><span class="s1">char </span><span class="s2">&lt;= </span><span class="s7">57</span><span class="s2">) ||</span>
+        <span class="s4">// Check for ASCII a-f</span>
+        <span class="s2">(</span><span class="s1">char </span><span class="s2">&gt;= </span><span class="s7">97 </span><span class="s2">&amp;&amp; </span><span class="s1">char </span><span class="s2">&lt;= </span><span class="s7">102</span><span class="s2">) ||</span>
+        <span class="s4">// Check for ASCII A-F</span>
+        <span class="s2">(</span><span class="s1">char </span><span class="s2">&gt;= </span><span class="s7">65 </span><span class="s2">&amp;&amp; </span><span class="s1">char </span><span class="s2">&lt;= </span><span class="s7">70</span><span class="s2">)</span>
+      <span class="s2">) {</span>
+        <span class="s0">continue</span><span class="s2">;</span>
+      <span class="s2">}</span>
+      <span class="s0">return false</span><span class="s2">;</span>
+    <span class="s2">}</span>
+    <span class="s0">return true</span><span class="s2">;</span>
+  <span class="s2">}</span>
+
+  <span class="s5">/** Returns the ObjectId id as a 24 lowercase character hex string representation */</span>
+  <span class="s1">toHexString</span><span class="s2">(): </span><span class="s1">string </span><span class="s2">{</span>
+    <span class="s0">if </span><span class="s2">(</span><span class="s1">ObjectId</span><span class="s2">.</span><span class="s1">cacheHexString</span><span class="s2">) {</span>
+      <span class="s0">const </span><span class="s1">__id </span><span class="s2">= </span><span class="s1">__idCache</span><span class="s2">.</span><span class="s1">get</span><span class="s2">(</span><span class="s0">this</span><span class="s2">);</span>
+      <span class="s0">if </span><span class="s2">(</span><span class="s1">__id</span><span class="s2">) </span><span class="s0">return </span><span class="s1">__id</span><span class="s2">;</span>
+    <span class="s2">}</span>
+
+    <span class="s0">const </span><span class="s1">hexString </span><span class="s2">= </span><span class="s1">ByteUtils</span><span class="s2">.</span><span class="s1">toHex</span><span class="s2">(</span><span class="s0">this</span><span class="s2">.</span><span class="s1">id</span><span class="s2">);</span>
+
+    <span class="s0">if </span><span class="s2">(</span><span class="s1">ObjectId</span><span class="s2">.</span><span class="s1">cacheHexString</span><span class="s2">) {</span>
+      <span class="s1">__idCache</span><span class="s2">.</span><span class="s1">set</span><span class="s2">(</span><span class="s0">this</span><span class="s2">, </span><span class="s1">hexString</span><span class="s2">);</span>
+    <span class="s2">}</span>
+
+    <span class="s0">return </span><span class="s1">hexString</span><span class="s2">;</span>
+  <span class="s2">}</span>
+
+  <span class="s5">/**</span>
+   <span class="s5">* Update the ObjectId index</span>
+   <span class="s5">* </span><span class="s6">@internal</span>
+   <span class="s5">*/</span>
+  <span class="s0">private static </span><span class="s1">getInc</span><span class="s2">(): </span><span class="s1">number </span><span class="s2">{</span>
+    <span class="s0">return </span><span class="s2">(</span><span class="s1">ObjectId</span><span class="s2">.</span><span class="s1">index </span><span class="s2">= (</span><span class="s1">ObjectId</span><span class="s2">.</span><span class="s1">index </span><span class="s2">+ </span><span class="s7">1</span><span class="s2">) % </span><span class="s7">0xffffff</span><span class="s2">);</span>
+  <span class="s2">}</span>
+
+  <span class="s5">/**</span>
+   <span class="s5">* Generate a 12 byte id buffer used in ObjectId's</span>
+   <span class="s5">*</span>
+   <span class="s5">* </span><span class="s6">@param </span><span class="s5">time - pass in a second based timestamp.</span>
+   <span class="s5">*/</span>
+  <span class="s0">static </span><span class="s1">generate</span><span class="s2">(</span><span class="s1">time</span><span class="s2">?: </span><span class="s1">number</span><span class="s2">): </span><span class="s1">Uint8Array </span><span class="s2">{</span>
+    <span class="s0">if </span><span class="s2">(</span><span class="s3">'number' </span><span class="s2">!== </span><span class="s0">typeof </span><span class="s1">time</span><span class="s2">) {</span>
+      <span class="s1">time </span><span class="s2">= </span><span class="s1">Math</span><span class="s2">.</span><span class="s1">floor</span><span class="s2">(</span><span class="s1">Date</span><span class="s2">.</span><span class="s1">now</span><span class="s2">() / </span><span class="s7">1000</span><span class="s2">);</span>
+    <span class="s2">}</span>
+
+    <span class="s0">const </span><span class="s1">inc </span><span class="s2">= </span><span class="s1">ObjectId</span><span class="s2">.</span><span class="s1">getInc</span><span class="s2">();</span>
+    <span class="s0">const </span><span class="s1">buffer </span><span class="s2">= </span><span class="s1">ByteUtils</span><span class="s2">.</span><span class="s1">allocateUnsafe</span><span class="s2">(</span><span class="s7">12</span><span class="s2">);</span>
+
+    <span class="s4">// 4-byte timestamp</span>
+    <span class="s1">NumberUtils</span><span class="s2">.</span><span class="s1">setInt32BE</span><span class="s2">(</span><span class="s1">buffer</span><span class="s2">, </span><span class="s7">0</span><span class="s2">, </span><span class="s1">time</span><span class="s2">);</span>
+
+    <span class="s4">// set PROCESS_UNIQUE if yet not initialized</span>
+    <span class="s0">if </span><span class="s2">(</span><span class="s1">PROCESS_UNIQUE </span><span class="s2">=== </span><span class="s0">null</span><span class="s2">) {</span>
+      <span class="s1">PROCESS_UNIQUE </span><span class="s2">= </span><span class="s1">ByteUtils</span><span class="s2">.</span><span class="s1">randomBytes</span><span class="s2">(</span><span class="s7">5</span><span class="s2">);</span>
+    <span class="s2">}</span>
+
+    <span class="s4">// 5-byte process unique</span>
+    <span class="s1">buffer</span><span class="s2">[</span><span class="s7">4</span><span class="s2">] = </span><span class="s1">PROCESS_UNIQUE</span><span class="s2">[</span><span class="s7">0</span><span class="s2">];</span>
+    <span class="s1">buffer</span><span class="s2">[</span><span class="s7">5</span><span class="s2">] = </span><span class="s1">PROCESS_UNIQUE</span><span class="s2">[</span><span class="s7">1</span><span class="s2">];</span>
+    <span class="s1">buffer</span><span class="s2">[</span><span class="s7">6</span><span class="s2">] = </span><span class="s1">PROCESS_UNIQUE</span><span class="s2">[</span><span class="s7">2</span><span class="s2">];</span>
+    <span class="s1">buffer</span><span class="s2">[</span><span class="s7">7</span><span class="s2">] = </span><span class="s1">PROCESS_UNIQUE</span><span class="s2">[</span><span class="s7">3</span><span class="s2">];</span>
+    <span class="s1">buffer</span><span class="s2">[</span><span class="s7">8</span><span class="s2">] = </span><span class="s1">PROCESS_UNIQUE</span><span class="s2">[</span><span class="s7">4</span><span class="s2">];</span>
+
+    <span class="s4">// 3-byte counter</span>
+    <span class="s1">buffer</span><span class="s2">[</span><span class="s7">11</span><span class="s2">] = </span><span class="s1">inc </span><span class="s2">&amp; </span><span class="s7">0xff</span><span class="s2">;</span>
+    <span class="s1">buffer</span><span class="s2">[</span><span class="s7">10</span><span class="s2">] = (</span><span class="s1">inc </span><span class="s2">&gt;&gt; </span><span class="s7">8</span><span class="s2">) &amp; </span><span class="s7">0xff</span><span class="s2">;</span>
+    <span class="s1">buffer</span><span class="s2">[</span><span class="s7">9</span><span class="s2">] = (</span><span class="s1">inc </span><span class="s2">&gt;&gt; </span><span class="s7">16</span><span class="s2">) &amp; </span><span class="s7">0xff</span><span class="s2">;</span>
+
+    <span class="s0">return </span><span class="s1">buffer</span><span class="s2">;</span>
+  <span class="s2">}</span>
+
+  <span class="s5">/**</span>
+   <span class="s5">* Converts the id into a 24 character hex string for printing, unless encoding is provided.</span>
+   <span class="s5">* </span><span class="s6">@param </span><span class="s5">encoding - hex or base64</span>
+   <span class="s5">*/</span>
+  <span class="s1">toString</span><span class="s2">(</span><span class="s1">encoding</span><span class="s2">?: </span><span class="s3">'hex' </span><span class="s2">| </span><span class="s3">'base64'</span><span class="s2">): </span><span class="s1">string </span><span class="s2">{</span>
+    <span class="s4">// Is the id a buffer then use the buffer toString method to return the format</span>
+    <span class="s0">if </span><span class="s2">(</span><span class="s1">encoding </span><span class="s2">=== </span><span class="s3">'base64'</span><span class="s2">) </span><span class="s0">return </span><span class="s1">ByteUtils</span><span class="s2">.</span><span class="s1">toBase64</span><span class="s2">(</span><span class="s0">this</span><span class="s2">.</span><span class="s1">id</span><span class="s2">);</span>
+    <span class="s0">if </span><span class="s2">(</span><span class="s1">encoding </span><span class="s2">=== </span><span class="s3">'hex'</span><span class="s2">) </span><span class="s0">return this</span><span class="s2">.</span><span class="s1">toHexString</span><span class="s2">();</span>
+    <span class="s0">return this</span><span class="s2">.</span><span class="s1">toHexString</span><span class="s2">();</span>
+  <span class="s2">}</span>
+
+  <span class="s5">/** Converts to its JSON the 24 character hex string representation. */</span>
+  <span class="s1">toJSON</span><span class="s2">(): </span><span class="s1">string </span><span class="s2">{</span>
+    <span class="s0">return this</span><span class="s2">.</span><span class="s1">toHexString</span><span class="s2">();</span>
+  <span class="s2">}</span>
+
+  <span class="s5">/** </span><span class="s6">@internal </span><span class="s5">*/</span>
+  <span class="s0">private static </span><span class="s2">is(</span><span class="s1">variable</span><span class="s2">: </span><span class="s1">unknown</span><span class="s2">): </span><span class="s1">variable </span><span class="s2">is </span><span class="s1">ObjectId </span><span class="s2">{</span>
+    <span class="s0">return </span><span class="s2">(</span>
+      <span class="s1">variable </span><span class="s2">!= </span><span class="s0">null </span><span class="s2">&amp;&amp;</span>
+      <span class="s0">typeof </span><span class="s1">variable </span><span class="s2">=== </span><span class="s3">'object' </span><span class="s2">&amp;&amp;</span>
+      <span class="s3">'_bsontype' </span><span class="s0">in </span><span class="s1">variable </span><span class="s2">&amp;&amp;</span>
+      <span class="s1">variable</span><span class="s2">.</span><span class="s1">_bsontype </span><span class="s2">=== </span><span class="s3">'ObjectId'</span>
+    <span class="s2">);</span>
+  <span class="s2">}</span>
+
+  <span class="s5">/**</span>
+   <span class="s5">* Compares the equality of this ObjectId with `otherID`.</span>
+   <span class="s5">*</span>
+   <span class="s5">* </span><span class="s6">@param </span><span class="s5">otherId - ObjectId instance to compare against.</span>
+   <span class="s5">*/</span>
+  <span class="s1">equals</span><span class="s2">(</span><span class="s1">otherId</span><span class="s2">: </span><span class="s1">string </span><span class="s2">| </span><span class="s1">ObjectId </span><span class="s2">| </span><span class="s1">ObjectIdLike </span><span class="s2">| </span><span class="s1">undefined </span><span class="s2">| </span><span class="s0">null</span><span class="s2">): </span><span class="s1">boolean </span><span class="s2">{</span>
+    <span class="s0">if </span><span class="s2">(</span><span class="s1">otherId </span><span class="s2">=== </span><span class="s1">undefined </span><span class="s2">|| </span><span class="s1">otherId </span><span class="s2">=== </span><span class="s0">null</span><span class="s2">) {</span>
+      <span class="s0">return false</span><span class="s2">;</span>
+    <span class="s2">}</span>
+
+    <span class="s0">if </span><span class="s2">(</span><span class="s1">ObjectId</span><span class="s2">.</span><span class="s1">is</span><span class="s2">(</span><span class="s1">otherId</span><span class="s2">)) {</span>
+      <span class="s0">return </span><span class="s2">(</span>
+        <span class="s0">this</span><span class="s2">.</span><span class="s1">buffer</span><span class="s2">[</span><span class="s7">11</span><span class="s2">] === </span><span class="s1">otherId</span><span class="s2">.</span><span class="s1">buffer</span><span class="s2">[</span><span class="s7">11</span><span class="s2">] &amp;&amp; </span><span class="s1">ByteUtils</span><span class="s2">.</span><span class="s1">equals</span><span class="s2">(</span><span class="s0">this</span><span class="s2">.</span><span class="s1">buffer</span><span class="s2">, </span><span class="s1">otherId</span><span class="s2">.</span><span class="s1">buffer</span><span class="s2">)</span>
+      <span class="s2">);</span>
+    <span class="s2">}</span>
+
+    <span class="s0">if </span><span class="s2">(</span><span class="s0">typeof </span><span class="s1">otherId </span><span class="s2">=== </span><span class="s3">'string'</span><span class="s2">) {</span>
+      <span class="s0">return </span><span class="s1">otherId</span><span class="s2">.</span><span class="s1">toLowerCase</span><span class="s2">() === </span><span class="s0">this</span><span class="s2">.</span><span class="s1">toHexString</span><span class="s2">();</span>
+    <span class="s2">}</span>
+
+    <span class="s0">if </span><span class="s2">(</span><span class="s0">typeof </span><span class="s1">otherId </span><span class="s2">=== </span><span class="s3">'object' </span><span class="s2">&amp;&amp; </span><span class="s0">typeof </span><span class="s1">otherId</span><span class="s2">.</span><span class="s1">toHexString </span><span class="s2">=== </span><span class="s3">'function'</span><span class="s2">) {</span>
+      <span class="s0">const </span><span class="s1">otherIdString </span><span class="s2">= </span><span class="s1">otherId</span><span class="s2">.</span><span class="s1">toHexString</span><span class="s2">();</span>
+      <span class="s0">const </span><span class="s1">thisIdString </span><span class="s2">= </span><span class="s0">this</span><span class="s2">.</span><span class="s1">toHexString</span><span class="s2">();</span>
+      <span class="s0">return typeof </span><span class="s1">otherIdString </span><span class="s2">=== </span><span class="s3">'string' </span><span class="s2">&amp;&amp; </span><span class="s1">otherIdString</span><span class="s2">.</span><span class="s1">toLowerCase</span><span class="s2">() === </span><span class="s1">thisIdString</span><span class="s2">;</span>
+    <span class="s2">}</span>
+
+    <span class="s0">return false</span><span class="s2">;</span>
+  <span class="s2">}</span>
+
+  <span class="s5">/** Returns the generation date (accurate up to the second) that this ID was generated. */</span>
+  <span class="s1">getTimestamp</span><span class="s2">(): </span><span class="s1">Date </span><span class="s2">{</span>
+    <span class="s0">const </span><span class="s1">timestamp </span><span class="s2">= </span><span class="s0">new </span><span class="s1">Date</span><span class="s2">();</span>
+    <span class="s0">const </span><span class="s1">time </span><span class="s2">= </span><span class="s1">NumberUtils</span><span class="s2">.</span><span class="s1">getUint32BE</span><span class="s2">(</span><span class="s0">this</span><span class="s2">.</span><span class="s1">buffer</span><span class="s2">, </span><span class="s7">0</span><span class="s2">);</span>
+    <span class="s1">timestamp</span><span class="s2">.</span><span class="s1">setTime</span><span class="s2">(</span><span class="s1">Math</span><span class="s2">.</span><span class="s1">floor</span><span class="s2">(</span><span class="s1">time</span><span class="s2">) * </span><span class="s7">1000</span><span class="s2">);</span>
+    <span class="s0">return </span><span class="s1">timestamp</span><span class="s2">;</span>
+  <span class="s2">}</span>
+
+  <span class="s5">/** </span><span class="s6">@internal </span><span class="s5">*/</span>
+  <span class="s0">static </span><span class="s1">createPk</span><span class="s2">(): </span><span class="s1">ObjectId </span><span class="s2">{</span>
+    <span class="s0">return new </span><span class="s1">ObjectId</span><span class="s2">();</span>
+  <span class="s2">}</span>
+
+  <span class="s5">/** </span><span class="s6">@internal </span><span class="s5">*/</span>
+  <span class="s1">serializeInto</span><span class="s2">(</span><span class="s1">uint8array</span><span class="s2">: </span><span class="s1">Uint8Array</span><span class="s2">, </span><span class="s1">index</span><span class="s2">: </span><span class="s1">number</span><span class="s2">): </span><span class="s7">12 </span><span class="s2">{</span>
+    <span class="s1">uint8array</span><span class="s2">[</span><span class="s1">index</span><span class="s2">] = </span><span class="s0">this</span><span class="s2">.</span><span class="s1">buffer</span><span class="s2">[</span><span class="s7">0</span><span class="s2">];</span>
+    <span class="s1">uint8array</span><span class="s2">[</span><span class="s1">index </span><span class="s2">+ </span><span class="s7">1</span><span class="s2">] = </span><span class="s0">this</span><span class="s2">.</span><span class="s1">buffer</span><span class="s2">[</span><span class="s7">1</span><span class="s2">];</span>
+    <span class="s1">uint8array</span><span class="s2">[</span><span class="s1">index </span><span class="s2">+ </span><span class="s7">2</span><span class="s2">] = </span><span class="s0">this</span><span class="s2">.</span><span class="s1">buffer</span><span class="s2">[</span><span class="s7">2</span><span class="s2">];</span>
+    <span class="s1">uint8array</span><span class="s2">[</span><span class="s1">index </span><span class="s2">+ </span><span class="s7">3</span><span class="s2">] = </span><span class="s0">this</span><span class="s2">.</span><span class="s1">buffer</span><span class="s2">[</span><span class="s7">3</span><span class="s2">];</span>
+    <span class="s1">uint8array</span><span class="s2">[</span><span class="s1">index </span><span class="s2">+ </span><span class="s7">4</span><span class="s2">] = </span><span class="s0">this</span><span class="s2">.</span><span class="s1">buffer</span><span class="s2">[</span><span class="s7">4</span><span class="s2">];</span>
+    <span class="s1">uint8array</span><span class="s2">[</span><span class="s1">index </span><span class="s2">+ </span><span class="s7">5</span><span class="s2">] = </span><span class="s0">this</span><span class="s2">.</span><span class="s1">buffer</span><span class="s2">[</span><span class="s7">5</span><span class="s2">];</span>
+    <span class="s1">uint8array</span><span class="s2">[</span><span class="s1">index </span><span class="s2">+ </span><span class="s7">6</span><span class="s2">] = </span><span class="s0">this</span><span class="s2">.</span><span class="s1">buffer</span><span class="s2">[</span><span class="s7">6</span><span class="s2">];</span>
+    <span class="s1">uint8array</span><span class="s2">[</span><span class="s1">index </span><span class="s2">+ </span><span class="s7">7</span><span class="s2">] = </span><span class="s0">this</span><span class="s2">.</span><span class="s1">buffer</span><span class="s2">[</span><span class="s7">7</span><span class="s2">];</span>
+    <span class="s1">uint8array</span><span class="s2">[</span><span class="s1">index </span><span class="s2">+ </span><span class="s7">8</span><span class="s2">] = </span><span class="s0">this</span><span class="s2">.</span><span class="s1">buffer</span><span class="s2">[</span><span class="s7">8</span><span class="s2">];</span>
+    <span class="s1">uint8array</span><span class="s2">[</span><span class="s1">index </span><span class="s2">+ </span><span class="s7">9</span><span class="s2">] = </span><span class="s0">this</span><span class="s2">.</span><span class="s1">buffer</span><span class="s2">[</span><span class="s7">9</span><span class="s2">];</span>
+    <span class="s1">uint8array</span><span class="s2">[</span><span class="s1">index </span><span class="s2">+ </span><span class="s7">10</span><span class="s2">] = </span><span class="s0">this</span><span class="s2">.</span><span class="s1">buffer</span><span class="s2">[</span><span class="s7">10</span><span class="s2">];</span>
+    <span class="s1">uint8array</span><span class="s2">[</span><span class="s1">index </span><span class="s2">+ </span><span class="s7">11</span><span class="s2">] = </span><span class="s0">this</span><span class="s2">.</span><span class="s1">buffer</span><span class="s2">[</span><span class="s7">11</span><span class="s2">];</span>
+    <span class="s0">return </span><span class="s7">12</span><span class="s2">;</span>
+  <span class="s2">}</span>
+
+  <span class="s5">/**</span>
+   <span class="s5">* Creates an ObjectId from a second based number, with the rest of the ObjectId zeroed out. Used for comparisons or sorting the ObjectId.</span>
+   <span class="s5">*</span>
+   <span class="s5">* </span><span class="s6">@param </span><span class="s5">time - an integer number representing a number of seconds.</span>
+   <span class="s5">*/</span>
+  <span class="s0">static </span><span class="s1">createFromTime</span><span class="s2">(</span><span class="s1">time</span><span class="s2">: </span><span class="s1">number</span><span class="s2">): </span><span class="s1">ObjectId </span><span class="s2">{</span>
+    <span class="s0">const </span><span class="s1">buffer </span><span class="s2">= </span><span class="s1">ByteUtils</span><span class="s2">.</span><span class="s1">allocate</span><span class="s2">(</span><span class="s7">12</span><span class="s2">);</span>
+    <span class="s0">for </span><span class="s2">(</span><span class="s0">let </span><span class="s1">i </span><span class="s2">= </span><span class="s7">11</span><span class="s2">; </span><span class="s1">i </span><span class="s2">&gt;= </span><span class="s7">4</span><span class="s2">; </span><span class="s1">i</span><span class="s2">--) </span><span class="s1">buffer</span><span class="s2">[</span><span class="s1">i</span><span class="s2">] = </span><span class="s7">0</span><span class="s2">;</span>
+    <span class="s4">// Encode time into first 4 bytes</span>
+    <span class="s1">NumberUtils</span><span class="s2">.</span><span class="s1">setInt32BE</span><span class="s2">(</span><span class="s1">buffer</span><span class="s2">, </span><span class="s7">0</span><span class="s2">, </span><span class="s1">time</span><span class="s2">);</span>
+    <span class="s4">// Return the new objectId</span>
+    <span class="s0">return new </span><span class="s1">ObjectId</span><span class="s2">(</span><span class="s1">buffer</span><span class="s2">);</span>
+  <span class="s2">}</span>
+
+  <span class="s5">/**</span>
+   <span class="s5">* Creates an ObjectId from a hex string representation of an ObjectId.</span>
+   <span class="s5">*</span>
+   <span class="s5">* </span><span class="s6">@param </span><span class="s5">hexString - create a ObjectId from a passed in 24 character hexstring.</span>
+   <span class="s5">*/</span>
+  <span class="s0">static </span><span class="s1">createFromHexString</span><span class="s2">(</span><span class="s1">hexString</span><span class="s2">: </span><span class="s1">string</span><span class="s2">): </span><span class="s1">ObjectId </span><span class="s2">{</span>
+    <span class="s0">if </span><span class="s2">(</span><span class="s1">hexString</span><span class="s2">?.</span><span class="s1">length </span><span class="s2">!== </span><span class="s7">24</span><span class="s2">) {</span>
+      <span class="s0">throw new </span><span class="s1">BSONError</span><span class="s2">(</span><span class="s3">'hex string must be 24 characters'</span><span class="s2">);</span>
+    <span class="s2">}</span>
+
+    <span class="s0">return new </span><span class="s1">ObjectId</span><span class="s2">(</span><span class="s1">ByteUtils</span><span class="s2">.</span><span class="s1">fromHex</span><span class="s2">(</span><span class="s1">hexString</span><span class="s2">));</span>
+  <span class="s2">}</span>
+
+  <span class="s5">/** Creates an ObjectId instance from a base64 string */</span>
+  <span class="s0">static </span><span class="s1">createFromBase64</span><span class="s2">(</span><span class="s1">base64</span><span class="s2">: </span><span class="s1">string</span><span class="s2">): </span><span class="s1">ObjectId </span><span class="s2">{</span>
+    <span class="s0">if </span><span class="s2">(</span><span class="s1">base64</span><span class="s2">?.</span><span class="s1">length </span><span class="s2">!== </span><span class="s7">16</span><span class="s2">) {</span>
+      <span class="s0">throw new </span><span class="s1">BSONError</span><span class="s2">(</span><span class="s3">'base64 string must be 16 characters'</span><span class="s2">);</span>
+    <span class="s2">}</span>
+
+    <span class="s0">return new </span><span class="s1">ObjectId</span><span class="s2">(</span><span class="s1">ByteUtils</span><span class="s2">.</span><span class="s1">fromBase64</span><span class="s2">(</span><span class="s1">base64</span><span class="s2">));</span>
+  <span class="s2">}</span>
+
+  <span class="s5">/**</span>
+   <span class="s5">* Checks if a value can be used to create a valid bson ObjectId</span>
+   <span class="s5">* </span><span class="s6">@param </span><span class="s5">id - any JS value</span>
+   <span class="s5">*/</span>
+  <span class="s0">static </span><span class="s1">isValid</span><span class="s2">(</span><span class="s1">id</span><span class="s2">: </span><span class="s1">string </span><span class="s2">| </span><span class="s1">number </span><span class="s2">| </span><span class="s1">ObjectId </span><span class="s2">| </span><span class="s1">ObjectIdLike </span><span class="s2">| </span><span class="s1">Uint8Array</span><span class="s2">): </span><span class="s1">boolean </span><span class="s2">{</span>
+    <span class="s0">if </span><span class="s2">(</span><span class="s1">id </span><span class="s2">== </span><span class="s0">null</span><span class="s2">) </span><span class="s0">return false</span><span class="s2">;</span>
+    <span class="s0">if </span><span class="s2">(</span><span class="s0">typeof </span><span class="s1">id </span><span class="s2">=== </span><span class="s3">'string'</span><span class="s2">) </span><span class="s0">return </span><span class="s1">ObjectId</span><span class="s2">.</span><span class="s1">validateHexString</span><span class="s2">(</span><span class="s1">id</span><span class="s2">);</span>
+
+    <span class="s0">try </span><span class="s2">{</span>
+      <span class="s0">new </span><span class="s1">ObjectId</span><span class="s2">(</span><span class="s1">id</span><span class="s2">);</span>
+      <span class="s0">return true</span><span class="s2">;</span>
+    <span class="s2">} </span><span class="s0">catch </span><span class="s2">{</span>
+      <span class="s0">return false</span><span class="s2">;</span>
+    <span class="s2">}</span>
+  <span class="s2">}</span>
+
+  <span class="s5">/** </span><span class="s6">@internal </span><span class="s5">*/</span>
+  <span class="s1">toExtendedJSON</span><span class="s2">(): </span><span class="s1">ObjectIdExtended </span><span class="s2">{</span>
+    <span class="s0">if </span><span class="s2">(</span><span class="s0">this</span><span class="s2">.</span><span class="s1">toHexString</span><span class="s2">) </span><span class="s0">return </span><span class="s2">{ </span><span class="s1">$oid</span><span class="s2">: </span><span class="s0">this</span><span class="s2">.</span><span class="s1">toHexString</span><span class="s2">() };</span>
+    <span class="s0">return </span><span class="s2">{ </span><span class="s1">$oid</span><span class="s2">: </span><span class="s0">this</span><span class="s2">.</span><span class="s1">toString</span><span class="s2">(</span><span class="s3">'hex'</span><span class="s2">) };</span>
+  <span class="s2">}</span>
+
+  <span class="s5">/** </span><span class="s6">@internal </span><span class="s5">*/</span>
+  <span class="s0">static </span><span class="s1">fromExtendedJSON</span><span class="s2">(</span><span class="s1">doc</span><span class="s2">: </span><span class="s1">ObjectIdExtended</span><span class="s2">): </span><span class="s1">ObjectId </span><span class="s2">{</span>
+    <span class="s0">return new </span><span class="s1">ObjectId</span><span class="s2">(</span><span class="s1">doc</span><span class="s2">.</span><span class="s1">$oid</span><span class="s2">);</span>
+  <span class="s2">}</span>
+
+  <span class="s5">/** </span><span class="s6">@internal </span><span class="s5">*/</span>
+  <span class="s0">private </span><span class="s1">isCached</span><span class="s2">(): </span><span class="s1">boolean </span><span class="s2">{</span>
+    <span class="s0">return </span><span class="s1">ObjectId</span><span class="s2">.</span><span class="s1">cacheHexString </span><span class="s2">&amp;&amp; </span><span class="s1">__idCache</span><span class="s2">.</span><span class="s1">has</span><span class="s2">(</span><span class="s0">this</span><span class="s2">);</span>
+  <span class="s2">}</span>
+
+  <span class="s5">/**</span>
+   <span class="s5">* Converts to a string representation of this Id.</span>
+   <span class="s5">*</span>
+   <span class="s5">* </span><span class="s6">@returns </span><span class="s5">return the 24 character hex string representation.</span>
+   <span class="s5">*/</span>
+  <span class="s1">inspect</span><span class="s2">(</span><span class="s1">depth</span><span class="s2">?: </span><span class="s1">number</span><span class="s2">, </span><span class="s1">options</span><span class="s2">?: </span><span class="s1">unknown</span><span class="s2">, </span><span class="s1">inspect</span><span class="s2">?: </span><span class="s1">InspectFn</span><span class="s2">): </span><span class="s1">string </span><span class="s2">{</span>
+    <span class="s1">inspect </span><span class="s2">??= </span><span class="s1">defaultInspect</span><span class="s2">;</span>
+    <span class="s0">return </span><span class="s3">`new ObjectId(</span><span class="s1">$</span><span class="s2">{</span><span class="s1">inspect</span><span class="s2">(</span><span class="s0">this</span><span class="s2">.</span><span class="s1">toHexString</span><span class="s2">(), </span><span class="s1">options</span><span class="s2">)}</span><span class="s3">)`</span><span class="s2">;</span>
+  <span class="s2">}</span>
+<span class="s2">}</span>
+</pre>
+</body>
+</html>

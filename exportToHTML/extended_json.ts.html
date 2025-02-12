@@ -1,0 +1,541 @@
+<html>
+<head>
+<title>extended_json.ts</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+<style type="text/css">
+.s0 { color: #cf8e6d;}
+.s1 { color: #bcbec4;}
+.s2 { color: #bcbec4;}
+.s3 { color: #6aab73;}
+.s4 { color: #5f826b; font-style: italic;}
+.s5 { color: #67a37c; font-style: italic;}
+.s6 { color: #7a7e85;}
+.s7 { color: #2aacb8;}
+.s8 { color: #42c3d4;}
+</style>
+</head>
+<body bgcolor="#1e1f22">
+<table CELLSPACING=0 CELLPADDING=5 COLS=1 WIDTH="100%" BGCOLOR="#606060" >
+<tr><td><center>
+<font face="Arial, Helvetica" color="#000000">
+extended_json.ts</font>
+</center></td></tr></table>
+<pre><span class="s0">import </span><span class="s2">{ </span><span class="s1">Binary </span><span class="s2">} </span><span class="s1">from </span><span class="s3">'./binary'</span><span class="s2">;</span>
+<span class="s0">import </span><span class="s1">type </span><span class="s2">{ </span><span class="s1">Document </span><span class="s2">} </span><span class="s1">from </span><span class="s3">'./bson'</span><span class="s2">;</span>
+<span class="s0">import </span><span class="s2">{ </span><span class="s1">Code </span><span class="s2">} </span><span class="s1">from </span><span class="s3">'./code'</span><span class="s2">;</span>
+<span class="s0">import </span><span class="s2">{</span>
+  <span class="s1">BSON_INT32_MAX</span><span class="s2">,</span>
+  <span class="s1">BSON_INT32_MIN</span><span class="s2">,</span>
+  <span class="s1">BSON_INT64_MAX</span><span class="s2">,</span>
+  <span class="s1">BSON_INT64_MIN</span><span class="s2">,</span>
+  <span class="s1">BSON_MAJOR_VERSION</span><span class="s2">,</span>
+  <span class="s1">BSON_VERSION_SYMBOL</span>
+<span class="s2">} </span><span class="s1">from </span><span class="s3">'./constants'</span><span class="s2">;</span>
+<span class="s0">import </span><span class="s2">{ </span><span class="s1">DBRef</span><span class="s2">, </span><span class="s1">isDBRefLike </span><span class="s2">} </span><span class="s1">from </span><span class="s3">'./db_ref'</span><span class="s2">;</span>
+<span class="s0">import </span><span class="s2">{ </span><span class="s1">Decimal128 </span><span class="s2">} </span><span class="s1">from </span><span class="s3">'./decimal128'</span><span class="s2">;</span>
+<span class="s0">import </span><span class="s2">{ </span><span class="s1">Double </span><span class="s2">} </span><span class="s1">from </span><span class="s3">'./double'</span><span class="s2">;</span>
+<span class="s0">import </span><span class="s2">{ </span><span class="s1">BSONError</span><span class="s2">, </span><span class="s1">BSONRuntimeError</span><span class="s2">, </span><span class="s1">BSONVersionError </span><span class="s2">} </span><span class="s1">from </span><span class="s3">'./error'</span><span class="s2">;</span>
+<span class="s0">import </span><span class="s2">{ </span><span class="s1">Int32 </span><span class="s2">} </span><span class="s1">from </span><span class="s3">'./int_32'</span><span class="s2">;</span>
+<span class="s0">import </span><span class="s2">{ </span><span class="s1">Long </span><span class="s2">} </span><span class="s1">from </span><span class="s3">'./long'</span><span class="s2">;</span>
+<span class="s0">import </span><span class="s2">{ </span><span class="s1">MaxKey </span><span class="s2">} </span><span class="s1">from </span><span class="s3">'./max_key'</span><span class="s2">;</span>
+<span class="s0">import </span><span class="s2">{ </span><span class="s1">MinKey </span><span class="s2">} </span><span class="s1">from </span><span class="s3">'./min_key'</span><span class="s2">;</span>
+<span class="s0">import </span><span class="s2">{ </span><span class="s1">ObjectId </span><span class="s2">} </span><span class="s1">from </span><span class="s3">'./objectid'</span><span class="s2">;</span>
+<span class="s0">import </span><span class="s2">{ </span><span class="s1">isDate</span><span class="s2">, </span><span class="s1">isRegExp</span><span class="s2">, </span><span class="s1">isMap </span><span class="s2">} </span><span class="s1">from </span><span class="s3">'./parser/utils'</span><span class="s2">;</span>
+<span class="s0">import </span><span class="s2">{ </span><span class="s1">BSONRegExp </span><span class="s2">} </span><span class="s1">from </span><span class="s3">'./regexp'</span><span class="s2">;</span>
+<span class="s0">import </span><span class="s2">{ </span><span class="s1">BSONSymbol </span><span class="s2">} </span><span class="s1">from </span><span class="s3">'./symbol'</span><span class="s2">;</span>
+<span class="s0">import </span><span class="s2">{ </span><span class="s1">Timestamp </span><span class="s2">} </span><span class="s1">from </span><span class="s3">'./timestamp'</span><span class="s2">;</span>
+
+<span class="s4">/** </span><span class="s5">@public </span><span class="s4">*/</span>
+<span class="s0">export </span><span class="s1">type EJSONOptions </span><span class="s2">= {</span>
+  <span class="s4">/**</span>
+   <span class="s4">* Output using the Extended JSON v1 spec</span>
+   <span class="s4">* </span><span class="s5">@defaultValue </span><span class="s4">`false`</span>
+   <span class="s4">*/</span>
+  <span class="s1">legacy</span><span class="s2">?: </span><span class="s1">boolean</span><span class="s2">;</span>
+  <span class="s4">/**</span>
+   <span class="s4">* Enable Extended JSON's `relaxed` mode, which attempts to return native JS types where possible, rather than BSON types</span>
+   <span class="s4">* </span><span class="s5">@defaultValue </span><span class="s4">`false` */</span>
+  <span class="s1">relaxed</span><span class="s2">?: </span><span class="s1">boolean</span><span class="s2">;</span>
+  <span class="s4">/**</span>
+   <span class="s4">* Enable native bigint support</span>
+   <span class="s4">* </span><span class="s5">@defaultValue </span><span class="s4">`false`</span>
+   <span class="s4">*/</span>
+  <span class="s1">useBigInt64</span><span class="s2">?: </span><span class="s1">boolean</span><span class="s2">;</span>
+<span class="s2">};</span>
+
+<span class="s4">/** </span><span class="s5">@internal </span><span class="s4">*/</span>
+<span class="s1">type BSONType </span><span class="s2">=</span>
+  <span class="s2">| </span><span class="s1">Binary</span>
+  <span class="s2">| </span><span class="s1">Code</span>
+  <span class="s2">| </span><span class="s1">DBRef</span>
+  <span class="s2">| </span><span class="s1">Decimal128</span>
+  <span class="s2">| </span><span class="s1">Double</span>
+  <span class="s2">| </span><span class="s1">Int32</span>
+  <span class="s2">| </span><span class="s1">Long</span>
+  <span class="s2">| </span><span class="s1">MaxKey</span>
+  <span class="s2">| </span><span class="s1">MinKey</span>
+  <span class="s2">| </span><span class="s1">ObjectId</span>
+  <span class="s2">| </span><span class="s1">BSONRegExp</span>
+  <span class="s2">| </span><span class="s1">BSONSymbol</span>
+  <span class="s2">| </span><span class="s1">Timestamp</span><span class="s2">;</span>
+
+<span class="s0">function </span><span class="s1">isBSONType</span><span class="s2">(</span><span class="s1">value</span><span class="s2">: </span><span class="s1">unknown</span><span class="s2">): </span><span class="s1">value </span><span class="s2">is </span><span class="s1">BSONType </span><span class="s2">{</span>
+  <span class="s0">return </span><span class="s2">(</span>
+    <span class="s1">value </span><span class="s2">!= </span><span class="s0">null </span><span class="s2">&amp;&amp;</span>
+    <span class="s0">typeof </span><span class="s1">value </span><span class="s2">=== </span><span class="s3">'object' </span><span class="s2">&amp;&amp;</span>
+    <span class="s3">'_bsontype' </span><span class="s0">in </span><span class="s1">value </span><span class="s2">&amp;&amp;</span>
+    <span class="s0">typeof </span><span class="s1">value</span><span class="s2">.</span><span class="s1">_bsontype </span><span class="s2">=== </span><span class="s3">'string'</span>
+  <span class="s2">);</span>
+<span class="s2">}</span>
+
+<span class="s6">// all the types where we don't need to do any special processing and can just pass the EJSON</span>
+<span class="s6">//straight to type.fromExtendedJSON</span>
+<span class="s0">const </span><span class="s1">keysToCodecs </span><span class="s2">= {</span>
+  <span class="s1">$oid</span><span class="s2">: </span><span class="s1">ObjectId</span><span class="s2">,</span>
+  <span class="s1">$binary</span><span class="s2">: </span><span class="s1">Binary</span><span class="s2">,</span>
+  <span class="s1">$uuid</span><span class="s2">: </span><span class="s1">Binary</span><span class="s2">,</span>
+  <span class="s1">$symbol</span><span class="s2">: </span><span class="s1">BSONSymbol</span><span class="s2">,</span>
+  <span class="s1">$numberInt</span><span class="s2">: </span><span class="s1">Int32</span><span class="s2">,</span>
+  <span class="s1">$numberDecimal</span><span class="s2">: </span><span class="s1">Decimal128</span><span class="s2">,</span>
+  <span class="s1">$numberDouble</span><span class="s2">: </span><span class="s1">Double</span><span class="s2">,</span>
+  <span class="s1">$numberLong</span><span class="s2">: </span><span class="s1">Long</span><span class="s2">,</span>
+  <span class="s1">$minKey</span><span class="s2">: </span><span class="s1">MinKey</span><span class="s2">,</span>
+  <span class="s1">$maxKey</span><span class="s2">: </span><span class="s1">MaxKey</span><span class="s2">,</span>
+  <span class="s1">$regex</span><span class="s2">: </span><span class="s1">BSONRegExp</span><span class="s2">,</span>
+  <span class="s1">$regularExpression</span><span class="s2">: </span><span class="s1">BSONRegExp</span><span class="s2">,</span>
+  <span class="s1">$timestamp</span><span class="s2">: </span><span class="s1">Timestamp</span>
+<span class="s2">} as </span><span class="s0">const</span><span class="s2">;</span>
+
+<span class="s6">// eslint-disable-next-line @typescript-eslint/no-explicit-any</span>
+<span class="s0">function </span><span class="s1">deserializeValue</span><span class="s2">(</span><span class="s1">value</span><span class="s2">: </span><span class="s1">any</span><span class="s2">, </span><span class="s1">options</span><span class="s2">: </span><span class="s1">EJSONOptions </span><span class="s2">= {}) {</span>
+  <span class="s0">if </span><span class="s2">(</span><span class="s0">typeof </span><span class="s1">value </span><span class="s2">=== </span><span class="s3">'number'</span><span class="s2">) {</span>
+    <span class="s6">// TODO(NODE-4377): EJSON js number handling diverges from BSON</span>
+    <span class="s0">const </span><span class="s1">in32BitRange </span><span class="s2">= </span><span class="s1">value </span><span class="s2">&lt;= </span><span class="s1">BSON_INT32_MAX </span><span class="s2">&amp;&amp; </span><span class="s1">value </span><span class="s2">&gt;= </span><span class="s1">BSON_INT32_MIN</span><span class="s2">;</span>
+    <span class="s0">const </span><span class="s1">in64BitRange </span><span class="s2">= </span><span class="s1">value </span><span class="s2">&lt;= </span><span class="s1">BSON_INT64_MAX </span><span class="s2">&amp;&amp; </span><span class="s1">value </span><span class="s2">&gt;= </span><span class="s1">BSON_INT64_MIN</span><span class="s2">;</span>
+
+    <span class="s0">if </span><span class="s2">(</span><span class="s1">options</span><span class="s2">.</span><span class="s1">relaxed </span><span class="s2">|| </span><span class="s1">options</span><span class="s2">.</span><span class="s1">legacy</span><span class="s2">) {</span>
+      <span class="s0">return </span><span class="s1">value</span><span class="s2">;</span>
+    <span class="s2">}</span>
+
+    <span class="s0">if </span><span class="s2">(</span><span class="s1">Number</span><span class="s2">.</span><span class="s1">isInteger</span><span class="s2">(</span><span class="s1">value</span><span class="s2">) &amp;&amp; !</span><span class="s1">Object</span><span class="s2">.</span><span class="s1">is</span><span class="s2">(</span><span class="s1">value</span><span class="s2">, -</span><span class="s7">0</span><span class="s2">)) {</span>
+      <span class="s6">// interpret as being of the smallest BSON integer type that can represent the number exactly</span>
+      <span class="s0">if </span><span class="s2">(</span><span class="s1">in32BitRange</span><span class="s2">) {</span>
+        <span class="s0">return new </span><span class="s1">Int32</span><span class="s2">(</span><span class="s1">value</span><span class="s2">);</span>
+      <span class="s2">}</span>
+      <span class="s0">if </span><span class="s2">(</span><span class="s1">in64BitRange</span><span class="s2">) {</span>
+        <span class="s0">if </span><span class="s2">(</span><span class="s1">options</span><span class="s2">.</span><span class="s1">useBigInt64</span><span class="s2">) {</span>
+          <span class="s6">// eslint-disable-next-line no-restricted-globals -- This is allowed here as useBigInt64=true</span>
+          <span class="s0">return </span><span class="s1">BigInt</span><span class="s2">(</span><span class="s1">value</span><span class="s2">);</span>
+        <span class="s2">}</span>
+        <span class="s0">return </span><span class="s1">Long</span><span class="s2">.</span><span class="s1">fromNumber</span><span class="s2">(</span><span class="s1">value</span><span class="s2">);</span>
+      <span class="s2">}</span>
+    <span class="s2">}</span>
+
+    <span class="s6">// If the number is a non-integer or out of integer range, should interpret as BSON Double.</span>
+    <span class="s0">return new </span><span class="s1">Double</span><span class="s2">(</span><span class="s1">value</span><span class="s2">);</span>
+  <span class="s2">}</span>
+
+  <span class="s6">// from here on out we're looking for bson types, so bail if its not an object</span>
+  <span class="s0">if </span><span class="s2">(</span><span class="s1">value </span><span class="s2">== </span><span class="s0">null </span><span class="s2">|| </span><span class="s0">typeof </span><span class="s1">value </span><span class="s2">!== </span><span class="s3">'object'</span><span class="s2">) </span><span class="s0">return </span><span class="s1">value</span><span class="s2">;</span>
+
+  <span class="s6">// upgrade deprecated undefined to null</span>
+  <span class="s0">if </span><span class="s2">(</span><span class="s1">value</span><span class="s2">.</span><span class="s1">$undefined</span><span class="s2">) </span><span class="s0">return null</span><span class="s2">;</span>
+
+  <span class="s0">const </span><span class="s1">keys </span><span class="s2">= </span><span class="s1">Object</span><span class="s2">.</span><span class="s1">keys</span><span class="s2">(</span><span class="s1">value</span><span class="s2">).</span><span class="s1">filter</span><span class="s2">(</span>
+    <span class="s1">k </span><span class="s2">=&gt; </span><span class="s1">k</span><span class="s2">.</span><span class="s1">startsWith</span><span class="s2">(</span><span class="s3">'$'</span><span class="s2">) &amp;&amp; </span><span class="s1">value</span><span class="s2">[</span><span class="s1">k</span><span class="s2">] != </span><span class="s0">null</span>
+  <span class="s2">) as (</span><span class="s1">keyof </span><span class="s0">typeof </span><span class="s1">keysToCodecs</span><span class="s2">)[];</span>
+  <span class="s0">for </span><span class="s2">(</span><span class="s0">let </span><span class="s1">i </span><span class="s2">= </span><span class="s7">0</span><span class="s2">; </span><span class="s1">i </span><span class="s2">&lt; </span><span class="s1">keys</span><span class="s2">.</span><span class="s1">length</span><span class="s2">; </span><span class="s1">i</span><span class="s2">++) {</span>
+    <span class="s0">const </span><span class="s1">c </span><span class="s2">= </span><span class="s1">keysToCodecs</span><span class="s2">[</span><span class="s1">keys</span><span class="s2">[</span><span class="s1">i</span><span class="s2">]];</span>
+    <span class="s0">if </span><span class="s2">(</span><span class="s1">c</span><span class="s2">) </span><span class="s0">return </span><span class="s1">c</span><span class="s2">.</span><span class="s1">fromExtendedJSON</span><span class="s2">(</span><span class="s1">value</span><span class="s2">, </span><span class="s1">options</span><span class="s2">);</span>
+  <span class="s2">}</span>
+
+  <span class="s0">if </span><span class="s2">(</span><span class="s1">value</span><span class="s2">.</span><span class="s1">$date </span><span class="s2">!= </span><span class="s0">null</span><span class="s2">) {</span>
+    <span class="s0">const </span><span class="s1">d </span><span class="s2">= </span><span class="s1">value</span><span class="s2">.</span><span class="s1">$date</span><span class="s2">;</span>
+    <span class="s0">const </span><span class="s1">date </span><span class="s2">= </span><span class="s0">new </span><span class="s1">Date</span><span class="s2">();</span>
+
+    <span class="s0">if </span><span class="s2">(</span><span class="s1">options</span><span class="s2">.</span><span class="s1">legacy</span><span class="s2">) {</span>
+      <span class="s0">if </span><span class="s2">(</span><span class="s0">typeof </span><span class="s1">d </span><span class="s2">=== </span><span class="s3">'number'</span><span class="s2">) </span><span class="s1">date</span><span class="s2">.</span><span class="s1">setTime</span><span class="s2">(</span><span class="s1">d</span><span class="s2">);</span>
+      <span class="s0">else if </span><span class="s2">(</span><span class="s0">typeof </span><span class="s1">d </span><span class="s2">=== </span><span class="s3">'string'</span><span class="s2">) </span><span class="s1">date</span><span class="s2">.</span><span class="s1">setTime</span><span class="s2">(</span><span class="s1">Date</span><span class="s2">.</span><span class="s1">parse</span><span class="s2">(</span><span class="s1">d</span><span class="s2">));</span>
+      <span class="s0">else if </span><span class="s2">(</span><span class="s0">typeof </span><span class="s1">d </span><span class="s2">=== </span><span class="s3">'bigint'</span><span class="s2">) </span><span class="s1">date</span><span class="s2">.</span><span class="s1">setTime</span><span class="s2">(</span><span class="s1">Number</span><span class="s2">(</span><span class="s1">d</span><span class="s2">));</span>
+      <span class="s0">else throw new </span><span class="s1">BSONRuntimeError</span><span class="s2">(</span><span class="s3">`Unrecognized type for EJSON date: </span><span class="s1">$</span><span class="s2">{</span><span class="s0">typeof </span><span class="s1">d</span><span class="s2">}</span><span class="s3">`</span><span class="s2">);</span>
+    <span class="s2">} </span><span class="s0">else </span><span class="s2">{</span>
+      <span class="s0">if </span><span class="s2">(</span><span class="s0">typeof </span><span class="s1">d </span><span class="s2">=== </span><span class="s3">'string'</span><span class="s2">) </span><span class="s1">date</span><span class="s2">.</span><span class="s1">setTime</span><span class="s2">(</span><span class="s1">Date</span><span class="s2">.</span><span class="s1">parse</span><span class="s2">(</span><span class="s1">d</span><span class="s2">));</span>
+      <span class="s0">else if </span><span class="s2">(</span><span class="s1">Long</span><span class="s2">.</span><span class="s1">isLong</span><span class="s2">(</span><span class="s1">d</span><span class="s2">)) </span><span class="s1">date</span><span class="s2">.</span><span class="s1">setTime</span><span class="s2">(</span><span class="s1">d</span><span class="s2">.</span><span class="s1">toNumber</span><span class="s2">());</span>
+      <span class="s0">else if </span><span class="s2">(</span><span class="s0">typeof </span><span class="s1">d </span><span class="s2">=== </span><span class="s3">'number' </span><span class="s2">&amp;&amp; </span><span class="s1">options</span><span class="s2">.</span><span class="s1">relaxed</span><span class="s2">) </span><span class="s1">date</span><span class="s2">.</span><span class="s1">setTime</span><span class="s2">(</span><span class="s1">d</span><span class="s2">);</span>
+      <span class="s0">else if </span><span class="s2">(</span><span class="s0">typeof </span><span class="s1">d </span><span class="s2">=== </span><span class="s3">'bigint'</span><span class="s2">) </span><span class="s1">date</span><span class="s2">.</span><span class="s1">setTime</span><span class="s2">(</span><span class="s1">Number</span><span class="s2">(</span><span class="s1">d</span><span class="s2">));</span>
+      <span class="s0">else throw new </span><span class="s1">BSONRuntimeError</span><span class="s2">(</span><span class="s3">`Unrecognized type for EJSON date: </span><span class="s1">$</span><span class="s2">{</span><span class="s0">typeof </span><span class="s1">d</span><span class="s2">}</span><span class="s3">`</span><span class="s2">);</span>
+    <span class="s2">}</span>
+    <span class="s0">return </span><span class="s1">date</span><span class="s2">;</span>
+  <span class="s2">}</span>
+
+  <span class="s0">if </span><span class="s2">(</span><span class="s1">value</span><span class="s2">.</span><span class="s1">$code </span><span class="s2">!= </span><span class="s0">null</span><span class="s2">) {</span>
+    <span class="s0">const </span><span class="s1">copy </span><span class="s2">= </span><span class="s1">Object</span><span class="s2">.</span><span class="s1">assign</span><span class="s2">({}, </span><span class="s1">value</span><span class="s2">);</span>
+    <span class="s0">if </span><span class="s2">(</span><span class="s1">value</span><span class="s2">.</span><span class="s1">$scope</span><span class="s2">) {</span>
+      <span class="s1">copy</span><span class="s2">.</span><span class="s1">$scope </span><span class="s2">= </span><span class="s1">deserializeValue</span><span class="s2">(</span><span class="s1">value</span><span class="s2">.</span><span class="s1">$scope</span><span class="s2">);</span>
+    <span class="s2">}</span>
+
+    <span class="s0">return </span><span class="s1">Code</span><span class="s2">.</span><span class="s1">fromExtendedJSON</span><span class="s2">(</span><span class="s1">value</span><span class="s2">);</span>
+  <span class="s2">}</span>
+
+  <span class="s0">if </span><span class="s2">(</span><span class="s1">isDBRefLike</span><span class="s2">(</span><span class="s1">value</span><span class="s2">) || </span><span class="s1">value</span><span class="s2">.</span><span class="s1">$dbPointer</span><span class="s2">) {</span>
+    <span class="s0">const </span><span class="s1">v </span><span class="s2">= </span><span class="s1">value</span><span class="s2">.</span><span class="s1">$ref </span><span class="s2">? </span><span class="s1">value </span><span class="s2">: </span><span class="s1">value</span><span class="s2">.</span><span class="s1">$dbPointer</span><span class="s2">;</span>
+
+    <span class="s6">// we run into this in a &quot;degenerate EJSON&quot; case (with $id and $ref order flipped)</span>
+    <span class="s6">// because of the order JSON.parse goes through the document</span>
+    <span class="s0">if </span><span class="s2">(</span><span class="s1">v </span><span class="s0">instanceof </span><span class="s1">DBRef</span><span class="s2">) </span><span class="s0">return </span><span class="s1">v</span><span class="s2">;</span>
+
+    <span class="s0">const </span><span class="s1">dollarKeys </span><span class="s2">= </span><span class="s1">Object</span><span class="s2">.</span><span class="s1">keys</span><span class="s2">(</span><span class="s1">v</span><span class="s2">).</span><span class="s1">filter</span><span class="s2">(</span><span class="s1">k </span><span class="s2">=&gt; </span><span class="s1">k</span><span class="s2">.</span><span class="s1">startsWith</span><span class="s2">(</span><span class="s3">'$'</span><span class="s2">));</span>
+    <span class="s0">let </span><span class="s1">valid </span><span class="s2">= </span><span class="s0">true</span><span class="s2">;</span>
+    <span class="s1">dollarKeys</span><span class="s2">.</span><span class="s1">forEach</span><span class="s2">(</span><span class="s1">k </span><span class="s2">=&gt; {</span>
+      <span class="s0">if </span><span class="s2">([</span><span class="s3">'$ref'</span><span class="s2">, </span><span class="s3">'$id'</span><span class="s2">, </span><span class="s3">'$db'</span><span class="s2">].</span><span class="s1">indexOf</span><span class="s2">(</span><span class="s1">k</span><span class="s2">) === -</span><span class="s7">1</span><span class="s2">) </span><span class="s1">valid </span><span class="s2">= </span><span class="s0">false</span><span class="s2">;</span>
+    <span class="s2">});</span>
+
+    <span class="s6">// only make DBRef if $ keys are all valid</span>
+    <span class="s0">if </span><span class="s2">(</span><span class="s1">valid</span><span class="s2">) </span><span class="s0">return </span><span class="s1">DBRef</span><span class="s2">.</span><span class="s1">fromExtendedJSON</span><span class="s2">(</span><span class="s1">v</span><span class="s2">);</span>
+  <span class="s2">}</span>
+
+  <span class="s0">return </span><span class="s1">value</span><span class="s2">;</span>
+<span class="s2">}</span>
+
+<span class="s1">type EJSONSerializeOptions </span><span class="s2">= </span><span class="s1">EJSONOptions </span><span class="s2">&amp; {</span>
+  <span class="s1">seenObjects</span><span class="s2">: { </span><span class="s1">obj</span><span class="s2">: </span><span class="s1">unknown</span><span class="s2">; </span><span class="s1">propertyName</span><span class="s2">: </span><span class="s1">string </span><span class="s2">}[];</span>
+<span class="s2">};</span>
+
+<span class="s6">// eslint-disable-next-line @typescript-eslint/no-explicit-any</span>
+<span class="s0">function </span><span class="s1">serializeArray</span><span class="s2">(</span><span class="s1">array</span><span class="s2">: </span><span class="s1">any</span><span class="s2">[], </span><span class="s1">options</span><span class="s2">: </span><span class="s1">EJSONSerializeOptions</span><span class="s2">): </span><span class="s1">any</span><span class="s2">[] {</span>
+  <span class="s0">return </span><span class="s1">array</span><span class="s2">.</span><span class="s1">map</span><span class="s2">((</span><span class="s1">v</span><span class="s2">: </span><span class="s1">unknown</span><span class="s2">, </span><span class="s1">index</span><span class="s2">: </span><span class="s1">number</span><span class="s2">) =&gt; {</span>
+    <span class="s1">options</span><span class="s2">.</span><span class="s1">seenObjects</span><span class="s2">.</span><span class="s1">push</span><span class="s2">({ </span><span class="s1">propertyName</span><span class="s2">: </span><span class="s3">`index </span><span class="s1">$</span><span class="s2">{</span><span class="s1">index</span><span class="s2">}</span><span class="s3">`</span><span class="s2">, </span><span class="s1">obj</span><span class="s2">: </span><span class="s0">null </span><span class="s2">});</span>
+    <span class="s0">try </span><span class="s2">{</span>
+      <span class="s0">return </span><span class="s1">serializeValue</span><span class="s2">(</span><span class="s1">v</span><span class="s2">, </span><span class="s1">options</span><span class="s2">);</span>
+    <span class="s2">} </span><span class="s0">finally </span><span class="s2">{</span>
+      <span class="s1">options</span><span class="s2">.</span><span class="s1">seenObjects</span><span class="s2">.</span><span class="s1">pop</span><span class="s2">();</span>
+    <span class="s2">}</span>
+  <span class="s2">});</span>
+<span class="s2">}</span>
+
+<span class="s0">function </span><span class="s1">getISOString</span><span class="s2">(</span><span class="s1">date</span><span class="s2">: </span><span class="s1">Date</span><span class="s2">) {</span>
+  <span class="s0">const </span><span class="s1">isoStr </span><span class="s2">= </span><span class="s1">date</span><span class="s2">.</span><span class="s1">toISOString</span><span class="s2">();</span>
+  <span class="s6">// we should only show milliseconds in timestamp if they're non-zero</span>
+  <span class="s0">return </span><span class="s1">date</span><span class="s2">.</span><span class="s1">getUTCMilliseconds</span><span class="s2">() !== </span><span class="s7">0 </span><span class="s2">? </span><span class="s1">isoStr </span><span class="s2">: </span><span class="s1">isoStr</span><span class="s2">.</span><span class="s1">slice</span><span class="s2">(</span><span class="s7">0</span><span class="s2">, -</span><span class="s7">5</span><span class="s2">) + </span><span class="s3">'Z'</span><span class="s2">;</span>
+<span class="s2">}</span>
+
+<span class="s6">// eslint-disable-next-line @typescript-eslint/no-explicit-any</span>
+<span class="s0">function </span><span class="s1">serializeValue</span><span class="s2">(</span><span class="s1">value</span><span class="s2">: </span><span class="s1">any</span><span class="s2">, </span><span class="s1">options</span><span class="s2">: </span><span class="s1">EJSONSerializeOptions</span><span class="s2">): </span><span class="s1">any </span><span class="s2">{</span>
+  <span class="s0">if </span><span class="s2">(</span><span class="s1">value </span><span class="s0">instanceof </span><span class="s1">Map </span><span class="s2">|| </span><span class="s1">isMap</span><span class="s2">(</span><span class="s1">value</span><span class="s2">)) {</span>
+    <span class="s0">const </span><span class="s1">obj</span><span class="s2">: </span><span class="s1">Record</span><span class="s2">&lt;</span><span class="s1">string</span><span class="s2">, </span><span class="s1">unknown</span><span class="s2">&gt; = </span><span class="s1">Object</span><span class="s2">.</span><span class="s1">create</span><span class="s2">(</span><span class="s0">null</span><span class="s2">);</span>
+    <span class="s0">for </span><span class="s2">(</span><span class="s0">const </span><span class="s2">[</span><span class="s1">k</span><span class="s2">, </span><span class="s1">v</span><span class="s2">] </span><span class="s1">of value</span><span class="s2">) {</span>
+      <span class="s0">if </span><span class="s2">(</span><span class="s0">typeof </span><span class="s1">k </span><span class="s2">!== </span><span class="s3">'string'</span><span class="s2">) {</span>
+        <span class="s0">throw new </span><span class="s1">BSONError</span><span class="s2">(</span><span class="s3">'Can only serialize maps with string keys'</span><span class="s2">);</span>
+      <span class="s2">}</span>
+      <span class="s1">obj</span><span class="s2">[</span><span class="s1">k</span><span class="s2">] = </span><span class="s1">v</span><span class="s2">;</span>
+    <span class="s2">}</span>
+
+    <span class="s0">return </span><span class="s1">serializeValue</span><span class="s2">(</span><span class="s1">obj</span><span class="s2">, </span><span class="s1">options</span><span class="s2">);</span>
+  <span class="s2">}</span>
+
+  <span class="s0">if </span><span class="s2">((</span><span class="s0">typeof </span><span class="s1">value </span><span class="s2">=== </span><span class="s3">'object' </span><span class="s2">|| </span><span class="s0">typeof </span><span class="s1">value </span><span class="s2">=== </span><span class="s3">'function'</span><span class="s2">) &amp;&amp; </span><span class="s1">value </span><span class="s2">!== </span><span class="s0">null</span><span class="s2">) {</span>
+    <span class="s0">const </span><span class="s1">index </span><span class="s2">= </span><span class="s1">options</span><span class="s2">.</span><span class="s1">seenObjects</span><span class="s2">.</span><span class="s1">findIndex</span><span class="s2">(</span><span class="s1">entry </span><span class="s2">=&gt; </span><span class="s1">entry</span><span class="s2">.</span><span class="s1">obj </span><span class="s2">=== </span><span class="s1">value</span><span class="s2">);</span>
+    <span class="s0">if </span><span class="s2">(</span><span class="s1">index </span><span class="s2">!== -</span><span class="s7">1</span><span class="s2">) {</span>
+      <span class="s0">const </span><span class="s1">props </span><span class="s2">= </span><span class="s1">options</span><span class="s2">.</span><span class="s1">seenObjects</span><span class="s2">.</span><span class="s1">map</span><span class="s2">(</span><span class="s1">entry </span><span class="s2">=&gt; </span><span class="s1">entry</span><span class="s2">.</span><span class="s1">propertyName</span><span class="s2">);</span>
+      <span class="s0">const </span><span class="s1">leadingPart </span><span class="s2">= </span><span class="s1">props</span>
+        <span class="s2">.</span><span class="s1">slice</span><span class="s2">(</span><span class="s7">0</span><span class="s2">, </span><span class="s1">index</span><span class="s2">)</span>
+        <span class="s2">.</span><span class="s1">map</span><span class="s2">(</span><span class="s1">prop </span><span class="s2">=&gt; </span><span class="s3">`</span><span class="s1">$</span><span class="s2">{</span><span class="s1">prop</span><span class="s2">} </span><span class="s3">-&gt; `</span><span class="s2">)</span>
+        <span class="s2">.</span><span class="s1">join</span><span class="s2">(</span><span class="s3">''</span><span class="s2">);</span>
+      <span class="s0">const </span><span class="s1">alreadySeen </span><span class="s2">= </span><span class="s1">props</span><span class="s2">[</span><span class="s1">index</span><span class="s2">];</span>
+      <span class="s0">const </span><span class="s1">circularPart </span><span class="s2">=</span>
+        <span class="s3">' -&gt; ' </span><span class="s2">+</span>
+        <span class="s1">props</span>
+          <span class="s2">.</span><span class="s1">slice</span><span class="s2">(</span><span class="s1">index </span><span class="s2">+ </span><span class="s7">1</span><span class="s2">, </span><span class="s1">props</span><span class="s2">.</span><span class="s1">length </span><span class="s2">- </span><span class="s7">1</span><span class="s2">)</span>
+          <span class="s2">.</span><span class="s1">map</span><span class="s2">(</span><span class="s1">prop </span><span class="s2">=&gt; </span><span class="s3">`</span><span class="s1">$</span><span class="s2">{</span><span class="s1">prop</span><span class="s2">} </span><span class="s3">-&gt; `</span><span class="s2">)</span>
+          <span class="s2">.</span><span class="s1">join</span><span class="s2">(</span><span class="s3">''</span><span class="s2">);</span>
+      <span class="s0">const </span><span class="s1">current </span><span class="s2">= </span><span class="s1">props</span><span class="s2">[</span><span class="s1">props</span><span class="s2">.</span><span class="s1">length </span><span class="s2">- </span><span class="s7">1</span><span class="s2">];</span>
+      <span class="s0">const </span><span class="s1">leadingSpace </span><span class="s2">= </span><span class="s3">' '</span><span class="s2">.</span><span class="s1">repeat</span><span class="s2">(</span><span class="s1">leadingPart</span><span class="s2">.</span><span class="s1">length </span><span class="s2">+ </span><span class="s1">alreadySeen</span><span class="s2">.</span><span class="s1">length </span><span class="s2">/ </span><span class="s7">2</span><span class="s2">);</span>
+      <span class="s0">const </span><span class="s1">dashes </span><span class="s2">= </span><span class="s3">'-'</span><span class="s2">.</span><span class="s1">repeat</span><span class="s2">(</span>
+        <span class="s1">circularPart</span><span class="s2">.</span><span class="s1">length </span><span class="s2">+ (</span><span class="s1">alreadySeen</span><span class="s2">.</span><span class="s1">length </span><span class="s2">+ </span><span class="s1">current</span><span class="s2">.</span><span class="s1">length</span><span class="s2">) / </span><span class="s7">2 </span><span class="s2">- </span><span class="s7">1</span>
+      <span class="s2">);</span>
+
+      <span class="s0">throw new </span><span class="s1">BSONError</span><span class="s2">(</span>
+        <span class="s3">'Converting circular structure to EJSON:</span><span class="s0">\n</span><span class="s3">' </span><span class="s2">+</span>
+          <span class="s3">`    </span><span class="s1">$</span><span class="s2">{</span><span class="s1">leadingPart</span><span class="s2">}</span><span class="s1">$</span><span class="s2">{</span><span class="s1">alreadySeen</span><span class="s2">}</span><span class="s1">$</span><span class="s2">{</span><span class="s1">circularPart</span><span class="s2">}</span><span class="s1">$</span><span class="s2">{</span><span class="s1">current</span><span class="s2">}</span><span class="s0">\n</span><span class="s3">` </span><span class="s2">+</span>
+          <span class="s3">`    </span><span class="s1">$</span><span class="s2">{</span><span class="s1">leadingSpace</span><span class="s2">}</span><span class="s0">\\</span><span class="s1">$</span><span class="s2">{</span><span class="s1">dashes</span><span class="s2">}</span><span class="s3">/`</span>
+      <span class="s2">);</span>
+    <span class="s2">}</span>
+    <span class="s1">options</span><span class="s2">.</span><span class="s1">seenObjects</span><span class="s2">[</span><span class="s1">options</span><span class="s2">.</span><span class="s1">seenObjects</span><span class="s2">.</span><span class="s1">length </span><span class="s2">- </span><span class="s7">1</span><span class="s2">].</span><span class="s1">obj </span><span class="s2">= </span><span class="s1">value</span><span class="s2">;</span>
+  <span class="s2">}</span>
+
+  <span class="s0">if </span><span class="s2">(</span><span class="s1">Array</span><span class="s2">.</span><span class="s1">isArray</span><span class="s2">(</span><span class="s1">value</span><span class="s2">)) </span><span class="s0">return </span><span class="s1">serializeArray</span><span class="s2">(</span><span class="s1">value</span><span class="s2">, </span><span class="s1">options</span><span class="s2">);</span>
+
+  <span class="s0">if </span><span class="s2">(</span><span class="s1">value </span><span class="s2">=== </span><span class="s1">undefined</span><span class="s2">) </span><span class="s0">return null</span><span class="s2">;</span>
+
+  <span class="s0">if </span><span class="s2">(</span><span class="s1">value </span><span class="s0">instanceof </span><span class="s1">Date </span><span class="s2">|| </span><span class="s1">isDate</span><span class="s2">(</span><span class="s1">value</span><span class="s2">)) {</span>
+    <span class="s0">const </span><span class="s1">dateNum </span><span class="s2">= </span><span class="s1">value</span><span class="s2">.</span><span class="s1">getTime</span><span class="s2">(),</span>
+      <span class="s6">// is it in year range 1970-9999?</span>
+      <span class="s1">inRange </span><span class="s2">= </span><span class="s1">dateNum </span><span class="s2">&gt; -</span><span class="s7">1 </span><span class="s2">&amp;&amp; </span><span class="s1">dateNum </span><span class="s2">&lt; </span><span class="s7">253402318800000</span><span class="s2">;</span>
+
+    <span class="s0">if </span><span class="s2">(</span><span class="s1">options</span><span class="s2">.</span><span class="s1">legacy</span><span class="s2">) {</span>
+      <span class="s0">return </span><span class="s1">options</span><span class="s2">.</span><span class="s1">relaxed </span><span class="s2">&amp;&amp; </span><span class="s1">inRange</span>
+        <span class="s2">? { </span><span class="s1">$date</span><span class="s2">: </span><span class="s1">value</span><span class="s2">.</span><span class="s1">getTime</span><span class="s2">() }</span>
+        <span class="s2">: { </span><span class="s1">$date</span><span class="s2">: </span><span class="s1">getISOString</span><span class="s2">(</span><span class="s1">value</span><span class="s2">) };</span>
+    <span class="s2">}</span>
+    <span class="s0">return </span><span class="s1">options</span><span class="s2">.</span><span class="s1">relaxed </span><span class="s2">&amp;&amp; </span><span class="s1">inRange</span>
+      <span class="s2">? { </span><span class="s1">$date</span><span class="s2">: </span><span class="s1">getISOString</span><span class="s2">(</span><span class="s1">value</span><span class="s2">) }</span>
+      <span class="s2">: { </span><span class="s1">$date</span><span class="s2">: { </span><span class="s1">$numberLong</span><span class="s2">: </span><span class="s1">value</span><span class="s2">.</span><span class="s1">getTime</span><span class="s2">().</span><span class="s1">toString</span><span class="s2">() } };</span>
+  <span class="s2">}</span>
+
+  <span class="s0">if </span><span class="s2">(</span><span class="s0">typeof </span><span class="s1">value </span><span class="s2">=== </span><span class="s3">'number' </span><span class="s2">&amp;&amp; (!</span><span class="s1">options</span><span class="s2">.</span><span class="s1">relaxed </span><span class="s2">|| !</span><span class="s1">isFinite</span><span class="s2">(</span><span class="s1">value</span><span class="s2">))) {</span>
+    <span class="s0">if </span><span class="s2">(</span><span class="s1">Number</span><span class="s2">.</span><span class="s1">isInteger</span><span class="s2">(</span><span class="s1">value</span><span class="s2">) &amp;&amp; !</span><span class="s1">Object</span><span class="s2">.</span><span class="s1">is</span><span class="s2">(</span><span class="s1">value</span><span class="s2">, -</span><span class="s7">0</span><span class="s2">)) {</span>
+      <span class="s6">// interpret as being of the smallest BSON integer type that can represent the number exactly</span>
+      <span class="s0">if </span><span class="s2">(</span><span class="s1">value </span><span class="s2">&gt;= </span><span class="s1">BSON_INT32_MIN </span><span class="s2">&amp;&amp; </span><span class="s1">value </span><span class="s2">&lt;= </span><span class="s1">BSON_INT32_MAX</span><span class="s2">) {</span>
+        <span class="s0">return </span><span class="s2">{ </span><span class="s1">$numberInt</span><span class="s2">: </span><span class="s1">value</span><span class="s2">.</span><span class="s1">toString</span><span class="s2">() };</span>
+      <span class="s2">}</span>
+      <span class="s0">if </span><span class="s2">(</span><span class="s1">value </span><span class="s2">&gt;= </span><span class="s1">BSON_INT64_MIN </span><span class="s2">&amp;&amp; </span><span class="s1">value </span><span class="s2">&lt;= </span><span class="s1">BSON_INT64_MAX</span><span class="s2">) {</span>
+        <span class="s6">// TODO(NODE-4377): EJSON js number handling diverges from BSON</span>
+        <span class="s0">return </span><span class="s2">{ </span><span class="s1">$numberLong</span><span class="s2">: </span><span class="s1">value</span><span class="s2">.</span><span class="s1">toString</span><span class="s2">() };</span>
+      <span class="s2">}</span>
+    <span class="s2">}</span>
+    <span class="s0">return </span><span class="s2">{ </span><span class="s1">$numberDouble</span><span class="s2">: </span><span class="s1">Object</span><span class="s2">.</span><span class="s1">is</span><span class="s2">(</span><span class="s1">value</span><span class="s2">, -</span><span class="s7">0</span><span class="s2">) ? </span><span class="s3">'-0.0' </span><span class="s2">: </span><span class="s1">value</span><span class="s2">.</span><span class="s1">toString</span><span class="s2">() };</span>
+  <span class="s2">}</span>
+
+  <span class="s0">if </span><span class="s2">(</span><span class="s0">typeof </span><span class="s1">value </span><span class="s2">=== </span><span class="s3">'bigint'</span><span class="s2">) {</span>
+    <span class="s6">/* eslint-disable no-restricted-globals -- This is allowed as we are accepting a bigint as input */</span>
+    <span class="s0">if </span><span class="s2">(!</span><span class="s1">options</span><span class="s2">.</span><span class="s1">relaxed</span><span class="s2">) {</span>
+      <span class="s0">return </span><span class="s2">{ </span><span class="s1">$numberLong</span><span class="s2">: </span><span class="s1">BigInt</span><span class="s2">.</span><span class="s1">asIntN</span><span class="s2">(</span><span class="s7">64</span><span class="s2">, </span><span class="s1">value</span><span class="s2">).</span><span class="s1">toString</span><span class="s2">() };</span>
+    <span class="s2">}</span>
+    <span class="s0">return </span><span class="s1">Number</span><span class="s2">(</span><span class="s1">BigInt</span><span class="s2">.</span><span class="s1">asIntN</span><span class="s2">(</span><span class="s7">64</span><span class="s2">, </span><span class="s1">value</span><span class="s2">));</span>
+    <span class="s6">/* eslint-enable */</span>
+  <span class="s2">}</span>
+
+  <span class="s0">if </span><span class="s2">(</span><span class="s1">value </span><span class="s0">instanceof </span><span class="s1">RegExp </span><span class="s2">|| </span><span class="s1">isRegExp</span><span class="s2">(</span><span class="s1">value</span><span class="s2">)) {</span>
+    <span class="s0">let </span><span class="s1">flags </span><span class="s2">= </span><span class="s1">value</span><span class="s2">.</span><span class="s1">flags</span><span class="s2">;</span>
+    <span class="s0">if </span><span class="s2">(</span><span class="s1">flags </span><span class="s2">=== </span><span class="s1">undefined</span><span class="s2">) {</span>
+      <span class="s0">const </span><span class="s1">match </span><span class="s2">= </span><span class="s1">value</span><span class="s2">.</span><span class="s1">toString</span><span class="s2">().</span><span class="s1">match</span><span class="s2">(</span><span class="s8">/[gimuy]*$/</span><span class="s2">);</span>
+      <span class="s0">if </span><span class="s2">(</span><span class="s1">match</span><span class="s2">) {</span>
+        <span class="s1">flags </span><span class="s2">= </span><span class="s1">match</span><span class="s2">[</span><span class="s7">0</span><span class="s2">];</span>
+      <span class="s2">}</span>
+    <span class="s2">}</span>
+
+    <span class="s0">const </span><span class="s1">rx </span><span class="s2">= </span><span class="s0">new </span><span class="s1">BSONRegExp</span><span class="s2">(</span><span class="s1">value</span><span class="s2">.</span><span class="s1">source</span><span class="s2">, </span><span class="s1">flags</span><span class="s2">);</span>
+    <span class="s0">return </span><span class="s1">rx</span><span class="s2">.</span><span class="s1">toExtendedJSON</span><span class="s2">(</span><span class="s1">options</span><span class="s2">);</span>
+  <span class="s2">}</span>
+
+  <span class="s0">if </span><span class="s2">(</span><span class="s1">value </span><span class="s2">!= </span><span class="s0">null </span><span class="s2">&amp;&amp; </span><span class="s0">typeof </span><span class="s1">value </span><span class="s2">=== </span><span class="s3">'object'</span><span class="s2">) </span><span class="s0">return </span><span class="s1">serializeDocument</span><span class="s2">(</span><span class="s1">value</span><span class="s2">, </span><span class="s1">options</span><span class="s2">);</span>
+  <span class="s0">return </span><span class="s1">value</span><span class="s2">;</span>
+<span class="s2">}</span>
+
+<span class="s0">const </span><span class="s1">BSON_TYPE_MAPPINGS </span><span class="s2">= {</span>
+  <span class="s1">Binary</span><span class="s2">: (</span><span class="s1">o</span><span class="s2">: </span><span class="s1">Binary</span><span class="s2">) =&gt; </span><span class="s0">new </span><span class="s1">Binary</span><span class="s2">(</span><span class="s1">o</span><span class="s2">.</span><span class="s1">value</span><span class="s2">(), </span><span class="s1">o</span><span class="s2">.</span><span class="s1">sub_type</span><span class="s2">),</span>
+  <span class="s1">Code</span><span class="s2">: (</span><span class="s1">o</span><span class="s2">: </span><span class="s1">Code</span><span class="s2">) =&gt; </span><span class="s0">new </span><span class="s1">Code</span><span class="s2">(</span><span class="s1">o</span><span class="s2">.</span><span class="s1">code</span><span class="s2">, </span><span class="s1">o</span><span class="s2">.</span><span class="s1">scope</span><span class="s2">),</span>
+  <span class="s1">DBRef</span><span class="s2">: (</span><span class="s1">o</span><span class="s2">: </span><span class="s1">DBRef</span><span class="s2">) =&gt; </span><span class="s0">new </span><span class="s1">DBRef</span><span class="s2">(</span><span class="s1">o</span><span class="s2">.</span><span class="s1">collection </span><span class="s2">|| </span><span class="s1">o</span><span class="s2">.</span><span class="s1">namespace</span><span class="s2">, </span><span class="s1">o</span><span class="s2">.</span><span class="s1">oid</span><span class="s2">, </span><span class="s1">o</span><span class="s2">.</span><span class="s1">db</span><span class="s2">, </span><span class="s1">o</span><span class="s2">.</span><span class="s1">fields</span><span class="s2">), </span><span class="s6">// &quot;namespace&quot; for 1.x library backwards compat</span>
+  <span class="s1">Decimal128</span><span class="s2">: (</span><span class="s1">o</span><span class="s2">: </span><span class="s1">Decimal128</span><span class="s2">) =&gt; </span><span class="s0">new </span><span class="s1">Decimal128</span><span class="s2">(</span><span class="s1">o</span><span class="s2">.</span><span class="s1">bytes</span><span class="s2">),</span>
+  <span class="s1">Double</span><span class="s2">: (</span><span class="s1">o</span><span class="s2">: </span><span class="s1">Double</span><span class="s2">) =&gt; </span><span class="s0">new </span><span class="s1">Double</span><span class="s2">(</span><span class="s1">o</span><span class="s2">.</span><span class="s1">value</span><span class="s2">),</span>
+  <span class="s1">Int32</span><span class="s2">: (</span><span class="s1">o</span><span class="s2">: </span><span class="s1">Int32</span><span class="s2">) =&gt; </span><span class="s0">new </span><span class="s1">Int32</span><span class="s2">(</span><span class="s1">o</span><span class="s2">.</span><span class="s1">value</span><span class="s2">),</span>
+  <span class="s1">Long</span><span class="s2">: (</span>
+    <span class="s1">o</span><span class="s2">: </span><span class="s1">Long </span><span class="s2">&amp; {</span>
+      <span class="s1">low_</span><span class="s2">: </span><span class="s1">number</span><span class="s2">;</span>
+      <span class="s1">high_</span><span class="s2">: </span><span class="s1">number</span><span class="s2">;</span>
+      <span class="s1">unsigned_</span><span class="s2">: </span><span class="s1">boolean </span><span class="s2">| </span><span class="s1">undefined</span><span class="s2">;</span>
+    <span class="s2">}</span>
+  <span class="s2">) =&gt;</span>
+    <span class="s1">Long</span><span class="s2">.</span><span class="s1">fromBits</span><span class="s2">(</span>
+      <span class="s6">// underscore variants for 1.x backwards compatibility</span>
+      <span class="s1">o</span><span class="s2">.</span><span class="s1">low </span><span class="s2">!= </span><span class="s0">null </span><span class="s2">? </span><span class="s1">o</span><span class="s2">.</span><span class="s1">low </span><span class="s2">: </span><span class="s1">o</span><span class="s2">.</span><span class="s1">low_</span><span class="s2">,</span>
+      <span class="s1">o</span><span class="s2">.</span><span class="s1">low </span><span class="s2">!= </span><span class="s0">null </span><span class="s2">? </span><span class="s1">o</span><span class="s2">.</span><span class="s1">high </span><span class="s2">: </span><span class="s1">o</span><span class="s2">.</span><span class="s1">high_</span><span class="s2">,</span>
+      <span class="s1">o</span><span class="s2">.</span><span class="s1">low </span><span class="s2">!= </span><span class="s0">null </span><span class="s2">? </span><span class="s1">o</span><span class="s2">.</span><span class="s1">unsigned </span><span class="s2">: </span><span class="s1">o</span><span class="s2">.</span><span class="s1">unsigned_</span>
+    <span class="s2">),</span>
+  <span class="s1">MaxKey</span><span class="s2">: () =&gt; </span><span class="s0">new </span><span class="s1">MaxKey</span><span class="s2">(),</span>
+  <span class="s1">MinKey</span><span class="s2">: () =&gt; </span><span class="s0">new </span><span class="s1">MinKey</span><span class="s2">(),</span>
+  <span class="s1">ObjectId</span><span class="s2">: (</span><span class="s1">o</span><span class="s2">: </span><span class="s1">ObjectId</span><span class="s2">) =&gt; </span><span class="s0">new </span><span class="s1">ObjectId</span><span class="s2">(</span><span class="s1">o</span><span class="s2">),</span>
+  <span class="s1">BSONRegExp</span><span class="s2">: (</span><span class="s1">o</span><span class="s2">: </span><span class="s1">BSONRegExp</span><span class="s2">) =&gt; </span><span class="s0">new </span><span class="s1">BSONRegExp</span><span class="s2">(</span><span class="s1">o</span><span class="s2">.</span><span class="s1">pattern</span><span class="s2">, </span><span class="s1">o</span><span class="s2">.</span><span class="s1">options</span><span class="s2">),</span>
+  <span class="s1">BSONSymbol</span><span class="s2">: (</span><span class="s1">o</span><span class="s2">: </span><span class="s1">BSONSymbol</span><span class="s2">) =&gt; </span><span class="s0">new </span><span class="s1">BSONSymbol</span><span class="s2">(</span><span class="s1">o</span><span class="s2">.</span><span class="s1">value</span><span class="s2">),</span>
+  <span class="s1">Timestamp</span><span class="s2">: (</span><span class="s1">o</span><span class="s2">: </span><span class="s1">Timestamp</span><span class="s2">) =&gt; </span><span class="s1">Timestamp</span><span class="s2">.</span><span class="s1">fromBits</span><span class="s2">(</span><span class="s1">o</span><span class="s2">.</span><span class="s1">low</span><span class="s2">, </span><span class="s1">o</span><span class="s2">.</span><span class="s1">high</span><span class="s2">)</span>
+<span class="s2">} as </span><span class="s0">const</span><span class="s2">;</span>
+
+<span class="s6">// eslint-disable-next-line @typescript-eslint/no-explicit-any</span>
+<span class="s0">function </span><span class="s1">serializeDocument</span><span class="s2">(</span><span class="s1">doc</span><span class="s2">: </span><span class="s1">any</span><span class="s2">, </span><span class="s1">options</span><span class="s2">: </span><span class="s1">EJSONSerializeOptions</span><span class="s2">) {</span>
+  <span class="s0">if </span><span class="s2">(</span><span class="s1">doc </span><span class="s2">== </span><span class="s0">null </span><span class="s2">|| </span><span class="s0">typeof </span><span class="s1">doc </span><span class="s2">!== </span><span class="s3">'object'</span><span class="s2">) </span><span class="s0">throw new </span><span class="s1">BSONError</span><span class="s2">(</span><span class="s3">'not an object instance'</span><span class="s2">);</span>
+
+  <span class="s0">const </span><span class="s1">bsontype</span><span class="s2">: </span><span class="s1">BSONType</span><span class="s2">[</span><span class="s3">'_bsontype'</span><span class="s2">] = </span><span class="s1">doc</span><span class="s2">.</span><span class="s1">_bsontype</span><span class="s2">;</span>
+  <span class="s0">if </span><span class="s2">(</span><span class="s0">typeof </span><span class="s1">bsontype </span><span class="s2">=== </span><span class="s3">'undefined'</span><span class="s2">) {</span>
+    <span class="s6">// It's a regular object. Recursively serialize its property values.</span>
+    <span class="s0">const </span><span class="s1">_doc</span><span class="s2">: </span><span class="s1">Document </span><span class="s2">= {};</span>
+    <span class="s0">for </span><span class="s2">(</span><span class="s0">const </span><span class="s1">name of Object</span><span class="s2">.</span><span class="s1">keys</span><span class="s2">(</span><span class="s1">doc</span><span class="s2">)) {</span>
+      <span class="s1">options</span><span class="s2">.</span><span class="s1">seenObjects</span><span class="s2">.</span><span class="s1">push</span><span class="s2">({ </span><span class="s1">propertyName</span><span class="s2">: </span><span class="s1">name</span><span class="s2">, </span><span class="s1">obj</span><span class="s2">: </span><span class="s0">null </span><span class="s2">});</span>
+      <span class="s0">try </span><span class="s2">{</span>
+        <span class="s0">const </span><span class="s1">value </span><span class="s2">= </span><span class="s1">serializeValue</span><span class="s2">(</span><span class="s1">doc</span><span class="s2">[</span><span class="s1">name</span><span class="s2">], </span><span class="s1">options</span><span class="s2">);</span>
+        <span class="s0">if </span><span class="s2">(</span><span class="s1">name </span><span class="s2">=== </span><span class="s3">'__proto__'</span><span class="s2">) {</span>
+          <span class="s1">Object</span><span class="s2">.</span><span class="s1">defineProperty</span><span class="s2">(</span><span class="s1">_doc</span><span class="s2">, </span><span class="s1">name</span><span class="s2">, {</span>
+            <span class="s1">value</span><span class="s2">,</span>
+            <span class="s1">writable</span><span class="s2">: </span><span class="s0">true</span><span class="s2">,</span>
+            <span class="s1">enumerable</span><span class="s2">: </span><span class="s0">true</span><span class="s2">,</span>
+            <span class="s1">configurable</span><span class="s2">: </span><span class="s0">true</span>
+          <span class="s2">});</span>
+        <span class="s2">} </span><span class="s0">else </span><span class="s2">{</span>
+          <span class="s1">_doc</span><span class="s2">[</span><span class="s1">name</span><span class="s2">] = </span><span class="s1">value</span><span class="s2">;</span>
+        <span class="s2">}</span>
+      <span class="s2">} </span><span class="s0">finally </span><span class="s2">{</span>
+        <span class="s1">options</span><span class="s2">.</span><span class="s1">seenObjects</span><span class="s2">.</span><span class="s1">pop</span><span class="s2">();</span>
+      <span class="s2">}</span>
+    <span class="s2">}</span>
+    <span class="s0">return </span><span class="s1">_doc</span><span class="s2">;</span>
+  <span class="s2">} </span><span class="s0">else if </span><span class="s2">(</span>
+    <span class="s1">doc </span><span class="s2">!= </span><span class="s0">null </span><span class="s2">&amp;&amp;</span>
+    <span class="s0">typeof </span><span class="s1">doc </span><span class="s2">=== </span><span class="s3">'object' </span><span class="s2">&amp;&amp;</span>
+    <span class="s0">typeof </span><span class="s1">doc</span><span class="s2">.</span><span class="s1">_bsontype </span><span class="s2">=== </span><span class="s3">'string' </span><span class="s2">&amp;&amp;</span>
+    <span class="s1">doc</span><span class="s2">[</span><span class="s1">BSON_VERSION_SYMBOL</span><span class="s2">] !== </span><span class="s1">BSON_MAJOR_VERSION</span>
+  <span class="s2">) {</span>
+    <span class="s0">throw new </span><span class="s1">BSONVersionError</span><span class="s2">();</span>
+  <span class="s2">} </span><span class="s0">else if </span><span class="s2">(</span><span class="s1">isBSONType</span><span class="s2">(</span><span class="s1">doc</span><span class="s2">)) {</span>
+    <span class="s6">// the &quot;document&quot; is really just a BSON type object</span>
+    <span class="s6">// eslint-disable-next-line @typescript-eslint/no-explicit-any</span>
+    <span class="s0">let </span><span class="s1">outDoc</span><span class="s2">: </span><span class="s1">any </span><span class="s2">= </span><span class="s1">doc</span><span class="s2">;</span>
+    <span class="s0">if </span><span class="s2">(</span><span class="s0">typeof </span><span class="s1">outDoc</span><span class="s2">.</span><span class="s1">toExtendedJSON </span><span class="s2">!== </span><span class="s3">'function'</span><span class="s2">) {</span>
+      <span class="s6">// There's no EJSON serialization function on the object. It's probably an</span>
+      <span class="s6">// object created by a previous version of this library (or another library)</span>
+      <span class="s6">// that's duck-typing objects to look like they were generated by this library).</span>
+      <span class="s6">// Copy the object into this library's version of that type.</span>
+      <span class="s0">const </span><span class="s1">mapper </span><span class="s2">= </span><span class="s1">BSON_TYPE_MAPPINGS</span><span class="s2">[</span><span class="s1">doc</span><span class="s2">.</span><span class="s1">_bsontype</span><span class="s2">];</span>
+      <span class="s0">if </span><span class="s2">(!</span><span class="s1">mapper</span><span class="s2">) {</span>
+        <span class="s0">throw new </span><span class="s1">BSONError</span><span class="s2">(</span><span class="s3">'Unrecognized or invalid _bsontype: ' </span><span class="s2">+ </span><span class="s1">doc</span><span class="s2">.</span><span class="s1">_bsontype</span><span class="s2">);</span>
+      <span class="s2">}</span>
+      <span class="s1">outDoc </span><span class="s2">= </span><span class="s1">mapper</span><span class="s2">(</span><span class="s1">outDoc</span><span class="s2">);</span>
+    <span class="s2">}</span>
+
+    <span class="s6">// Two BSON types may have nested objects that may need to be serialized too</span>
+    <span class="s0">if </span><span class="s2">(</span><span class="s1">bsontype </span><span class="s2">=== </span><span class="s3">'Code' </span><span class="s2">&amp;&amp; </span><span class="s1">outDoc</span><span class="s2">.</span><span class="s1">scope</span><span class="s2">) {</span>
+      <span class="s1">outDoc </span><span class="s2">= </span><span class="s0">new </span><span class="s1">Code</span><span class="s2">(</span><span class="s1">outDoc</span><span class="s2">.</span><span class="s1">code</span><span class="s2">, </span><span class="s1">serializeValue</span><span class="s2">(</span><span class="s1">outDoc</span><span class="s2">.</span><span class="s1">scope</span><span class="s2">, </span><span class="s1">options</span><span class="s2">));</span>
+    <span class="s2">} </span><span class="s0">else if </span><span class="s2">(</span><span class="s1">bsontype </span><span class="s2">=== </span><span class="s3">'DBRef' </span><span class="s2">&amp;&amp; </span><span class="s1">outDoc</span><span class="s2">.</span><span class="s1">oid</span><span class="s2">) {</span>
+      <span class="s1">outDoc </span><span class="s2">= </span><span class="s0">new </span><span class="s1">DBRef</span><span class="s2">(</span>
+        <span class="s1">serializeValue</span><span class="s2">(</span><span class="s1">outDoc</span><span class="s2">.</span><span class="s1">collection</span><span class="s2">, </span><span class="s1">options</span><span class="s2">),</span>
+        <span class="s1">serializeValue</span><span class="s2">(</span><span class="s1">outDoc</span><span class="s2">.</span><span class="s1">oid</span><span class="s2">, </span><span class="s1">options</span><span class="s2">),</span>
+        <span class="s1">serializeValue</span><span class="s2">(</span><span class="s1">outDoc</span><span class="s2">.</span><span class="s1">db</span><span class="s2">, </span><span class="s1">options</span><span class="s2">),</span>
+        <span class="s1">serializeValue</span><span class="s2">(</span><span class="s1">outDoc</span><span class="s2">.</span><span class="s1">fields</span><span class="s2">, </span><span class="s1">options</span><span class="s2">)</span>
+      <span class="s2">);</span>
+    <span class="s2">}</span>
+
+    <span class="s0">return </span><span class="s1">outDoc</span><span class="s2">.</span><span class="s1">toExtendedJSON</span><span class="s2">(</span><span class="s1">options</span><span class="s2">);</span>
+  <span class="s2">} </span><span class="s0">else </span><span class="s2">{</span>
+    <span class="s0">throw new </span><span class="s1">BSONError</span><span class="s2">(</span><span class="s3">'_bsontype must be a string, but was: ' </span><span class="s2">+ </span><span class="s0">typeof </span><span class="s1">bsontype</span><span class="s2">);</span>
+  <span class="s2">}</span>
+<span class="s2">}</span>
+
+<span class="s4">/**</span>
+ <span class="s4">* Parse an Extended JSON string, constructing the JavaScript value or object described by that</span>
+ <span class="s4">* string.</span>
+ <span class="s4">*</span>
+ <span class="s4">* </span><span class="s5">@example</span>
+ <span class="s4">* ```js</span>
+ <span class="s4">* const { EJSON } = require('bson');</span>
+ <span class="s4">* const text = '{ &quot;int32&quot;: { &quot;$numberInt&quot;: &quot;10&quot; } }';</span>
+ <span class="s4">*</span>
+ <span class="s4">* // prints { int32: { [String: '10'] _bsontype: 'Int32', value: '10' } }</span>
+ <span class="s4">* console.log(EJSON.parse(text, { relaxed: false }));</span>
+ <span class="s4">*</span>
+ <span class="s4">* // prints { int32: 10 }</span>
+ <span class="s4">* console.log(EJSON.parse(text));</span>
+ <span class="s4">* ```</span>
+ <span class="s4">*/</span>
+<span class="s6">// eslint-disable-next-line @typescript-eslint/no-explicit-any</span>
+<span class="s0">function </span><span class="s1">parse</span><span class="s2">(</span><span class="s1">text</span><span class="s2">: </span><span class="s1">string</span><span class="s2">, </span><span class="s1">options</span><span class="s2">?: </span><span class="s1">EJSONOptions</span><span class="s2">): </span><span class="s1">any </span><span class="s2">{</span>
+  <span class="s0">const </span><span class="s1">ejsonOptions </span><span class="s2">= {</span>
+    <span class="s1">useBigInt64</span><span class="s2">: </span><span class="s1">options</span><span class="s2">?.</span><span class="s1">useBigInt64 </span><span class="s2">?? </span><span class="s0">false</span><span class="s2">,</span>
+    <span class="s1">relaxed</span><span class="s2">: </span><span class="s1">options</span><span class="s2">?.</span><span class="s1">relaxed </span><span class="s2">?? </span><span class="s0">true</span><span class="s2">,</span>
+    <span class="s1">legacy</span><span class="s2">: </span><span class="s1">options</span><span class="s2">?.</span><span class="s1">legacy </span><span class="s2">?? </span><span class="s0">false</span>
+  <span class="s2">};</span>
+  <span class="s0">return </span><span class="s1">JSON</span><span class="s2">.</span><span class="s1">parse</span><span class="s2">(</span><span class="s1">text</span><span class="s2">, (</span><span class="s1">key</span><span class="s2">, </span><span class="s1">value</span><span class="s2">) =&gt; {</span>
+    <span class="s0">if </span><span class="s2">(</span><span class="s1">key</span><span class="s2">.</span><span class="s1">indexOf</span><span class="s2">(</span><span class="s3">'</span><span class="s0">\x00</span><span class="s3">'</span><span class="s2">) !== -</span><span class="s7">1</span><span class="s2">) {</span>
+      <span class="s0">throw new </span><span class="s1">BSONError</span><span class="s2">(</span>
+        <span class="s3">`BSON Document field names cannot contain null bytes, found: </span><span class="s1">$</span><span class="s2">{</span><span class="s1">JSON</span><span class="s2">.</span><span class="s1">stringify</span><span class="s2">(</span><span class="s1">key</span><span class="s2">)}</span><span class="s3">`</span>
+      <span class="s2">);</span>
+    <span class="s2">}</span>
+    <span class="s0">return </span><span class="s1">deserializeValue</span><span class="s2">(</span><span class="s1">value</span><span class="s2">, </span><span class="s1">ejsonOptions</span><span class="s2">);</span>
+  <span class="s2">});</span>
+<span class="s2">}</span>
+
+<span class="s4">/**</span>
+ <span class="s4">* Converts a BSON document to an Extended JSON string, optionally replacing values if a replacer</span>
+ <span class="s4">* function is specified or optionally including only the specified properties if a replacer array</span>
+ <span class="s4">* is specified.</span>
+ <span class="s4">*</span>
+ <span class="s4">* </span><span class="s5">@param </span><span class="s4">value - The value to convert to extended JSON</span>
+ <span class="s4">* </span><span class="s5">@param </span><span class="s4">replacer - A function that alters the behavior of the stringification process, or an array of String and Number objects that serve as a whitelist for selecting/filtering the properties of the value object to be included in the JSON string. If this value is null or not provided, all properties of the object are included in the resulting JSON string</span>
+ <span class="s4">* </span><span class="s5">@param </span><span class="s4">space - A String or Number object that's used to insert white space into the output JSON string for readability purposes.</span>
+ <span class="s4">* </span><span class="s5">@param </span><span class="s4">options - Optional settings</span>
+ <span class="s4">*</span>
+ <span class="s4">* </span><span class="s5">@example</span>
+ <span class="s4">* ```js</span>
+ <span class="s4">* const { EJSON } = require('bson');</span>
+ <span class="s4">* const Int32 = require('mongodb').Int32;</span>
+ <span class="s4">* const doc = { int32: new Int32(10) };</span>
+ <span class="s4">*</span>
+ <span class="s4">* // prints '{&quot;int32&quot;:{&quot;$numberInt&quot;:&quot;10&quot;}}'</span>
+ <span class="s4">* console.log(EJSON.stringify(doc, { relaxed: false }));</span>
+ <span class="s4">*</span>
+ <span class="s4">* // prints '{&quot;int32&quot;:10}'</span>
+ <span class="s4">* console.log(EJSON.stringify(doc));</span>
+ <span class="s4">* ```</span>
+ <span class="s4">*/</span>
+<span class="s0">function </span><span class="s1">stringify</span><span class="s2">(</span>
+  <span class="s6">// eslint-disable-next-line @typescript-eslint/no-explicit-any</span>
+  <span class="s1">value</span><span class="s2">: </span><span class="s1">any</span><span class="s2">,</span>
+  <span class="s6">// eslint-disable-next-line @typescript-eslint/no-explicit-any</span>
+  <span class="s1">replacer</span><span class="s2">?: (</span><span class="s1">number </span><span class="s2">| </span><span class="s1">string</span><span class="s2">)[] | ((</span><span class="s0">this</span><span class="s2">: </span><span class="s1">any</span><span class="s2">, </span><span class="s1">key</span><span class="s2">: </span><span class="s1">string</span><span class="s2">, </span><span class="s1">value</span><span class="s2">: </span><span class="s1">any</span><span class="s2">) =&gt; </span><span class="s1">any</span><span class="s2">) | </span><span class="s1">EJSONOptions</span><span class="s2">,</span>
+  <span class="s1">space</span><span class="s2">?: </span><span class="s1">string </span><span class="s2">| </span><span class="s1">number</span><span class="s2">,</span>
+  <span class="s1">options</span><span class="s2">?: </span><span class="s1">EJSONOptions</span>
+<span class="s2">): </span><span class="s1">string </span><span class="s2">{</span>
+  <span class="s0">if </span><span class="s2">(</span><span class="s1">space </span><span class="s2">!= </span><span class="s0">null </span><span class="s2">&amp;&amp; </span><span class="s0">typeof </span><span class="s1">space </span><span class="s2">=== </span><span class="s3">'object'</span><span class="s2">) {</span>
+    <span class="s1">options </span><span class="s2">= </span><span class="s1">space</span><span class="s2">;</span>
+    <span class="s1">space </span><span class="s2">= </span><span class="s7">0</span><span class="s2">;</span>
+  <span class="s2">}</span>
+  <span class="s0">if </span><span class="s2">(</span><span class="s1">replacer </span><span class="s2">!= </span><span class="s0">null </span><span class="s2">&amp;&amp; </span><span class="s0">typeof </span><span class="s1">replacer </span><span class="s2">=== </span><span class="s3">'object' </span><span class="s2">&amp;&amp; !</span><span class="s1">Array</span><span class="s2">.</span><span class="s1">isArray</span><span class="s2">(</span><span class="s1">replacer</span><span class="s2">)) {</span>
+    <span class="s1">options </span><span class="s2">= </span><span class="s1">replacer</span><span class="s2">;</span>
+    <span class="s1">replacer </span><span class="s2">= </span><span class="s1">undefined</span><span class="s2">;</span>
+    <span class="s1">space </span><span class="s2">= </span><span class="s7">0</span><span class="s2">;</span>
+  <span class="s2">}</span>
+  <span class="s0">const </span><span class="s1">serializeOptions </span><span class="s2">= </span><span class="s1">Object</span><span class="s2">.</span><span class="s1">assign</span><span class="s2">({ </span><span class="s1">relaxed</span><span class="s2">: </span><span class="s0">true</span><span class="s2">, </span><span class="s1">legacy</span><span class="s2">: </span><span class="s0">false </span><span class="s2">}, </span><span class="s1">options</span><span class="s2">, {</span>
+    <span class="s1">seenObjects</span><span class="s2">: [{ </span><span class="s1">propertyName</span><span class="s2">: </span><span class="s3">'(root)'</span><span class="s2">, </span><span class="s1">obj</span><span class="s2">: </span><span class="s0">null </span><span class="s2">}]</span>
+  <span class="s2">});</span>
+
+  <span class="s0">const </span><span class="s1">doc </span><span class="s2">= </span><span class="s1">serializeValue</span><span class="s2">(</span><span class="s1">value</span><span class="s2">, </span><span class="s1">serializeOptions</span><span class="s2">);</span>
+  <span class="s0">return </span><span class="s1">JSON</span><span class="s2">.</span><span class="s1">stringify</span><span class="s2">(</span><span class="s1">doc</span><span class="s2">, </span><span class="s1">replacer </span><span class="s2">as </span><span class="s1">Parameters</span><span class="s2">&lt;</span><span class="s1">JSON</span><span class="s2">[</span><span class="s3">'stringify'</span><span class="s2">]&gt;[</span><span class="s7">1</span><span class="s2">], </span><span class="s1">space</span><span class="s2">);</span>
+<span class="s2">}</span>
+
+<span class="s4">/**</span>
+ <span class="s4">* Serializes an object to an Extended JSON string, and reparse it as a JavaScript object.</span>
+ <span class="s4">*</span>
+ <span class="s4">* </span><span class="s5">@param </span><span class="s4">value - The object to serialize</span>
+ <span class="s4">* </span><span class="s5">@param </span><span class="s4">options - Optional settings passed to the `stringify` function</span>
+ <span class="s4">*/</span>
+<span class="s6">// eslint-disable-next-line @typescript-eslint/no-explicit-any</span>
+<span class="s0">function </span><span class="s1">EJSONserialize</span><span class="s2">(</span><span class="s1">value</span><span class="s2">: </span><span class="s1">any</span><span class="s2">, </span><span class="s1">options</span><span class="s2">?: </span><span class="s1">EJSONOptions</span><span class="s2">): </span><span class="s1">Document </span><span class="s2">{</span>
+  <span class="s1">options </span><span class="s2">= </span><span class="s1">options </span><span class="s2">|| {};</span>
+  <span class="s0">return </span><span class="s1">JSON</span><span class="s2">.</span><span class="s1">parse</span><span class="s2">(</span><span class="s1">stringify</span><span class="s2">(</span><span class="s1">value</span><span class="s2">, </span><span class="s1">options</span><span class="s2">));</span>
+<span class="s2">}</span>
+
+<span class="s4">/**</span>
+ <span class="s4">* Deserializes an Extended JSON object into a plain JavaScript object with native/BSON types</span>
+ <span class="s4">*</span>
+ <span class="s4">* </span><span class="s5">@param </span><span class="s4">ejson - The Extended JSON object to deserialize</span>
+ <span class="s4">* </span><span class="s5">@param </span><span class="s4">options - Optional settings passed to the parse method</span>
+ <span class="s4">*/</span>
+<span class="s6">// eslint-disable-next-line @typescript-eslint/no-explicit-any</span>
+<span class="s0">function </span><span class="s1">EJSONdeserialize</span><span class="s2">(</span><span class="s1">ejson</span><span class="s2">: </span><span class="s1">Document</span><span class="s2">, </span><span class="s1">options</span><span class="s2">?: </span><span class="s1">EJSONOptions</span><span class="s2">): </span><span class="s1">any </span><span class="s2">{</span>
+  <span class="s1">options </span><span class="s2">= </span><span class="s1">options </span><span class="s2">|| {};</span>
+  <span class="s0">return </span><span class="s1">parse</span><span class="s2">(</span><span class="s1">JSON</span><span class="s2">.</span><span class="s1">stringify</span><span class="s2">(</span><span class="s1">ejson</span><span class="s2">), </span><span class="s1">options</span><span class="s2">);</span>
+<span class="s2">}</span>
+
+<span class="s4">/** </span><span class="s5">@public </span><span class="s4">*/</span>
+<span class="s0">const </span><span class="s1">EJSON</span><span class="s2">: {</span>
+  <span class="s1">parse</span><span class="s2">: </span><span class="s0">typeof </span><span class="s1">parse</span><span class="s2">;</span>
+  <span class="s1">stringify</span><span class="s2">: </span><span class="s0">typeof </span><span class="s1">stringify</span><span class="s2">;</span>
+  <span class="s1">serialize</span><span class="s2">: </span><span class="s0">typeof </span><span class="s1">EJSONserialize</span><span class="s2">;</span>
+  <span class="s1">deserialize</span><span class="s2">: </span><span class="s0">typeof </span><span class="s1">EJSONdeserialize</span><span class="s2">;</span>
+<span class="s2">} = </span><span class="s1">Object</span><span class="s2">.</span><span class="s1">create</span><span class="s2">(</span><span class="s0">null</span><span class="s2">);</span>
+<span class="s1">EJSON</span><span class="s2">.</span><span class="s1">parse </span><span class="s2">= </span><span class="s1">parse</span><span class="s2">;</span>
+<span class="s1">EJSON</span><span class="s2">.</span><span class="s1">stringify </span><span class="s2">= </span><span class="s1">stringify</span><span class="s2">;</span>
+<span class="s1">EJSON</span><span class="s2">.</span><span class="s1">serialize </span><span class="s2">= </span><span class="s1">EJSONserialize</span><span class="s2">;</span>
+<span class="s1">EJSON</span><span class="s2">.</span><span class="s1">deserialize </span><span class="s2">= </span><span class="s1">EJSONdeserialize</span><span class="s2">;</span>
+<span class="s1">Object</span><span class="s2">.</span><span class="s1">freeze</span><span class="s2">(</span><span class="s1">EJSON</span><span class="s2">);</span>
+<span class="s0">export </span><span class="s2">{ </span><span class="s1">EJSON </span><span class="s2">};</span>
+</pre>
+</body>
+</html>

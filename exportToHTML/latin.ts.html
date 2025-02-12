@@ -1,0 +1,127 @@
+<html>
+<head>
+<title>latin.ts</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+<style type="text/css">
+.s0 { color: #5f826b; font-style: italic;}
+.s1 { color: #67a37c; font-style: italic;}
+.s2 { color: #bcbec4;}
+.s3 { color: #cf8e6d;}
+.s4 { color: #bcbec4;}
+.s5 { color: #2aacb8;}
+.s6 { color: #6aab73;}
+</style>
+</head>
+<body bgcolor="#1e1f22">
+<table CELLSPACING=0 CELLPADDING=5 COLS=1 WIDTH="100%" BGCOLOR="#606060" >
+<tr><td><center>
+<font face="Arial, Helvetica" color="#000000">
+latin.ts</font>
+</center></td></tr></table>
+<pre><span class="s0">/**</span>
+ <span class="s0">* This function is an optimization for small basic latin strings.</span>
+ <span class="s0">* </span><span class="s1">@internal</span>
+ <span class="s0">* </span><span class="s1">@remarks</span>
+ <span class="s0">* ### Important characteristics:</span>
+ <span class="s0">* - If the uint8array or distance between start and end is 0 this function returns an empty string</span>
+ <span class="s0">* - If the byteLength of the string is 1, 2, or 3 we invoke String.fromCharCode and manually offset into the buffer</span>
+ <span class="s0">* - If the byteLength of the string is less than or equal to 20 an array of bytes is built and `String.fromCharCode.apply` is called with the result</span>
+ <span class="s0">* - If any byte exceeds 128 this function returns null</span>
+ <span class="s0">*</span>
+ <span class="s0">* </span><span class="s1">@param </span><span class="s0">uint8array - A sequence of bytes that may contain basic latin characters</span>
+ <span class="s0">* </span><span class="s1">@param </span><span class="s0">start - The start index from which to search the uint8array</span>
+ <span class="s0">* </span><span class="s1">@param </span><span class="s0">end - The index to stop searching the uint8array</span>
+ <span class="s0">* </span><span class="s1">@returns </span><span class="s0">string if all bytes are within the basic latin range, otherwise null</span>
+ <span class="s0">*/</span>
+<span class="s3">export function </span><span class="s2">tryReadBasicLatin</span><span class="s4">(</span>
+  <span class="s2">uint8array</span><span class="s4">: </span><span class="s2">Uint8Array</span><span class="s4">,</span>
+  <span class="s2">start</span><span class="s4">: </span><span class="s2">number</span><span class="s4">,</span>
+  <span class="s2">end</span><span class="s4">: </span><span class="s2">number</span>
+<span class="s4">): </span><span class="s2">string </span><span class="s4">| </span><span class="s3">null </span><span class="s4">{</span>
+  <span class="s3">if </span><span class="s4">(</span><span class="s2">uint8array</span><span class="s4">.</span><span class="s2">length </span><span class="s4">=== </span><span class="s5">0</span><span class="s4">) {</span>
+    <span class="s3">return </span><span class="s6">''</span><span class="s4">;</span>
+  <span class="s4">}</span>
+
+  <span class="s3">const </span><span class="s2">stringByteLength </span><span class="s4">= </span><span class="s2">end </span><span class="s4">- </span><span class="s2">start</span><span class="s4">;</span>
+  <span class="s3">if </span><span class="s4">(</span><span class="s2">stringByteLength </span><span class="s4">=== </span><span class="s5">0</span><span class="s4">) {</span>
+    <span class="s3">return </span><span class="s6">''</span><span class="s4">;</span>
+  <span class="s4">}</span>
+
+  <span class="s3">if </span><span class="s4">(</span><span class="s2">stringByteLength </span><span class="s4">&gt; </span><span class="s5">20</span><span class="s4">) {</span>
+    <span class="s3">return null</span><span class="s4">;</span>
+  <span class="s4">}</span>
+
+  <span class="s3">if </span><span class="s4">(</span><span class="s2">stringByteLength </span><span class="s4">=== </span><span class="s5">1 </span><span class="s4">&amp;&amp; </span><span class="s2">uint8array</span><span class="s4">[</span><span class="s2">start</span><span class="s4">] &lt; </span><span class="s5">128</span><span class="s4">) {</span>
+    <span class="s3">return </span><span class="s2">String</span><span class="s4">.</span><span class="s2">fromCharCode</span><span class="s4">(</span><span class="s2">uint8array</span><span class="s4">[</span><span class="s2">start</span><span class="s4">]);</span>
+  <span class="s4">}</span>
+
+  <span class="s3">if </span><span class="s4">(</span><span class="s2">stringByteLength </span><span class="s4">=== </span><span class="s5">2 </span><span class="s4">&amp;&amp; </span><span class="s2">uint8array</span><span class="s4">[</span><span class="s2">start</span><span class="s4">] &lt; </span><span class="s5">128 </span><span class="s4">&amp;&amp; </span><span class="s2">uint8array</span><span class="s4">[</span><span class="s2">start </span><span class="s4">+ </span><span class="s5">1</span><span class="s4">] &lt; </span><span class="s5">128</span><span class="s4">) {</span>
+    <span class="s3">return </span><span class="s2">String</span><span class="s4">.</span><span class="s2">fromCharCode</span><span class="s4">(</span><span class="s2">uint8array</span><span class="s4">[</span><span class="s2">start</span><span class="s4">]) + </span><span class="s2">String</span><span class="s4">.</span><span class="s2">fromCharCode</span><span class="s4">(</span><span class="s2">uint8array</span><span class="s4">[</span><span class="s2">start </span><span class="s4">+ </span><span class="s5">1</span><span class="s4">]);</span>
+  <span class="s4">}</span>
+
+  <span class="s3">if </span><span class="s4">(</span>
+    <span class="s2">stringByteLength </span><span class="s4">=== </span><span class="s5">3 </span><span class="s4">&amp;&amp;</span>
+    <span class="s2">uint8array</span><span class="s4">[</span><span class="s2">start</span><span class="s4">] &lt; </span><span class="s5">128 </span><span class="s4">&amp;&amp;</span>
+    <span class="s2">uint8array</span><span class="s4">[</span><span class="s2">start </span><span class="s4">+ </span><span class="s5">1</span><span class="s4">] &lt; </span><span class="s5">128 </span><span class="s4">&amp;&amp;</span>
+    <span class="s2">uint8array</span><span class="s4">[</span><span class="s2">start </span><span class="s4">+ </span><span class="s5">2</span><span class="s4">] &lt; </span><span class="s5">128</span>
+  <span class="s4">) {</span>
+    <span class="s3">return </span><span class="s4">(</span>
+      <span class="s2">String</span><span class="s4">.</span><span class="s2">fromCharCode</span><span class="s4">(</span><span class="s2">uint8array</span><span class="s4">[</span><span class="s2">start</span><span class="s4">]) +</span>
+      <span class="s2">String</span><span class="s4">.</span><span class="s2">fromCharCode</span><span class="s4">(</span><span class="s2">uint8array</span><span class="s4">[</span><span class="s2">start </span><span class="s4">+ </span><span class="s5">1</span><span class="s4">]) +</span>
+      <span class="s2">String</span><span class="s4">.</span><span class="s2">fromCharCode</span><span class="s4">(</span><span class="s2">uint8array</span><span class="s4">[</span><span class="s2">start </span><span class="s4">+ </span><span class="s5">2</span><span class="s4">])</span>
+    <span class="s4">);</span>
+  <span class="s4">}</span>
+
+  <span class="s3">const </span><span class="s2">latinBytes </span><span class="s4">= [];</span>
+  <span class="s3">for </span><span class="s4">(</span><span class="s3">let </span><span class="s2">i </span><span class="s4">= </span><span class="s2">start</span><span class="s4">; </span><span class="s2">i </span><span class="s4">&lt; </span><span class="s2">end</span><span class="s4">; </span><span class="s2">i</span><span class="s4">++) {</span>
+    <span class="s3">const </span><span class="s2">byte </span><span class="s4">= </span><span class="s2">uint8array</span><span class="s4">[</span><span class="s2">i</span><span class="s4">];</span>
+    <span class="s3">if </span><span class="s4">(</span><span class="s2">byte </span><span class="s4">&gt; </span><span class="s5">127</span><span class="s4">) {</span>
+      <span class="s3">return null</span><span class="s4">;</span>
+    <span class="s4">}</span>
+    <span class="s2">latinBytes</span><span class="s4">.</span><span class="s2">push</span><span class="s4">(</span><span class="s2">byte</span><span class="s4">);</span>
+  <span class="s4">}</span>
+
+  <span class="s3">return </span><span class="s2">String</span><span class="s4">.</span><span class="s2">fromCharCode</span><span class="s4">(</span><span class="s2">...latinBytes</span><span class="s4">);</span>
+<span class="s4">}</span>
+
+<span class="s0">/**</span>
+ <span class="s0">* This function is an optimization for writing small basic latin strings.</span>
+ <span class="s0">* </span><span class="s1">@internal</span>
+ <span class="s0">* </span><span class="s1">@remarks</span>
+ <span class="s0">* ### Important characteristics:</span>
+ <span class="s0">* - If the string length is 0 return 0, do not perform any work</span>
+ <span class="s0">* - If a string is longer than 25 code units return null</span>
+ <span class="s0">* - If any code unit exceeds 128 this function returns null</span>
+ <span class="s0">*</span>
+ <span class="s0">* </span><span class="s1">@param </span><span class="s0">destination - The uint8array to serialize the string to</span>
+ <span class="s0">* </span><span class="s1">@param </span><span class="s0">source - The string to turn into UTF-8 bytes if it fits in the basic latin range</span>
+ <span class="s0">* </span><span class="s1">@param </span><span class="s0">offset - The position in the destination to begin writing bytes to</span>
+ <span class="s0">* </span><span class="s1">@returns </span><span class="s0">the number of bytes written to destination if all code units are below 128, otherwise null</span>
+ <span class="s0">*/</span>
+<span class="s3">export function </span><span class="s2">tryWriteBasicLatin</span><span class="s4">(</span>
+  <span class="s2">destination</span><span class="s4">: </span><span class="s2">Uint8Array</span><span class="s4">,</span>
+  <span class="s2">source</span><span class="s4">: </span><span class="s2">string</span><span class="s4">,</span>
+  <span class="s2">offset</span><span class="s4">: </span><span class="s2">number</span>
+<span class="s4">): </span><span class="s2">number </span><span class="s4">| </span><span class="s3">null </span><span class="s4">{</span>
+  <span class="s3">if </span><span class="s4">(</span><span class="s2">source</span><span class="s4">.</span><span class="s2">length </span><span class="s4">=== </span><span class="s5">0</span><span class="s4">) </span><span class="s3">return </span><span class="s5">0</span><span class="s4">;</span>
+
+  <span class="s3">if </span><span class="s4">(</span><span class="s2">source</span><span class="s4">.</span><span class="s2">length </span><span class="s4">&gt; </span><span class="s5">25</span><span class="s4">) </span><span class="s3">return null</span><span class="s4">;</span>
+
+  <span class="s3">if </span><span class="s4">(</span><span class="s2">destination</span><span class="s4">.</span><span class="s2">length </span><span class="s4">- </span><span class="s2">offset </span><span class="s4">&lt; </span><span class="s2">source</span><span class="s4">.</span><span class="s2">length</span><span class="s4">) </span><span class="s3">return null</span><span class="s4">;</span>
+
+  <span class="s3">for </span><span class="s4">(</span>
+    <span class="s3">let </span><span class="s2">charOffset </span><span class="s4">= </span><span class="s5">0</span><span class="s4">, </span><span class="s2">destinationOffset </span><span class="s4">= </span><span class="s2">offset</span><span class="s4">;</span>
+    <span class="s2">charOffset </span><span class="s4">&lt; </span><span class="s2">source</span><span class="s4">.</span><span class="s2">length</span><span class="s4">;</span>
+    <span class="s2">charOffset</span><span class="s4">++, </span><span class="s2">destinationOffset</span><span class="s4">++</span>
+  <span class="s4">) {</span>
+    <span class="s3">const </span><span class="s2">char </span><span class="s4">= </span><span class="s2">source</span><span class="s4">.</span><span class="s2">charCodeAt</span><span class="s4">(</span><span class="s2">charOffset</span><span class="s4">);</span>
+    <span class="s3">if </span><span class="s4">(</span><span class="s2">char </span><span class="s4">&gt; </span><span class="s5">127</span><span class="s4">) </span><span class="s3">return null</span><span class="s4">;</span>
+
+    <span class="s2">destination</span><span class="s4">[</span><span class="s2">destinationOffset</span><span class="s4">] = </span><span class="s2">char</span><span class="s4">;</span>
+  <span class="s4">}</span>
+
+  <span class="s3">return </span><span class="s2">source</span><span class="s4">.</span><span class="s2">length</span><span class="s4">;</span>
+<span class="s4">}</span>
+</pre>
+</body>
+</html>

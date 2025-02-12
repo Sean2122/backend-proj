@@ -1,0 +1,29 @@
+<html>
+<head>
+<title>TeamMember.js</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+<style type="text/css">
+.s0 { color: #cf8e6d;}
+.s1 { color: #bcbec4;}
+.s2 { color: #bcbec4;}
+.s3 { color: #6aab73;}
+</style>
+</head>
+<body bgcolor="#1e1f22">
+<table CELLSPACING=0 CELLPADDING=5 COLS=1 WIDTH="100%" BGCOLOR="#606060" >
+<tr><td><center>
+<font face="Arial, Helvetica" color="#000000">
+TeamMember.js</font>
+</center></td></tr></table>
+<pre><span class="s0">const </span><span class="s1">mongoose </span><span class="s2">= </span><span class="s1">require</span><span class="s2">(</span><span class="s3">'mongoose'</span><span class="s2">);</span>
+
+<span class="s0">const </span><span class="s1">TeamMemberSchema </span><span class="s2">= </span><span class="s0">new </span><span class="s1">mongoose</span><span class="s2">.</span><span class="s1">Schema</span><span class="s2">({</span>
+    <span class="s1">_id</span><span class="s2">: { </span><span class="s1">type</span><span class="s2">: </span><span class="s1">Number</span><span class="s2">, </span><span class="s1">required</span><span class="s2">: </span><span class="s0">true </span><span class="s2">},</span>
+    <span class="s1">first_name</span><span class="s2">: { </span><span class="s1">type</span><span class="s2">: </span><span class="s1">String</span><span class="s2">, </span><span class="s1">required</span><span class="s2">: </span><span class="s0">true </span><span class="s2">},</span>
+    <span class="s1">last_name</span><span class="s2">: { </span><span class="s1">type</span><span class="s2">: </span><span class="s1">String</span><span class="s2">, </span><span class="s1">required</span><span class="s2">: </span><span class="s0">true </span><span class="s2">}</span>
+<span class="s2">});</span>
+
+<span class="s1">module</span><span class="s2">.</span><span class="s1">exports </span><span class="s2">= </span><span class="s1">mongoose</span><span class="s2">.</span><span class="s1">model</span><span class="s2">(</span><span class="s3">'TeamMember'</span><span class="s2">, </span><span class="s1">TeamMemberSchema</span><span class="s2">, </span><span class="s3">'team_members'</span><span class="s2">);</span>
+</pre>
+</body>
+</html>
